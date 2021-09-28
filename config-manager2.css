@@ -1,0 +1,13 @@
+label#main {
+    font-weight: bold;
+}
+
+label#sub {
+    font-style: italic;
+    font-size: 80%;
+}
+
+label#title {
+    font-weight: bold;
+    font-size: 110%;
+}

@@ -1,0 +1,31 @@
+preconfigured:
+  -
+    name: "Personal domain"
+    subtitle: "web browser, office suite"
+    icon: "writer and ff3.png"
+    salt: "personal_salt"
+  -
+    name: "Social media domain"
+    subtitle: "web browser"
+    salt: "sm_salt"
+  -
+    name: "Work domain"
+    subtitle: "web browser, office suite"
+    salt: "work_salt"
+  -
+    name: "Email domain"
+    subtitle: "email client"
+    salt: "email_salt"
+  -
+    name: "Key management"
+    subtitle: "manage your keys and passwords securely"
+    salt: "key_salt"
+  -
+    name: "split GPG"
+    subtitle: "manage GPG keys securely"
+    salt: "gpg_salt"
+network_settings:
+  enable_wifi: True
+  enable_wired: True
+vpn_settings:
+  enable_vpn: True
