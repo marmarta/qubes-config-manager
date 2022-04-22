@@ -3,11 +3,12 @@
 This is a preliminary draft of a configuration manager tool for Qubes OS.
 Intented to make system settings usable for non-power users. 
 
-## Planned steps
+## Design
 
-Formalized design, user research.
+Split tools into General System Settings tool and Add New Qube tool, with redesigned 
+UX.
 
-## Initial ideas for configuration
+## Former initial ideas for configuration
 
 File format for configuration:
 - yaml
