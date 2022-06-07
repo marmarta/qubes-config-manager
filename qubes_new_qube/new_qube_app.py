@@ -16,7 +16,7 @@ import logging
 import qubesadmin
 import qubesadmin.events
 import qubesadmin.vm
-from .qubes_widgets_library import QubeName, VMListStore
+from .qubes_widgets_library import QubeName, VMListStore, VMListModeler
 
 import gi
 
@@ -300,6 +300,7 @@ class TemplateSelector(abc.ABC):
         if widget.get_active():
             self.main_window.emit('template-changed', None)
 
+# TODO: some error with choosing apps appeared after the refactor
 
 class TemplateSelectorCombo(TemplateSelector):
     def __init__(self, gtk_builder: Gtk.Builder, qapp: qubesadmin.Qubes, name_suffix: str, filter_function):
@@ -309,17 +310,12 @@ class TemplateSelectorCombo(TemplateSelector):
         self.combo: Gtk.ComboBox = gtk_builder.get_object(f'combo_template_{name_suffix}')
 
         # TODO: add default here somehow, but only after this template selector refactor
-        self.store = VMListStore(self.qapp, filter_function)
-        self.store.attach_to_combobox(self.combo)
-        self.model = self.combo.get_model()
+        self.modeler = VMListModeler(self.combo, self.qapp, filter_function, lambda: self.emit_signal(self.combo))
 
-        self.combo.connect('changed', self.emit_signal)
-
-        # select default template
-        # TODO: fixme, only debug now
-        print(f"Combo - {name_suffix}")
-        for item in self.model:
-            print(item)
+        # self.combo.connect('changed', self.emit_signal) # TODO????
+        # TODO: less stupid
+        if name_suffix == 'app':
+            self.modeler.select_entry(self.qapp.default_template)
 
     def set_visible(self, state: bool):
         self.label.set_visible(state)
@@ -328,16 +324,10 @@ class TemplateSelectorCombo(TemplateSelector):
             self.emit_signal(self.combo)
 
     def get_selected_vm(self) -> Optional[qubesadmin.vm.QubesVM]:
-        tree_iter = self.combo.get_active_iter()
-        if tree_iter is not None:
-            return self.qapp.domains[self.model[tree_iter][1]]
-        return None
+        return self.modeler.get_selected()
 
     def select_vm(self, vm_name: str):
-        for i, val in enumerate(self.model):
-            if val[1] == vm_name:
-                self.combo.set_active(i)
-                break
+        self.modeler.select_entry(vm_name)
         # TODO: handle errors
 
 
@@ -351,28 +341,20 @@ class TemplateSelectorNoneCombo(TemplateSelector):
         self.radio_template: Gtk.RadioButton = gtk_builder.get_object(f'radio_template_{name_suffix}')
         self.combo_template: Gtk.ComboBox = gtk_builder.get_object(f'combo_template_{name_suffix}')
 
-        self.store = VMListStore(self.qapp, filter_function)
-        self.store.attach_to_combobox(self.combo_template)
-        self.model = self.combo_template.get_model()
+        self.modeler = VMListModeler(self.combo_template, self.qapp, filter_function, lambda: self.emit_signal(self.combo_template))
 
         self.radio_none.connect('toggled', self.emit_signal)
         self.radio_template.connect('toggled', self._radio_toggled)
-        self.combo_template.connect('changed', self.emit_signal)
 
-        # select default template
-        # TODO: fixme, only debug now
-        print(f"Non + Combo: {name_suffix}")
-        for item in self.model:
-            print(item)
+        # TODO: select default template
+
+        # TODO: unrelated, but when cloning standalone, you don't get template default aps, also bad for dvms
 
     def _radio_toggled(self, widget: Gtk.RadioButton):
         if widget.get_active():
             self.combo_template.set_sensitive(True)
-            if self.combo_template.get_active() == -1:
-                self.combo_template.set_active(0)
-            self.emit_signal(self.combo_template)
-            return
-        self.combo_template.set_sensitive(False)
+        else:
+            self.combo_template.set_sensitive(False)
 
     def set_visible(self, state: bool):
         self.label.set_visible(state)
@@ -383,20 +365,13 @@ class TemplateSelectorNoneCombo(TemplateSelector):
 
     def get_selected_vm(self) -> Optional[qubesadmin.vm.QubesVM]:
         if self.radio_template.get_active():
-            tree_iter = self.combo_template.get_active_iter()
-            if tree_iter is not None:
-                return self.qapp.domains[self.model[tree_iter][1]]
+            return self.modeler.get_selected()
         return None
 
     def select_vm(self, vm_name: str):
         if vm_name is None:
             self.radio_none.set_active(True)
-        else:
-            self.radio_template.set_active(True)
-            for i, val in enumerate(self.model):
-                if val[1] == vm_name:
-                    self.combo_template.set_active(i)
-                    break
+        self.modeler.select_entry(vm_name)
 
 
 class TemplateHandler:
@@ -428,6 +403,7 @@ class TemplateHandler:
         for selector_type, selector in self.template_selectors.items():
             selector.set_visible(selector_type == vm_type)
         self.selected_type = vm_type
+        self.main_window.emit('template-changed', None)
 
     def get_selected_template(self, *args):
         return self.template_selectors[self.selected_type].get_selected_vm()

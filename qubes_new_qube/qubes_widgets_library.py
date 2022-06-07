@@ -2,6 +2,7 @@ import gi
 
 import qubesadmin
 import qubesadmin.vm
+import itertools
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GLib, Gio, GdkPixbuf, GObject
@@ -53,3 +54,141 @@ class VMListStore(Gtk.ListStore):
         combobox.pack_start(renderer, False)
         combobox.add_attribute(renderer, "text", 1)
 
+
+# TODO: icon cache: discuss
+# TODO: make a VM cache actually...
+# TODO: add pretty default
+
+# based on boring-stuff's code in core-qrexec qrexec_policy_agent.py
+class VMListModeler:
+    def __init__(self, combobox: Gtk.ComboBox, qapp: qubesadmin.Qubes, filter_function, change_function):
+        self.qapp = qapp
+        self.combo = combobox
+        self.entry_box = self.combo.get_child()
+        self.change_function = change_function
+
+        self._entries = {}
+
+        self._icons = {}
+        self._icon_size = 16
+
+        self._theme = Gtk.IconTheme.get_default()
+
+        self._create_entries(filter_function)
+
+        self.apply_model()
+
+    def _get_icon(self, name):
+        if name not in self._icons:
+            try:
+                icon = self._theme.load_icon(name, self._icon_size, 0)
+            except GLib.Error:  # pylint: disable=catching-non-exception
+                # TODO: check why how what?
+                icon = self._theme.load_icon("edit-find", self._icon_size, 0)
+            self._icons[name] = icon
+        return self._icons[name]
+
+    def _create_entries(self, filter_function):
+        for domain in self.qapp.domains:
+            if not filter_function(domain):
+                continue
+            vm_name = domain.name
+            icon = self._get_icon(domain.icon)
+            # TODO: here we can have default
+            display_name = vm_name
+            self._entries[display_name] = {
+                "api_name": vm_name,
+                "icon": icon,
+                "vm": domain,
+            }
+
+    def _get_valid_qube_name(self):
+        selected = self.combo.get_active_id()
+        if selected in self._entries:
+            return selected
+
+        typed = self.entry_box.get_text()
+        if typed in self._entries:
+            return typed
+
+    def _combo_change(self, _widget):
+        name = self._get_valid_qube_name()
+
+        if name:
+            entry = self._entries[name]
+            self.entry_box.set_icon_from_pixbuf(
+                Gtk.EntryIconPosition.PRIMARY, entry["icon"]
+            )
+        else:
+            self.entry_box.set_icon_from_stock(
+                Gtk.EntryIconPosition.PRIMARY, "gtk-find"
+            )
+
+        self.change_function()
+
+    def apply_model(self):
+        # TODO: discuss connecting to validator - if incorrect template selected, scream
+        assert isinstance(self.combo, Gtk.ComboBox)
+        list_store = Gtk.ListStore(int, str, GdkPixbuf.Pixbuf, str)
+
+        for entry_no, display_name in zip(itertools.count(), sorted(self._entries)):
+            entry = self._entries[display_name]
+            list_store.append(
+                [
+                    entry_no,
+                    display_name,
+                    entry["icon"],
+                    entry["api_name"],
+                ])
+
+        self.combo.set_model(list_store)
+        self.combo.set_id_column(1)
+
+        icon_column = Gtk.CellRendererPixbuf()
+        self.combo.pack_start(icon_column, False)
+        self.combo.add_attribute(icon_column, "pixbuf", 2)
+        self.combo.set_entry_text_column(1)
+
+        entry_box = self.combo.get_child()
+
+        area = Gtk.CellAreaBox()
+        area.pack_start(icon_column, False, False, False)
+        area.add_attribute(icon_column, "pixbuf", 2)
+
+        completion = Gtk.EntryCompletion.new_with_area(area)
+        completion.set_inline_selection(True)
+        completion.set_inline_completion(True)
+        completion.set_popup_completion(True)
+        completion.set_popup_single_match(False)
+        completion.set_model(list_store)
+        completion.set_text_column(1)
+
+        entry_box.set_completion(completion)
+
+        # A Combo with an entry has a text column already
+        text_column = self.combo.get_cells()[0]
+        self.combo.reorder(text_column, 1)
+
+        self.combo.connect("changed", self._combo_change)
+        self.entry_box.connect("changed", lambda combo: self.change_function())
+
+    def apply_icon(self, entry, qube_name):
+        assert isinstance(entry, Gtk.Entry)
+        if qube_name in self._entries:
+            entry.set_icon_from_pixbuf(
+                Gtk.EntryIconPosition.PRIMARY,
+                self._entries[qube_name]["icon"],
+            )
+        else:
+            raise ValueError("The specified source qube does not exist!")
+
+    def get_selected(self):
+        selected = self._get_valid_qube_name()
+
+        if selected in self._entries:
+            return self._entries[selected]["vm"]
+
+    def select_entry(self, vm_name):
+        for display_name, entry in self._entries.items():
+            if entry["api_name"] == vm_name:
+                self.combo.set_active_id(display_name)
