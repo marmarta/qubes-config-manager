@@ -7,76 +7,80 @@ import itertools
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GLib, Gio, GdkPixbuf, GObject
 
+from typing import Optional, Callable
+
+# TODO: generalize loading icons, too much boilerplate?
+# TODO: or just IconCache
+
+# TODO: question icon needs bolder insides...
+
 
 class QubeName(Gtk.Box):
-    # nice name with nice padding
+    """
+    A Gtk.Box containing qube icon plus name, colored in the label color and
+    bolded.
+    """
     def __init__(self, vm: qubesadmin.vm.QubesVM):
+        """
+        :param vm: Qubes VM to be represented.
+        """
         super(QubeName, self).__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.image = Gtk.Image()
         self.image.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
-                vm.icon, 16, 0))
+                vm.icon, 20, 0))
         self.label = Gtk.Label()
         self.label.set_label(vm.name)
-        # TODO: color
+
+        self.set_spacing(5)
+        self.image.set_halign(Gtk.Align.CENTER)
+
         self.add(self.image)
         self.add(self.label)
+
         self.get_style_context().add_class(f'qube-box-base')
         self.get_style_context().add_class(f'qube-box-{vm.label}')
+
         self.show_all()
 
-    # TODO: styling
-    # TODO: how to handle color??? magic needed
-    # TODO: like styles or smth
-
-
-# styling
-
-class VMListStore(Gtk.ListStore):
-    # TODO: add default here somehow, so that some are marked as 'default'
-    def __init__(self, qapp: qubesadmin.Qubes, filter_func=None):
-        super(VMListStore, self).__init__(GdkPixbuf.Pixbuf, str)
-
-        data = [(vm.name, vm.icon) for vm in qapp.domains if not filter_func or filter_func(vm)]
-
-        for text, icon in data:
-            # TODO: icon SIZES
-            pixbuf = Gtk.IconTheme.get_default().load_icon(icon, 16, 0)
-            self.append([pixbuf, text])
-
-    def attach_to_combobox(self, combobox: Gtk.ComboBox):
-        combobox.set_model(self)
-
-        renderer = Gtk.CellRendererPixbuf()
-        combobox.pack_start(renderer, True)
-        combobox.add_attribute(renderer, "pixbuf", 0)
-
-        renderer = Gtk.CellRendererText()
-        combobox.pack_start(renderer, False)
-        combobox.add_attribute(renderer, "text", 1)
-
-
-# TODO: icon cache: discuss
+# TODO: adjust colors for readability, e.g. yellow needs to be darker
 # TODO: make a VM cache actually...
-# TODO: add pretty default
 
-# based on boring-stuff's code in core-qrexec qrexec_policy_agent.py
+
 class VMListModeler:
-    def __init__(self, combobox: Gtk.ComboBox, qapp: qubesadmin.Qubes, filter_function, change_function):
+    """
+    Modeler for Gtk.ComboBox contain a list of qubes VMs.
+    Based on boring-stuff's code in core-qrexec qrexec_policy_agent.py.
+    """
+    def __init__(self, combobox: Gtk.ComboBox, qapp: qubesadmin.Qubes,
+                 filter_function: Optional[Callable[[qubesadmin.vm.QubesVM], bool]]=None,
+                 event_callback: Optional[Callable[[], None]]=None,
+                 default_value: Optional[qubesadmin.vm.QubesVM]=None):
+        """
+        :param combobox: target ComboBox object
+        :param qapp: Qubes object, necessary to retrieve VM info
+        :param filter_function: function used to filter VMs, must take as input
+        QubesVM object and return bool; caution: remember not all properties
+        are always available for all VMs, in particular dom0 can cause problems
+        :param event_callback: function to be called whenever combobox value
+        changes
+        :param default_value: default VM to be selected (will be selected as
+        initial value and get a (default) decoration next to its name)
+        """
         self.qapp = qapp
         self.combo = combobox
         self.entry_box = self.combo.get_child()
-        self.change_function = change_function
+        self.change_function = event_callback
 
         self._entries = {}
 
         self._icons = {}
-        self._icon_size = 16
+        self._icon_size = 20
 
         self._theme = Gtk.IconTheme.get_default()
 
-        self._create_entries(filter_function)
+        self._create_entries(filter_function, default_value)
 
-        self.apply_model()
+        self._apply_model()
 
     def _get_icon(self, name):
         if name not in self._icons:
@@ -88,14 +92,17 @@ class VMListModeler:
             self._icons[name] = icon
         return self._icons[name]
 
-    def _create_entries(self, filter_function):
+    def _create_entries(self, filter_function, default_value):
         for domain in self.qapp.domains:
             if not filter_function(domain):
                 continue
             vm_name = domain.name
             icon = self._get_icon(domain.icon)
-            # TODO: here we can have default
             display_name = vm_name
+
+            if domain == default_value:
+                display_name = display_name + ' (default)'
+
             self._entries[display_name] = {
                 "api_name": vm_name,
                 "icon": icon,
@@ -124,9 +131,10 @@ class VMListModeler:
                 Gtk.EntryIconPosition.PRIMARY, "gtk-find"
             )
 
-        self.change_function()
+        if self.change_function:
+            self.change_function()
 
-    def apply_model(self):
+    def _apply_model(self):
         # TODO: discuss connecting to validator - if incorrect template selected, scream
         assert isinstance(self.combo, Gtk.ComboBox)
         list_store = Gtk.ListStore(int, str, GdkPixbuf.Pixbuf, str)
@@ -172,23 +180,22 @@ class VMListModeler:
         self.combo.connect("changed", self._combo_change)
         self.entry_box.connect("changed", lambda combo: self.change_function())
 
-    def apply_icon(self, entry, qube_name):
-        assert isinstance(entry, Gtk.Entry)
-        if qube_name in self._entries:
-            entry.set_icon_from_pixbuf(
-                Gtk.EntryIconPosition.PRIMARY,
-                self._entries[qube_name]["icon"],
-            )
-        else:
-            raise ValueError("The specified source qube does not exist!")
-
-    def get_selected(self):
+    def get_selected(self) -> qubesadmin.vm.QubesVM:
+        """
+        Get currently selected VM, if any
+        :return: QubesVM object
+        """
         selected = self._get_valid_qube_name()
 
         if selected in self._entries:
             return self._entries[selected]["vm"]
 
     def select_entry(self, vm_name):
+        """
+        Select VM by name.
+        :param vm_name: str
+        :return: None
+        """
         for display_name, entry in self._entries.items():
             if entry["api_name"] == vm_name:
                 self.combo.set_active_id(display_name)

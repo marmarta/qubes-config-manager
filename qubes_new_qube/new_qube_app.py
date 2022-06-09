@@ -16,7 +16,7 @@ import logging
 import qubesadmin
 import qubesadmin.events
 import qubesadmin.vm
-from .qubes_widgets_library import QubeName, VMListStore, VMListModeler
+from .qubes_widgets_library import QubeName, VMListModeler
 
 import gi
 
@@ -49,16 +49,31 @@ WHONIX_QUBE_NAME = 'sys-whonix'
 # window icon
 # cleanup of the combobox model methods
 # cleanup of custom dropdowns: should only activate when selected, or always active and set to selected when chosen
+# light and dark themes: check if it works
+
+
+# move type to the side
+# hide network and maybe template?
+# select default stuff or first
 
 # TODO: resize with advanced is weird.
 
 
 class ApplicationData:
-    def __init__(self, name: str, ident: str, comment: Optional[str] = None, template: Optional[qubesadmin.vm.QubesVM] = None):
+    """
+    Class representing information about an available application.
+    """
+    def __init__(self, name: str, ident: str, comment: Optional[str] = None,
+                 template: Optional[qubesadmin.vm.QubesVM] = None):
         self.name = name
         self.ident = ident
         self.template = template
         additional_description = ".desktop filename: " + str(self.ident)
+        # TODO: get the icon is should have name related to desktop filename
+        # TODO: template?
+
+        file_name_root = self.ident[:-len('.desktop')]
+        self.icon_path = f'/home/marmarta/.local/share/qubes-appmenus/{template}/apps.tempicons/{file_name_root}.png'
 
         if not comment:
             self.comment = additional_description
@@ -111,9 +126,23 @@ class ApplicationButton(Gtk.Button):
         self.box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.add(self.box)
         self.appdata = appdata
+
+        # TODO: here do icon
+        self.icon = Gtk.Image()
+        self.icon.set_from_pixbuf(
+            GdkPixbuf.Pixbuf.new_from_file_at_size(appdata.icon_path, 18, 18))
+
+        self.box.pack_start(self.icon, False, False, 3)
+
         self.label = Gtk.Label()
         self.label.set_text(self.appdata.name)
-        self.box.add(self.label)
+        self.box.pack_start(self.label, False, False, 3)
+
+        self.remove_icon = Gtk.Image()
+        self.remove_icon.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
+                'qubes-delete', 14, 0))
+        self.box.pack_end(self.remove_icon, False, False, 3)
+
         self.show_all()
 
 
@@ -296,21 +325,23 @@ class TemplateSelector(abc.ABC):
     def select_vm(self, vm_name: str):
         pass
 
-    def emit_signal(self, widget):
-        if widget.get_active():
+    def emit_signal(self, widget=None):
+        if widget is None or widget.get_active():
             self.main_window.emit('template-changed', None)
 
 # TODO: some error with choosing apps appeared after the refactor
 
+
 class TemplateSelectorCombo(TemplateSelector):
-    def __init__(self, gtk_builder: Gtk.Builder, qapp: qubesadmin.Qubes, name_suffix: str, filter_function):
+    def __init__(self, gtk_builder: Gtk.Builder, qapp: qubesadmin.Qubes, name_suffix: str, filter_function, default_value):
         super().__init__(gtk_builder, qapp)
 
         self.label: Gtk.Label = gtk_builder.get_object(f'label_template_{name_suffix}')
+        self.explain_label: Gtk.Label = gtk_builder.get_object(f'label_template_explanation_{name_suffix}')
         self.combo: Gtk.ComboBox = gtk_builder.get_object(f'combo_template_{name_suffix}')
 
         # TODO: add default here somehow, but only after this template selector refactor
-        self.modeler = VMListModeler(self.combo, self.qapp, filter_function, lambda: self.emit_signal(self.combo))
+        self.modeler = VMListModeler(self.combo, self.qapp, filter_function, self.emit_signal, default_value)
 
         # self.combo.connect('changed', self.emit_signal) # TODO????
         # TODO: less stupid
@@ -320,6 +351,7 @@ class TemplateSelectorCombo(TemplateSelector):
     def set_visible(self, state: bool):
         self.label.set_visible(state)
         self.combo.set_visible(state)
+        self.explain_label.set_visible(state)
         if state:
             self.emit_signal(self.combo)
 
@@ -332,16 +364,17 @@ class TemplateSelectorCombo(TemplateSelector):
 
 
 class TemplateSelectorNoneCombo(TemplateSelector):
-    def __init__(self, gtk_builder: Gtk.Builder, qapp: qubesadmin.Qubes, name_suffix: str, filter_function):
+    def __init__(self, gtk_builder: Gtk.Builder, qapp: qubesadmin.Qubes, name_suffix: str, filter_function, default_value):
         super().__init__(gtk_builder, qapp)
 
         self.label: Gtk.Label = gtk_builder.get_object(f'label_template_{name_suffix}')
+        self.explain_label: Gtk.Label = gtk_builder.get_object(f'label_template_explanation_{name_suffix}')
         self.radio_none: Gtk.RadioButton = gtk_builder.get_object(f'radio_{name_suffix}_none')
         self.box_template: Gtk.Box = gtk_builder.get_object(f'box_radio_{name_suffix}')
         self.radio_template: Gtk.RadioButton = gtk_builder.get_object(f'radio_template_{name_suffix}')
         self.combo_template: Gtk.ComboBox = gtk_builder.get_object(f'combo_template_{name_suffix}')
 
-        self.modeler = VMListModeler(self.combo_template, self.qapp, filter_function, lambda: self.emit_signal(self.combo_template))
+        self.modeler = VMListModeler(self.combo_template, self.qapp, filter_function, self.emit_signal, default_value)
 
         self.radio_none.connect('toggled', self.emit_signal)
         self.radio_template.connect('toggled', self._radio_toggled)
@@ -358,6 +391,7 @@ class TemplateSelectorNoneCombo(TemplateSelector):
 
     def set_visible(self, state: bool):
         self.label.set_visible(state)
+        self.explain_label.set_visible(state)
         self.radio_none.set_visible(state)
         self.box_template.set_visible(state)
         if state:
@@ -385,10 +419,11 @@ class TemplateHandler:
                            (GObject.TYPE_PYOBJECT,))
 
         self.template_selectors: Dict[str, TemplateSelector] = {
-            'qube_type_app': TemplateSelectorCombo(gtk_builder, self.qapp, 'app', lambda x: x.klass == 'TemplateVM'),
-            'qube_type_template': TemplateSelectorNoneCombo(gtk_builder, self.qapp, 'template', lambda x: x.klass == 'TemplateVM'),
-            'qube_type_standalone': TemplateSelectorNoneCombo(gtk_builder, self.qapp, 'standalone',  lambda x: x.klass == 'TemplateVM' or x.klass == 'StandaloneVM'),
-            'qube_type_disposable': TemplateSelectorCombo(gtk_builder, self.qapp, 'dispvm', lambda x: getattr(x, 'template_for_dispvms', False))}
+            'qube_type_app': TemplateSelectorCombo(gtk_builder, self.qapp, 'app', lambda x: x.klass == 'TemplateVM', self.qapp.default_template),
+            'qube_type_template': TemplateSelectorNoneCombo(gtk_builder, self.qapp, 'template', lambda x: x.klass == 'TemplateVM', None),
+            'qube_type_standalone': TemplateSelectorNoneCombo(gtk_builder, self.qapp, 'standalone', lambda x: x.klass == 'TemplateVM' or x.klass == 'StandaloneVM', None),
+            'qube_type_disposable': TemplateSelectorCombo(gtk_builder, self.qapp, 'dispvm', lambda x: getattr(x, 'template_for_dispvms', False), None)}
+        # TODO: default dispvm template is a thing
 
         self.selected_type = None
         self.change_vm_type('qube_type_app')
@@ -447,6 +482,7 @@ class NetworkSelector:
         self.network_tor_box: Gtk.Box = gtk_builder.get_object('network_tor_box')
         self.network_custom: Gtk.RadioButton = gtk_builder.get_object('network_custom')
         self.network_custom_combo: Gtk.ComboBox = gtk_builder.get_object('network_custom_combo')
+        self.network_custom.connect('toggled', self._custom_toggled)
 
         self.network_none: Gtk.RadioButton = gtk_builder.get_object('network_none')
 
@@ -457,8 +493,10 @@ class NetworkSelector:
         else:
             self.network_tor_box.set_visible(False)
 
-        init_combobox_with_icons(
-            self.network_custom_combo, [(vm.name, vm.icon) for vm in self.qapp.domains if getattr(vm, 'provides_network', False)])
+        self.network_modeler = VMListModeler(self.network_custom_combo, self.qapp, lambda x: getattr(x, 'provides_network', False))
+
+    def _custom_toggled(self, widget):
+        self.network_custom_combo.set_sensitive(widget.get_active())
 
     def get_selected_netvm(self):
         if self.network_none.get_active():
@@ -481,12 +519,12 @@ def init_combobox_with_icons(combobox: Gtk.ComboBox, data: List[Tuple[str, str]]
 
     for text, icon in data:
         # TODO: icon SIZES
-        pixbuf = Gtk.IconTheme.get_default().load_icon(icon, 16, 0)
+        pixbuf = Gtk.IconTheme.get_default().load_icon(icon, 20, 0)
         store.append([pixbuf, text])
 
     combobox.set_model(store)
     renderer = Gtk.CellRendererPixbuf()
-    combobox.pack_start(renderer, True)
+    combobox.pack_start(renderer, False)
     combobox.add_attribute(renderer, "pixbuf", 0)
 
     renderer = Gtk.CellRendererText()

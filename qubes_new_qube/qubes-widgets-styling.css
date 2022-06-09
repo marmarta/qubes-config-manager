@@ -1,16 +1,36 @@
 .qube-box-base {
-  padding-left: 20px;
+  font-family: SourceSansPro;
+  font-weight: 600;
 }
 
 .qube-box-red {
-    color: red;
+    color: #631110;
+}
+
+.qube-box-orange {
+    color: #843A04;
+}
+
+.qube-box-yellow {
+    color: #946705;
 }
 
 .qube-box-green {
-    color: green;
+    color: #10631D;
+}
+
+.qube-box-gray {
+    color: #555555;
 }
 
 .qube-box-blue {
-    color: blue;
+    color: #0E2276;
 }
 
+.qube-box-purple {
+    color: #3F0C46;
+}
+
+.qube-box-black {
+    color: #000000;
+}

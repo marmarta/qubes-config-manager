@@ -2,25 +2,7 @@
 <!-- Generated with glade 3.38.2 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
-  <object class="GtkWindow">
-    <property name="can-focus">False</property>
-    <child>
-      <object class="GtkBox">
-        <property name="visible">True</property>
-        <property name="can-focus">False</property>
-        <property name="orientation">vertical</property>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-      </object>
-    </child>
-  </object>
+  <!-- interface-css-provider-path qubes-new-qube.css -->
   <object class="GtkWindow" id="applications_popup">
     <property name="height-request">400</property>
     <property name="can-focus">False</property>
@@ -81,6 +63,7 @@
                         <property name="height-request">300</property>
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
+                        <property name="vexpand">False</property>
                         <property name="selection-mode">multiple</property>
                         <child type="placeholder">
                           <object class="GtkLabel" id="apps_list_placeholder">
@@ -165,6 +148,10 @@
       <object class="GtkBox">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
+        <property name="margin-start">20</property>
+        <property name="margin-end">20</property>
+        <property name="margin-top">10</property>
+        <property name="margin-bottom">10</property>
         <property name="orientation">vertical</property>
         <child type="center">
           <object class="GtkButtonBox">
@@ -205,7 +192,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">10</property>
+            <property name="position">7</property>
           </packing>
         </child>
         <child>
@@ -214,11 +201,31 @@
             <property name="can-focus">False</property>
             <property name="halign">start</property>
             <property name="label" translatable="yes">Qube Type</property>
+            <style>
+              <class name="group_title"/>
+            </style>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="label" translatable="yes">Select type of your new qube. This cannot be changed later. </property>
+            <property name="wrap">True</property>
+            <property name="xalign">0</property>
+            <style>
+              <class name="explanation"/>
+            </style>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
           </packing>
         </child>
         <child>
@@ -238,7 +245,8 @@
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Application qube</property>
+                    <property name="label" translatable="yes">&lt;b&gt;Application&lt;/b&gt; qube</property>
+                    <property name="use-markup">True</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -252,13 +260,17 @@
                     <property name="can-focus">False</property>
                     <property name="tooltip-text" translatable="yes">The most widely-used qube type - this is a template-based qube designed to be used to run various applications. An application qube can run all applications installed in its template.</property>
                     <property name="xalign">0.5</property>
-                    <property name="yalign">0.5</property>
+                    <property name="yalign">0.6000000238418579</property>
+                    <property name="pixel-size">20</property>
                     <property name="icon-name">qubes-question</property>
-                    <property name="icon_size">2</property>
+                    <style>
+                      <class name="info-tooltip"/>
+                    </style>
                   </object>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
+                    <property name="padding">3</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
@@ -268,7 +280,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">1</property>
+            <property name="position">2</property>
           </packing>
         </child>
         <child>
@@ -288,7 +300,8 @@
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Template qube</property>
+                    <property name="label" translatable="yes">&lt;b&gt;Template&lt;/b&gt; qube</property>
+                    <property name="use-markup">True</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -302,13 +315,17 @@
                     <property name="can-focus">False</property>
                     <property name="tooltip-text" translatable="yes">Template qubes are the qubes on which application qubes are based. </property>
                     <property name="xalign">0.5</property>
-                    <property name="yalign">0.5</property>
+                    <property name="yalign">0.6000000238418579</property>
+                    <property name="pixel-size">20</property>
                     <property name="icon-name">qubes-question</property>
-                    <property name="icon_size">2</property>
+                    <style>
+                      <class name="info-tooltip"/>
+                    </style>
                   </object>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
+                    <property name="padding">3</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
@@ -318,7 +335,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">2</property>
+            <property name="position">3</property>
           </packing>
         </child>
         <child>
@@ -338,7 +355,8 @@
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Standalone qube</property>
+                    <property name="label" translatable="yes">&lt;b&gt;Standalone&lt;/b&gt; qube</property>
+                    <property name="use-markup">True</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -352,13 +370,17 @@
                     <property name="can-focus">False</property>
                     <property name="tooltip-text" translatable="yes">Standalone qubes contain their whole operating system inside; unlike application qubes, they are not based on a template qube and therefore generally take up significantly more disk space than application qubes.</property>
                     <property name="xalign">0.5</property>
-                    <property name="yalign">0.5</property>
+                    <property name="yalign">0.6000000238418579</property>
+                    <property name="pixel-size">20</property>
                     <property name="icon-name">qubes-question</property>
-                    <property name="icon_size">2</property>
+                    <style>
+                      <class name="info-tooltip"/>
+                    </style>
                   </object>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
+                    <property name="padding">3</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
@@ -368,7 +390,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">3</property>
+            <property name="position">4</property>
           </packing>
         </child>
         <child>
@@ -388,7 +410,8 @@
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Named disposable qube</property>
+                    <property name="label" translatable="yes">&lt;b&gt;Named disposable&lt;/b&gt; qube</property>
+                    <property name="use-markup">True</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -402,13 +425,17 @@
                     <property name="can-focus">False</property>
                     <property name="tooltip-text" translatable="yes">Disposable qubes do not store any persistent information between restarts. There is rarely a need to create one manually - if you just want to use one to e.g. browser internet, use the menu to open application in new disposable qube.</property>
                     <property name="xalign">0.5</property>
-                    <property name="yalign">0.5</property>
+                    <property name="yalign">0.6000000238418579</property>
+                    <property name="pixel-size">20</property>
                     <property name="icon-name">qubes-question</property>
-                    <property name="icon_size">2</property>
+                    <style>
+                      <class name="info-tooltip"/>
+                    </style>
                   </object>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
+                    <property name="padding">3</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
@@ -418,11 +445,25 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">4</property>
+            <property name="position">5</property>
           </packing>
         </child>
         <child>
-          <placeholder/>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="halign">start</property>
+            <property name="margin-bottom">5</property>
+            <property name="label" translatable="yes">Basic properties</property>
+            <style>
+              <class name="group_title"/>
+            </style>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">6</property>
+          </packing>
         </child>
         <child>
           <object class="GtkBox">
@@ -432,7 +473,10 @@
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Name</property>
+                <property name="margin-start">5</property>
+                <property name="margin-end">10</property>
+                <property name="label" translatable="yes">Name:</property>
+                <property name="use-markup">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -446,6 +490,7 @@
                 <property name="can-focus">True</property>
                 <property name="tooltip-text" translatable="yes">The name of the qube can contain letters from a to z and underscore.</property>
                 <property name="max-length">64</property>
+                <property name="width-chars">32</property>
                 <property name="placeholder-text" translatable="yes">enter qube name</property>
               </object>
               <packing>
@@ -455,21 +500,33 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel">
+              <object class="GtkImage">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Label</property>
+                <property name="tooltip-text" translatable="yes">Qube name can have up to 63 characters: A-Z, a-z, numbers and underscores</property>
+                <property name="margin-end">30</property>
+                <property name="xalign">0.5</property>
+                <property name="yalign">0.6000000238418579</property>
+                <property name="pixel-size">20</property>
+                <property name="icon-name">qubes-question</property>
+                <style>
+                  <class name="info-tooltip"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
+                <property name="padding">3</property>
                 <property name="position">2</property>
               </packing>
             </child>
             <child>
-              <object class="GtkComboBox" id="qube_label">
+              <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
+                <property name="margin-end">10</property>
+                <property name="label" translatable="yes">Label:</property>
+                <property name="use-markup">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -477,40 +534,38 @@
                 <property name="position">3</property>
               </packing>
             </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">6</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkLabel" id="label_template_app">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="label" translatable="yes">Template</property>
-            <property name="xalign">0</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">7</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkComboBox" id="combo_template_app">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="hexpand">True</property>
-            <property name="has-entry">True</property>
-            <child internal-child="entry">
-              <object class="GtkEntry">
-                <property name="can-focus">True</property>
-                <property name="width-chars">5</property>
-                <property name="primary-icon-activatable">False</property>
-                <property name="placeholder-text" translatable="yes">start typing or use the arrow</property>
-                <property name="input-hints">GTK_INPUT_HINT_WORD_COMPLETION | GTK_INPUT_HINT_NONE</property>
+            <child>
+              <object class="GtkComboBox" id="qube_label">
+                <property name="width-request">200</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
               </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">4</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkImage">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="tooltip-text" translatable="yes">Label is the color of the qube, used to distinguish its windows (with a frame of this color) and programs (with a tinted icon). </property>
+                <property name="margin-end">30</property>
+                <property name="xalign">0.5</property>
+                <property name="yalign">0.6000000238418579</property>
+                <property name="pixel-size">20</property>
+                <property name="icon-name">qubes-question</property>
+                <style>
+                  <class name="info-tooltip"/>
+                </style>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="padding">3</property>
+                <property name="position">5</property>
+              </packing>
             </child>
           </object>
           <packing>
@@ -520,15 +575,92 @@
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label_template_template">
+          <object class="GtkLabel" id="label_template_app">
+            <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label" translatable="yes">Clone from existing template</property>
+            <property name="label" translatable="yes">Template</property>
             <property name="xalign">0</property>
+            <style>
+              <class name="group_title"/>
+            </style>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">9</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label_template_explanation_app">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="label" translatable="yes">Select template for this qube. Applications available in the qube depend on the template.</property>
+            <property name="wrap">True</property>
+            <property name="xalign">0</property>
+            <style>
+              <class name="explanation"/>
+            </style>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">10</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkComboBox" id="combo_template_app">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="halign">start</property>
+            <property name="margin-start">5</property>
+            <property name="hexpand">False</property>
+            <property name="has-entry">True</property>
+            <child internal-child="entry">
+              <object class="GtkEntry">
+                <property name="can-focus">True</property>
+                <property name="width-chars">30</property>
+                <property name="primary-icon-activatable">False</property>
+                <property name="placeholder-text" translatable="yes">start typing or use the arrow</property>
+                <property name="input-hints">GTK_INPUT_HINT_WORD_COMPLETION | GTK_INPUT_HINT_NONE</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">11</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label_template_template">
+            <property name="can-focus">False</property>
+            <property name="label" translatable="yes">Clone from existing template</property>
+            <property name="xalign">0</property>
+            <style>
+              <class name="group_title"/>
+            </style>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">12</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label_template_explanation_template">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="label" translatable="yes">If you clone the new template from an existing one, you will have the same system and applications available there. Otherwise, you will have to install a system in your new qube manually.</property>
+            <property name="wrap">True</property>
+            <property name="xalign">0</property>
+            <style>
+              <class name="explanation"/>
+            </style>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">13</property>
           </packing>
         </child>
         <child>
@@ -560,13 +692,14 @@
                     <property name="can-focus">False</property>
                     <property name="tooltip-text" translatable="yes">If you do not clone from an existing template, the resulting qube will be completely empty and you will need to install an operating system inside manually.</property>
                     <property name="xalign">0.5</property>
-                    <property name="yalign">0.5</property>
+                    <property name="yalign">0.6000000238418579</property>
+                    <property name="pixel-size">20</property>
                     <property name="icon-name">qubes-question</property>
-                    <property name="icon_size">2</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
+                    <property name="padding">3</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
@@ -576,7 +709,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">11</property>
+            <property name="position">14</property>
           </packing>
         </child>
         <child>
@@ -601,13 +734,16 @@
             <child>
               <object class="GtkComboBox" id="combo_template_template">
                 <property name="visible">True</property>
+                <property name="sensitive">False</property>
                 <property name="can-focus">False</property>
-                <property name="hexpand">True</property>
+                <property name="halign">start</property>
+                <property name="margin-end">250</property>
+                <property name="hexpand">False</property>
                 <property name="has-entry">True</property>
                 <child internal-child="entry">
                   <object class="GtkEntry">
                     <property name="can-focus">True</property>
-                    <property name="width-chars">5</property>
+                    <property name="width-chars">30</property>
                     <property name="primary-icon-activatable">False</property>
                     <property name="placeholder-text" translatable="yes">start typing or use the arrow</property>
                     <property name="input-hints">GTK_INPUT_HINT_WORD_COMPLETION | GTK_INPUT_HINT_NONE</property>
@@ -624,7 +760,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">12</property>
+            <property name="position">15</property>
           </packing>
         </child>
         <child>
@@ -633,11 +769,31 @@
             <property name="can-focus">False</property>
             <property name="label" translatable="yes">Clone from existing template or standalone qube</property>
             <property name="xalign">0</property>
+            <style>
+              <class name="group_title"/>
+            </style>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">13</property>
+            <property name="position">16</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label_template_explanation_standalone">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="label" translatable="yes">If you clone the new qube from an existing one, you will have the same system and applications available there. Otherwise, you will have to install a system in your new qube manually.</property>
+            <property name="wrap">True</property>
+            <property name="xalign">0</property>
+            <style>
+              <class name="explanation"/>
+            </style>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">17</property>
           </packing>
         </child>
         <child>
@@ -669,13 +825,14 @@
                     <property name="can-focus">False</property>
                     <property name="tooltip-text" translatable="yes">If you do not clone from an existing template, the resulting qube will be completely empty and you will need to install an operating system inside manually.</property>
                     <property name="xalign">0.5</property>
-                    <property name="yalign">0.5</property>
+                    <property name="yalign">0.6000000238418579</property>
+                    <property name="pixel-size">20</property>
                     <property name="icon-name">qubes-question</property>
-                    <property name="icon_size">2</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
+                    <property name="padding">3</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
@@ -685,7 +842,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">14</property>
+            <property name="position">18</property>
           </packing>
         </child>
         <child>
@@ -694,7 +851,7 @@
             <property name="can-focus">False</property>
             <child>
               <object class="GtkRadioButton" id="radio_template_standalone">
-                <property name="label" translatable="yes">Qube:</property>
+                <property name="label" translatable="yes">Template or standalone qube:</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">False</property>
@@ -710,13 +867,16 @@
             <child>
               <object class="GtkComboBox" id="combo_template_standalone">
                 <property name="visible">True</property>
+                <property name="sensitive">False</property>
                 <property name="can-focus">False</property>
-                <property name="hexpand">True</property>
+                <property name="halign">start</property>
+                <property name="margin-end">250</property>
+                <property name="hexpand">False</property>
                 <property name="has-entry">True</property>
                 <child internal-child="entry">
                   <object class="GtkEntry">
                     <property name="can-focus">True</property>
-                    <property name="width-chars">5</property>
+                    <property name="width-chars">30</property>
                     <property name="primary-icon-activatable">False</property>
                     <property name="placeholder-text" translatable="yes">start typing or use the arrow</property>
                     <property name="input-hints">GTK_INPUT_HINT_WORD_COMPLETION | GTK_INPUT_HINT_NONE</property>
@@ -733,7 +893,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">15</property>
+            <property name="position">19</property>
           </packing>
         </child>
         <child>
@@ -742,23 +902,46 @@
             <property name="can-focus">False</property>
             <property name="label" translatable="yes">Disposable Qube Template</property>
             <property name="xalign">0</property>
+            <style>
+              <class name="group_title"/>
+            </style>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">16</property>
+            <property name="position">20</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label_template_explanation_dispvm">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="label" translatable="yes">Select disposable qube template to base your new qube on. The state on the disposable qube when started will be the same as of the template.</property>
+            <property name="wrap">True</property>
+            <property name="xalign">0</property>
+            <style>
+              <class name="explanation"/>
+            </style>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">21</property>
           </packing>
         </child>
         <child>
           <object class="GtkComboBox" id="combo_template_dispvm">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="hexpand">True</property>
+            <property name="halign">start</property>
+            <property name="margin-start">5</property>
+            <property name="margin-end">300</property>
+            <property name="hexpand">False</property>
             <property name="has-entry">True</property>
             <child internal-child="entry">
               <object class="GtkEntry">
                 <property name="can-focus">True</property>
-                <property name="width-chars">5</property>
+                <property name="width-chars">30</property>
                 <property name="primary-icon-activatable">False</property>
                 <property name="placeholder-text" translatable="yes">start typing or use the arrow</property>
                 <property name="input-hints">GTK_INPUT_HINT_WORD_COMPLETION | GTK_INPUT_HINT_NONE</property>
@@ -768,7 +951,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">17</property>
+            <property name="position">22</property>
           </packing>
         </child>
         <child>
@@ -777,11 +960,31 @@
             <property name="can-focus">False</property>
             <property name="label" translatable="yes">Network</property>
             <property name="xalign">0</property>
+            <style>
+              <class name="group_title"/>
+            </style>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">18</property>
+            <property name="position">23</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label_template_explanation_dispvm1">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="label" translatable="yes">Choose network connection for your new qube.</property>
+            <property name="wrap">True</property>
+            <property name="xalign">0</property>
+            <style>
+              <class name="explanation"/>
+            </style>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">24</property>
           </packing>
         </child>
         <child>
@@ -790,10 +993,11 @@
             <property name="can-focus">False</property>
             <child>
               <object class="GtkRadioButton" id="network_default">
-                <property name="label" translatable="yes">Default</property>
+                <property name="label" translatable="yes">Default:</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">False</property>
+                <property name="margin-end">5</property>
                 <property name="active">True</property>
                 <property name="draw-indicator">True</property>
               </object>
@@ -813,7 +1017,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">19</property>
+            <property name="position">25</property>
           </packing>
         </child>
         <child>
@@ -828,7 +1032,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">20</property>
+            <property name="position">26</property>
           </packing>
         </child>
         <child>
@@ -837,10 +1041,11 @@
             <property name="can-focus">False</property>
             <child>
               <object class="GtkRadioButton" id="network_tor">
-                <property name="label" translatable="yes">Tor/Whonix</property>
+                <property name="label" translatable="yes">Tor/Whonix:</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">False</property>
+                <property name="margin-end">5</property>
                 <property name="draw-indicator">True</property>
                 <property name="group">network_default</property>
               </object>
@@ -860,7 +1065,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">21</property>
+            <property name="position">27</property>
           </packing>
         </child>
         <child>
@@ -873,6 +1078,7 @@
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">False</property>
+                <property name="margin-end">5</property>
                 <property name="draw-indicator">True</property>
                 <property name="group">network_default</property>
               </object>
@@ -885,10 +1091,25 @@
             <child>
               <object class="GtkComboBox" id="network_custom_combo">
                 <property name="visible">True</property>
+                <property name="sensitive">False</property>
                 <property name="can-focus">False</property>
+                <property name="halign">start</property>
+                <property name="margin-start">5</property>
+                <property name="margin-end">300</property>
+                <property name="hexpand">False</property>
+                <property name="has-entry">True</property>
+                <child internal-child="entry">
+                  <object class="GtkEntry">
+                    <property name="can-focus">True</property>
+                    <property name="width-chars">30</property>
+                    <property name="primary-icon-activatable">False</property>
+                    <property name="placeholder-text" translatable="yes">start typing or use the arrow</property>
+                    <property name="input-hints">GTK_INPUT_HINT_WORD_COMPLETION | GTK_INPUT_HINT_NONE</property>
+                  </object>
+                </child>
               </object>
               <packing>
-                <property name="expand">True</property>
+                <property name="expand">False</property>
                 <property name="fill">True</property>
                 <property name="position">1</property>
               </packing>
@@ -897,7 +1118,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">22</property>
+            <property name="position">28</property>
           </packing>
         </child>
         <child>
@@ -906,34 +1127,42 @@
             <property name="can-focus">False</property>
             <property name="label" translatable="yes">Applications</property>
             <property name="xalign">0</property>
+            <style>
+              <class name="group_title"/>
+            </style>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">23</property>
+            <property name="position">29</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel">
+          <object class="GtkLabel" id="label_apps_explain">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="label" translatable="yes">Choose applications available in the qube. This can be changed later in Qube Settings.</property>
+            <property name="wrap">True</property>
+            <property name="xalign">0</property>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">24</property>
+            <property name="position">30</property>
           </packing>
         </child>
         <child>
           <object class="GtkFlowBox" id="applications">
+            <property name="name">applications</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
+            <property name="column-spacing">5</property>
+            <property name="row-spacing">5</property>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">25</property>
+            <property name="position">31</property>
           </packing>
         </child>
         <child>
@@ -947,7 +1176,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">26</property>
+            <property name="position">32</property>
           </packing>
         </child>
         <child>
@@ -1082,7 +1311,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">27</property>
+            <property name="position">33</property>
           </packing>
         </child>
       </object>
