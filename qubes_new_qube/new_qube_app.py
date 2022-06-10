@@ -7,7 +7,7 @@ Main Application Menu class and helpers.
 import asyncio
 import subprocess
 import sys
-from typing import Optional, List, Tuple, Dict
+from typing import Optional, List, Tuple, Dict, Callable
 import abc
 from contextlib import suppress
 import pkg_resources
@@ -74,6 +74,8 @@ class ApplicationData:
         # TODO: template?
 
         file_name_root = self.ident[:-len('.desktop')]
+        # TODO: this does not work for dispvm templates FFS
+        # TODO: maybe let's not hardcode my home dir here, eh?
         self.icon_path = f'/home/marmarta/.local/share/qubes-appmenus/{template}/apps.tempicons/{file_name_root}.png'
 
         if not comment:
@@ -310,23 +312,42 @@ class ApplicationBoxHandler:
 
 
 class TemplateSelector(abc.ABC):
+    """
+    Abstract base class for various variants of template/source VM selection.
+    """
     def __init__(self, gtk_builder: Gtk.Builder, qapp: qubesadmin.Qubes):
         self.qapp = qapp
         self.main_window = gtk_builder.get_object('main_window')
 
     @abc.abstractmethod
     def set_visible(self, state: bool):
-        pass
+        """
+        Used whenever visibility of the widgets should change.
+        :param state: bool, True for visible, False for hidden
+        :return: None
+        """
 
     @abc.abstractmethod
     def get_selected_vm(self) -> Optional[qubesadmin.vm.QubesVM]:
-        pass
+        """
+        Return which VM (if any) is currently selected.
+        :return: None or QubesVM
+        """
 
     @abc.abstractmethod
     def select_vm(self, vm_name: str):
-        pass
+        """
+        Select a vm given by name.
+        :param vm_name: str of vm's name
+        :return: None
+        """
 
     def emit_signal(self, widget=None):
+        """
+        Emit signal signifying template change to the main window widget.
+        :param widget: widget emitting the signal
+        :return: None
+        """
         if widget is None or widget.get_active():
             self.main_window.emit('template-changed', None)
 
@@ -334,22 +355,40 @@ class TemplateSelector(abc.ABC):
 
 
 class TemplateSelectorCombo(TemplateSelector):
-    def __init__(self, gtk_builder: Gtk.Builder, qapp: qubesadmin.Qubes, name_suffix: str, filter_function, default_value):
+    """
+    Simple combobox selector.
+    """
+    def __init__(self, gtk_builder: Gtk.Builder,
+                 qapp: qubesadmin.Qubes,
+                 name_suffix: str,
+                 filter_function: Callable[[qubesadmin.vm.QubesVM], bool],
+                 default_value: Optional[qubesadmin.vm.QubesVM]):
+        """
+        :param gtk_builder: Gtk.Builder object
+        :param qapp: Qubes object
+        :param name_suffix: suffix of the object names, expected names are
+        label_template_suffix, label_template_explanation_suffix and
+        combo_template_suffix
+        :param filter_function: function used to filter available VMs
+        :param default_value: optional value to be marked as (default) and
+        selected
+        """
         super().__init__(gtk_builder, qapp)
 
-        self.label: Gtk.Label = gtk_builder.get_object(f'label_template_{name_suffix}')
-        self.explain_label: Gtk.Label = gtk_builder.get_object(f'label_template_explanation_{name_suffix}')
-        self.combo: Gtk.ComboBox = gtk_builder.get_object(f'combo_template_{name_suffix}')
+        self.label: Gtk.Label = \
+            gtk_builder.get_object(f'label_template_{name_suffix}')
+        self.explain_label: Gtk.Label = \
+            gtk_builder.get_object(f'label_template_explanation_{name_suffix}')
+        self.combo: Gtk.ComboBox = \
+            gtk_builder.get_object(f'combo_template_{name_suffix}')
 
-        # TODO: add default here somehow, but only after this template selector refactor
-        self.modeler = VMListModeler(self.combo, self.qapp, filter_function, self.emit_signal, default_value)
-
-        # self.combo.connect('changed', self.emit_signal) # TODO????
-        # TODO: less stupid
-        if name_suffix == 'app':
-            self.modeler.select_entry(self.qapp.default_template)
+        self.modeler = VMListModeler(
+            combobox=self.combo, qapp=self.qapp,
+            filter_function=filter_function, event_callback=self.emit_signal,
+            default_value=default_value)
 
     def set_visible(self, state: bool):
+        """Change visibility of widgets to state (True-visible, False-hidden)"""
         self.label.set_visible(state)
         self.combo.set_visible(state)
         self.explain_label.set_visible(state)
@@ -357,40 +396,63 @@ class TemplateSelectorCombo(TemplateSelector):
             self.emit_signal(self.combo)
 
     def get_selected_vm(self) -> Optional[qubesadmin.vm.QubesVM]:
+        """Get selected QubesVM object"""
         return self.modeler.get_selected()
 
     def select_vm(self, vm_name: str):
+        """Select qube provided by name."""
         self.modeler.select_entry(vm_name)
-        # TODO: handle errors
 
 
 class TemplateSelectorNoneCombo(TemplateSelector):
-    def __init__(self, gtk_builder: Gtk.Builder, qapp: qubesadmin.Qubes, name_suffix: str, filter_function, default_value):
+    """
+    Selector for a combination of None/combobox with VMs.
+    """
+    def __init__(self, gtk_builder: Gtk.Builder,
+                 qapp: qubesadmin.Qubes,
+                 name_suffix: str,
+                 filter_function: Callable[[qubesadmin.vm.QubesVM], bool],
+                 default_value: Optional[qubesadmin.vm.QubesVM]):
+        """
+        :param gtk_builder: Gtk.Builder object
+        :param qapp: Qubes object
+        :param name_suffix: suffix of the object names
+        :param filter_function: function used to filter available VMs
+        :param default_value: optional value to be marked as (default) and
+        selected
+        """
         super().__init__(gtk_builder, qapp)
 
-        self.label: Gtk.Label = gtk_builder.get_object(f'label_template_{name_suffix}')
-        self.explain_label: Gtk.Label = gtk_builder.get_object(f'label_template_explanation_{name_suffix}')
-        self.radio_none: Gtk.RadioButton = gtk_builder.get_object(f'radio_{name_suffix}_none')
-        self.box_template: Gtk.Box = gtk_builder.get_object(f'box_radio_{name_suffix}')
-        self.radio_template: Gtk.RadioButton = gtk_builder.get_object(f'radio_template_{name_suffix}')
-        self.combo_template: Gtk.ComboBox = gtk_builder.get_object(f'combo_template_{name_suffix}')
+        self.label: Gtk.Label = \
+            gtk_builder.get_object(f'label_template_{name_suffix}')
+        self.explain_label: Gtk.Label = \
+            gtk_builder.get_object(f'label_template_explanation_{name_suffix}')
+        self.radio_none: Gtk.RadioButton = \
+            gtk_builder.get_object(f'radio_{name_suffix}_none')
+        self.box_template: Gtk.Box = \
+            gtk_builder.get_object(f'box_radio_{name_suffix}')
+        self.radio_template: Gtk.RadioButton = \
+            gtk_builder.get_object(f'radio_template_{name_suffix}')
+        self.combo_template: Gtk.ComboBox = \
+            gtk_builder.get_object(f'combo_template_{name_suffix}')
 
-        self.modeler = VMListModeler(self.combo_template, self.qapp, filter_function, self.emit_signal, default_value)
+        self.modeler = VMListModeler(
+            combobox=self.combo_template, qapp=self.qapp,
+            filter_function=filter_function, event_callback=self.emit_signal,
+            default_value=default_value)
 
         self.radio_none.connect('toggled', self.emit_signal)
         self.radio_template.connect('toggled', self._radio_toggled)
 
-        # TODO: select default template
-
-        # TODO: unrelated, but when cloning standalone, you don't get template default aps, also bad for dvms
-
     def _radio_toggled(self, widget: Gtk.RadioButton):
         if widget.get_active():
             self.combo_template.set_sensitive(True)
+            self.emit_signal()
         else:
             self.combo_template.set_sensitive(False)
 
     def set_visible(self, state: bool):
+        """Change visibility of widgets to state (True-visible, False-hidden)"""
         self.label.set_visible(state)
         self.explain_label.set_visible(state)
         self.radio_none.set_visible(state)
@@ -399,18 +461,27 @@ class TemplateSelectorNoneCombo(TemplateSelector):
             self.emit_signal(self.combo_template)
 
     def get_selected_vm(self) -> Optional[qubesadmin.vm.QubesVM]:
+        """Get selected QubesVM object or None"""
         if self.radio_template.get_active():
             return self.modeler.get_selected()
         return None
 
     def select_vm(self, vm_name: str):
+        """Select qube provided by name."""
         if vm_name is None:
+            # this is a weird edge case that should not happen, but let's cover
+            # it just in case
             self.radio_none.set_active(True)
         self.modeler.select_entry(vm_name)
 
 
 class TemplateHandler:
+    """Class to handle a collection of template selectors"""
     def __init__(self, gtk_builder: Gtk.Builder, qapp: qubesadmin.Qubes):
+        """
+        :param gtk_builder: Gtk.Builder object
+        :param qapp: Qubes object
+        """
         self.qapp = qapp
         self.main_window: Gtk.Window = gtk_builder.get_object('main_window')
 
@@ -420,34 +491,48 @@ class TemplateHandler:
                            (GObject.TYPE_PYOBJECT,))
 
         self.template_selectors: Dict[str, TemplateSelector] = {
-            'qube_type_app': TemplateSelectorCombo(gtk_builder, self.qapp, 'app', lambda x: x.klass == 'TemplateVM', self.qapp.default_template),
-            'qube_type_template': TemplateSelectorNoneCombo(gtk_builder, self.qapp, 'template', lambda x: x.klass == 'TemplateVM', None),
-            'qube_type_standalone': TemplateSelectorNoneCombo(gtk_builder, self.qapp, 'standalone', lambda x: x.klass == 'TemplateVM' or x.klass == 'StandaloneVM', None),
-            'qube_type_disposable': TemplateSelectorCombo(gtk_builder, self.qapp, 'dispvm', lambda x: getattr(x, 'template_for_dispvms', False), None)}
-        # TODO: default dispvm template is a thing
+            'qube_type_app': TemplateSelectorCombo(
+                gtk_builder=gtk_builder, qapp=self.qapp, name_suffix='app',
+                filter_function=lambda x: x.klass == 'TemplateVM',
+                default_value=self.qapp.default_template),
+            'qube_type_template': TemplateSelectorNoneCombo(
+                gtk_builder=gtk_builder, qapp=self.qapp, name_suffix='template',
+                filter_function=lambda x: x.klass == 'TemplateVM',
+                default_value=None),
+            'qube_type_standalone': TemplateSelectorNoneCombo(
+                gtk_builder=gtk_builder, qapp=self.qapp,
+                name_suffix='standalone',
+                filter_function=lambda x: x.klass == 'TemplateVM' or
+                                          x.klass == 'StandaloneVM',
+                default_value=None),
+            'qube_type_disposable': TemplateSelectorCombo(
+                gtk_builder=gtk_builder, qapp=self.qapp, name_suffix='dispvm',
+                filter_function=lambda x:
+                getattr(x, 'template_for_dispvms', False),
+                default_value=self.qapp.default_dispvm)}
 
         self.selected_type = None
         self.change_vm_type('qube_type_app')
 
-        # TODO: what if theres no default (it is possible confirmed by marmarek)
-        # TODO: why this so slow
-
-        self._application_data: Dict[qubesadmin.vm.QubesVM, List[ApplicationData]] = {}
+        self._application_data: \
+            Dict[qubesadmin.vm.QubesVM, List[ApplicationData]] = {}
         self._collect_application_data()
 
-    def change_vm_type(self, vm_type):
+    def change_vm_type(self, vm_type: str):
+        """Change selector to one appropriate for the type of VM
+        being created"""
         for selector_type, selector in self.template_selectors.items():
             selector.set_visible(selector_type == vm_type)
         self.selected_type = vm_type
         self.main_window.emit('template-changed', None)
 
-    def get_selected_template(self, *args):
+    def get_selected_template(self):
+        """Get currently selected VM."""
         return self.template_selectors[self.selected_type].get_selected_vm()
 
     def _collect_application_data(self):
+        # TODO: check if this works for dispvms
         for vm in self.qapp.domains:
-            if vm.klass != 'TemplateVM':
-                continue
             command = ['qvm-appmenus', '--get-available',
                        '--i-understand-format-is-unstable', '--file-field',
                        'Comment', vm.name]
@@ -459,11 +544,14 @@ class TemplateHandler:
             self._application_data[vm] = available_applications
 
     def get_available_apps(self, vm: Optional[qubesadmin.vm.QubesVM] = None):
+        """Get apps available for a given template."""
         if vm:
             return self._application_data.get(vm, [])
-        return [appdata for appdata_list in self._application_data.values() for appdata in appdata_list]
+        return [appdata for appdata_list
+                in self._application_data.values() for appdata in appdata_list]
 
     def select_template(self, vm: str):
+        """Selected a vm in the current selector as provided by vm name"""
         self.template_selectors[self.selected_type].select_vm(vm)
 
 

@@ -78,9 +78,12 @@ class VMListModeler:
 
         self._theme = Gtk.IconTheme.get_default()
 
+        self.initial_value = None
         self._create_entries(filter_function, default_value)
 
         self._apply_model()
+
+        self.combo.set_active_id(self.initial_value)
 
     def _get_icon(self, name):
         if name not in self._icons:
@@ -99,9 +102,12 @@ class VMListModeler:
             vm_name = domain.name
             icon = self._get_icon(domain.icon)
             display_name = vm_name
+            if self.initial_value is None:
+                self.initial_value = display_name
 
             if domain == default_value:
                 display_name = display_name + ' (default)'
+                self.initial_value = display_name
 
             self._entries[display_name] = {
                 "api_name": vm_name,
@@ -178,7 +184,8 @@ class VMListModeler:
         self.combo.reorder(text_column, 1)
 
         self.combo.connect("changed", self._combo_change)
-        self.entry_box.connect("changed", lambda combo: self.change_function())
+        if self.change_function:
+            self.entry_box.connect("changed", lambda combo: self.change_function())
 
     def get_selected(self) -> qubesadmin.vm.QubesVM:
         """

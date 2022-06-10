@@ -385,6 +385,7 @@
                 <child internal-child="entry">
                   <object class="GtkEntry">
                     <property name="can-focus">False</property>
+                    <property name="width-chars">32</property>
                   </object>
                 </child>
               </object>
@@ -397,7 +398,7 @@
             <child>
               <object class="GtkLabel" id="label_template_template">
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Clone from existing template</property>
+                <property name="label" translatable="yes">Clone from existing</property>
                 <property name="xalign">0</property>
                 <style>
                   <class name="group_title"/>
@@ -413,7 +414,7 @@
               <object class="GtkLabel" id="label_template_explanation_template">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">If you clone the new template from an existing one, you will have the same system and applications available there. Otherwise, you will have to install a system in your new qube manually.</property>
+                <property name="label" translatable="yes">You can clone your new template from an existing one; initially, the new template will have the same applications as the source template.</property>
                 <property name="wrap">True</property>
                 <property name="xalign">0</property>
                 <style>
@@ -485,6 +486,7 @@
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">False</property>
+                    <property name="active">True</property>
                     <property name="draw-indicator">True</property>
                     <property name="group">radio_template_none</property>
                   </object>
@@ -506,6 +508,7 @@
                     <child internal-child="entry">
                       <object class="GtkEntry">
                         <property name="can-focus">False</property>
+                        <property name="width-chars">32</property>
                       </object>
                     </child>
                   </object>
@@ -526,7 +529,7 @@
               <object class="GtkLabel" id="label_template_standalone">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Clone from existing template or standalone qube</property>
+                <property name="label" translatable="yes">Clone from existing</property>
                 <property name="xalign">0</property>
                 <style>
                   <class name="group_title"/>
@@ -542,7 +545,7 @@
               <object class="GtkLabel" id="label_template_explanation_standalone">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">If you clone the new qube from an existing one, you will have the same system and applications available there. Otherwise, you will have to install a system in your new qube manually.</property>
+                <property name="label" translatable="yes">You can clone your new qube from an existing one; initially, the new qube will have the same applications as the source qube.</property>
                 <property name="wrap">True</property>
                 <property name="xalign">0</property>
                 <style>
@@ -614,6 +617,7 @@
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">False</property>
+                    <property name="active">True</property>
                     <property name="draw-indicator">True</property>
                     <property name="group">radio_standalone_none</property>
                   </object>
@@ -635,6 +639,7 @@
                     <child internal-child="entry">
                       <object class="GtkEntry">
                         <property name="can-focus">False</property>
+                        <property name="width-chars">32</property>
                       </object>
                     </child>
                   </object>
@@ -655,7 +660,7 @@
               <object class="GtkLabel" id="label_template_dispvm">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Disposable Qube Template</property>
+                <property name="label" translatable="yes">Disposable qube template</property>
                 <property name="xalign">0</property>
                 <style>
                   <class name="group_title"/>
@@ -696,6 +701,7 @@
                 <child internal-child="entry">
                   <object class="GtkEntry">
                     <property name="can-focus">False</property>
+                    <property name="width-chars">32</property>
                   </object>
                 </child>
               </object>
