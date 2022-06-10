@@ -1,7 +1,16 @@
 @import "qubes-widgets-styling.css";
+@define-color qubes-blue #4180c9;
+@define-color light-gray #979797;
 
 label {
   font-family: SourceSansPro;
+}
+
+.left_box {
+   background: white;
+   border-width: 0px 1px 0px 1px;
+   border-color: @light-gray;
+   border-style: solid;
 }
 
 .group_title {
@@ -10,9 +19,40 @@ label {
     margin-top: 20px;
 }
 
+.big_title {
+    font-weight: 300;
+    font-size: 150%;
+    margin-top: 20px;
+    margin-bottom: 0px;
+}
+
+.qubes_logo {
+    margin: 10px;
+}
+
+.type_toggle {
+    font-weight: 600;
+    font-size: 120%;
+    border-radius: 0px;
+    border-width: 1px 0px 0px 0px;
+    border-color: @light-gray;
+    background: white;
+    padding: 10px 15px 10px 20px;
+}
+
+.type_toggle_bottom {
+    border-width: 1px 0px 1px 0px;
+}
+
+.type_toggle:checked {
+    background: @qubes-blue;
+    color: white;
+}
+
 .explanation {
     margin-bottom: 10px;
     margin-left: 5px;
+    font-size: 90%;
 }
 
 .info-tooltip {
@@ -20,12 +60,22 @@ label {
 }
 
 radiobutton {
-    margin: 5px 0 5px 0;
+    margin: 2px 0 2px 0;
+}
+
+checkbutton {
+    margin: 2px 0 2px 0;
+}
+
+checkbutton check {
+    min-width: 20px;
+    min-height: 20px;
+    margin-right: 10px;
 }
 
 radiobutton radio {
-    min-width: 30px;
-    min-height: 30px;
+    min-width: 20px;
+    min-height: 20px;
     margin-right: 10px;
 }
 

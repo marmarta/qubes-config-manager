@@ -49,8 +49,9 @@ WHONIX_QUBE_NAME = 'sys-whonix'
 # window icon
 # cleanup of the combobox model methods
 # cleanup of custom dropdowns: should only activate when selected, or always active and set to selected when chosen
-# light and dark themes: check if it works
+# light and dark themes: left panel
 
+# TODO: fix blue etc to be more Nina
 
 # move type to the side
 # hide network and maybe template?
@@ -592,6 +593,14 @@ class CreateNewQube(Gtk.Application):
         self.qube_type_template: Gtk.RadioButton = self.builder.get_object('qube_type_template')
         self.qube_type_standalone: Gtk.RadioButton = self.builder.get_object('qube_type_standalone')
         self.qube_type_disposable: Gtk.RadioButton = self.builder.get_object('qube_type_disposable')
+
+        self.tooltips = {
+            'qube_type_app': self.builder.get_object('qube_type_app_q'),
+            'qube_type_template': self.builder.get_object('qube_type_template_q'),
+            'qube_type_standalone': self.builder.get_object('qube_type_standalone_q'),
+            'qube_type_disposable': self.builder.get_object('qube_type_disposable_q')
+        }
+
         self.qube_type_app.connect('toggled', self._type_selected)
         self.qube_type_template.connect('toggled', self._type_selected)
         self.qube_type_standalone.connect('toggled', self._type_selected)
@@ -623,19 +632,14 @@ class CreateNewQube(Gtk.Application):
             # TODO: needs a tooltip to inform user what is missing
 
     def _type_selected(self, button: Gtk.RadioButton):
-        if not button.get_active():
-            return
         button_name = button.get_name()
+        if not button.get_active():
+            self.tooltips[button_name].set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
+                'qubes-question', 20, 0))
+            return
         self.template_handler.change_vm_type(button_name)
-
-        if button_name == 'qube_type_app':
-            pass
-        if button_name == 'qube_type_template':
-            pass
-        if button_name == 'qube_type_standalone':
-            pass
-        if button_name == 'qube_type_disposable':
-            pass
+        self.tooltips[button_name].set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
+                'qubes-question-light', 20, 0))
 
     def do_create_qube(self, *args, **kwargs):
         # TODO: check for validation, this can actually be done with events and make the create inactive until name etc chosen
