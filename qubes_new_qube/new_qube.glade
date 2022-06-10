@@ -197,7 +197,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">1</property>
+                <property name="position">19</property>
               </packing>
             </child>
             <child>
@@ -323,7 +323,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">2</property>
+                <property name="position">1</property>
               </packing>
             </child>
             <child>
@@ -338,7 +338,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">3</property>
+                <property name="position">2</property>
               </packing>
             </child>
             <child>
@@ -354,7 +354,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">10</property>
+                <property name="position">3</property>
               </packing>
             </child>
             <child>
@@ -371,7 +371,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">11</property>
+                <property name="position">4</property>
               </packing>
             </child>
             <child>
@@ -392,7 +392,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">12</property>
+                <property name="position">5</property>
               </packing>
             </child>
             <child>
@@ -407,7 +407,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">13</property>
+                <property name="position">6</property>
               </packing>
             </child>
             <child>
@@ -424,7 +424,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">14</property>
+                <property name="position">7</property>
               </packing>
             </child>
             <child>
@@ -473,7 +473,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">15</property>
+                <property name="position">8</property>
               </packing>
             </child>
             <child>
@@ -522,7 +522,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">16</property>
+                <property name="position">9</property>
               </packing>
             </child>
             <child>
@@ -538,7 +538,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">17</property>
+                <property name="position">10</property>
               </packing>
             </child>
             <child>
@@ -555,7 +555,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">18</property>
+                <property name="position">11</property>
               </packing>
             </child>
             <child>
@@ -604,7 +604,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">19</property>
+                <property name="position">12</property>
               </packing>
             </child>
             <child>
@@ -653,7 +653,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">20</property>
+                <property name="position">13</property>
               </packing>
             </child>
             <child>
@@ -669,7 +669,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">21</property>
+                <property name="position">14</property>
               </packing>
             </child>
             <child>
@@ -686,7 +686,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">22</property>
+                <property name="position">15</property>
               </packing>
             </child>
             <child>
@@ -708,7 +708,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">23</property>
+                <property name="position">16</property>
               </packing>
             </child>
             <child>
@@ -724,142 +724,31 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">24</property>
+                <property name="position">17</property>
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="label_template_explanation_dispvm1">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Choose network connection for your new qube.</property>
-                <property name="wrap">True</property>
-                <property name="xalign">0</property>
-                <style>
-                  <class name="explanation"/>
-                </style>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">25</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkBox" id="network_default_box">
+              <object class="GtkBox" id="box_network_current">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <child>
-                  <object class="GtkRadioButton" id="network_default">
-                    <property name="label" translatable="yes">Default:</property>
+                  <object class="GtkLabel">
                     <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">False</property>
-                    <property name="margin-end">5</property>
-                    <property name="active">True</property>
-                    <property name="draw-indicator">True</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">26</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkRadioButton" id="network_none">
-                <property name="label" translatable="yes">No network connection</property>
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">False</property>
-                <property name="draw-indicator">True</property>
-                <property name="group">network_default</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">27</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkBox" id="network_tor_box">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <child>
-                  <object class="GtkRadioButton" id="network_tor">
-                    <property name="label" translatable="yes">Tor/Whonix:</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">False</property>
-                    <property name="margin-end">5</property>
-                    <property name="draw-indicator">True</property>
-                    <property name="group">network_default</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">28</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <child>
-                  <object class="GtkRadioButton" id="network_custom">
-                    <property name="label" translatable="yes">Custom:</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">False</property>
-                    <property name="margin-end">5</property>
-                    <property name="draw-indicator">True</property>
-                    <property name="group">network_default</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkComboBox" id="network_custom_combo">
-                    <property name="visible">True</property>
-                    <property name="sensitive">False</property>
                     <property name="can-focus">False</property>
-                    <property name="halign">start</property>
-                    <property name="margin-start">5</property>
-                    <property name="margin-end">300</property>
-                    <property name="hexpand">False</property>
-                    <property name="has-entry">True</property>
-                    <child internal-child="entry">
-                      <object class="GtkEntry">
-                        <property name="can-focus">False</property>
-                      </object>
-                    </child>
+                    <property name="label" translatable="yes">Network connection: </property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="label_current_network_none">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">&lt;b&gt;None&lt;/b&gt;</property>
+                    <property name="use-markup">True</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -867,11 +756,175 @@
                     <property name="position">1</property>
                   </packing>
                 </child>
+                <child>
+                  <placeholder/>
+                </child>
               </object>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">29</property>
+                <property name="padding">5</property>
+                <property name="position">18</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkExpander">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <object class="GtkBox" id="network_default_box">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <child>
+                          <object class="GtkRadioButton" id="network_default">
+                            <property name="label" translatable="yes">Default:</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">False</property>
+                            <property name="margin-end">5</property>
+                            <property name="active">True</property>
+                            <property name="draw-indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkRadioButton" id="network_none">
+                        <property name="label" translatable="yes">No network connection</property>
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="receives-default">False</property>
+                        <property name="draw-indicator">True</property>
+                        <property name="group">network_default</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkBox" id="network_tor_box">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <child>
+                          <object class="GtkRadioButton" id="network_tor">
+                            <property name="label" translatable="yes">Tor/Whonix:</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">False</property>
+                            <property name="margin-right">5</property>
+                            <property name="margin-end">5</property>
+                            <property name="draw-indicator">True</property>
+                            <property name="group">network_default</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <child>
+                          <object class="GtkRadioButton" id="network_custom">
+                            <property name="label" translatable="yes">Custom:</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">False</property>
+                            <property name="margin-right">5</property>
+                            <property name="margin-end">5</property>
+                            <property name="draw-indicator">True</property>
+                            <property name="group">network_default</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkComboBox" id="network_custom_combo">
+                            <property name="visible">True</property>
+                            <property name="sensitive">False</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">start</property>
+                            <property name="margin-left">5</property>
+                            <property name="margin-right">300</property>
+                            <property name="margin-start">5</property>
+                            <property name="margin-end">300</property>
+                            <property name="hexpand">False</property>
+                            <property name="has-entry">True</property>
+                            <child internal-child="entry">
+                              <object class="GtkEntry">
+                                <property name="can-focus">False</property>
+                              </object>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">3</property>
+                      </packing>
+                    </child>
+                  </object>
+                </child>
+                <child type="label">
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">Click to change network connection.</property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="padding">5</property>
+                <property name="position">20</property>
               </packing>
             </child>
             <child>
@@ -887,7 +940,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">30</property>
+                <property name="position">21</property>
               </packing>
             </child>
             <child>
@@ -901,7 +954,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">31</property>
+                <property name="position">22</property>
               </packing>
             </child>
             <child>
@@ -915,8 +968,17 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">32</property>
+                <property name="position">23</property>
               </packing>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
             </child>
             <child>
               <placeholder/>
@@ -1053,7 +1115,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">34</property>
+                <property name="position">35</property>
               </packing>
             </child>
           </object>

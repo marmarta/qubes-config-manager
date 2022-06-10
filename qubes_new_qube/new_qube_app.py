@@ -574,18 +574,51 @@ class NetworkSelector:
         self.network_custom.connect('toggled', self._custom_toggled)
 
         self.network_none: Gtk.RadioButton = gtk_builder.get_object('network_none')
-
         self.network_tor: Gtk.RadioButton = gtk_builder.get_object('network_tor')
+        self.network_default: Gtk.RadioButton = gtk_builder.get_object('network_default')
 
         if WHONIX_QUBE_NAME in self.qapp.domains:
             self.network_tor_box.pack_start(QubeName(self.qapp.domains[WHONIX_QUBE_NAME]), False, False, 0)
         else:
             self.network_tor_box.set_visible(False)
 
-        self.network_modeler = VMListModeler(self.network_custom_combo, self.qapp, lambda x: getattr(x, 'provides_network', False))
+        self.network_modeler = VMListModeler(
+            self.network_custom_combo, self.qapp,
+            lambda x: getattr(x, 'provides_network', False))
+
+        self.network_tor.connect('toggled', self._netvm_changed)
+        self.network_none.connect('toggled', self._netvm_changed)
+        self.network_default.connect('toggled', self._netvm_changed)
+        self.network_custom.connect('toggled', self._netvm_changed)
+        self.network_custom_combo.connect('changed', self._netvm_changed_combo)
+
+        self.network_current_box: Gtk.Box = gtk_builder.get_object('box_network_current')
+        self.network_current_none: Gtk.Label = gtk_builder.get_object('label_current_network_none')
+        self.network_current_widget = QubeName(self.qapp.default_netvm)
+        self.network_current_box.pack_start(self.network_current_widget, False, False, 3)
+        self.network_current_none.set_visible(False)
 
     def _custom_toggled(self, widget):
         self.network_custom_combo.set_sensitive(widget.get_active())
+
+    def _netvm_changed_combo(self, _widget):
+        self._netvm_changed(None)
+
+    def _netvm_changed(self, widget: Optional[Gtk.RadioButton]):
+        if widget and not widget.get_active():
+            # do not perform this twice for every change of netvm
+            return
+        current_netvm = self.get_selected_netvm()
+        self.network_current_none.set_visible(current_netvm is None)
+        self.network_current_box.remove(self.network_current_widget)
+
+        if current_netvm == qubesadmin.DEFAULT:
+            current_netvm = self.qapp.default_netvm
+
+        if current_netvm:
+            self.network_current_widget = QubeName(current_netvm)
+            self.network_current_box.pack_start(self.network_current_widget,
+                                                False, False, 3)
 
     def get_selected_netvm(self):
         if self.network_none.get_active():
