@@ -598,6 +598,13 @@ class NetworkSelector:
         self.network_current_box.pack_start(self.network_current_widget, False, False, 3)
         self.network_current_none.set_visible(False)
 
+        self.button_toggle_settings: Gtk.Button = gtk_builder.get_object('customize_network_button')
+        self.box_network_settings: Gtk.Box = gtk_builder.get_object('box_network_settings')
+        self.button_toggle_settings.connect('clicked', self._show_hide_more)
+
+    def _show_hide_more(self, _widget):
+        self.box_network_settings.set_visible(not self.box_network_settings.get_visible())
+
     def _custom_toggled(self, widget):
         self.network_custom_combo.set_sensitive(widget.get_active())
 
