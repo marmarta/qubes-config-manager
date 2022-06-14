@@ -14,6 +14,8 @@ install-icons:
 	cp qubes_new_qube/delete_icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-delete.svg
 	cp qubes_new_qube/qubes_logo.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-logo.svg
 	cp qubes_new_qube/qubes_customize.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-customize.svg
+	cp qubes_new_qube/qubes_expander_shown.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-expander-shown.svg
+	cp qubes_new_qube/qubes_expander_hidden.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-expander-hidden.svg
 
 install-autostart:
 	mkdir -p $(DESTDIR)/etc/xdg/autostart

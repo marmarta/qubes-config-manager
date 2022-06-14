@@ -7,6 +7,7 @@ Main Application Menu class and helpers.
 import asyncio
 import subprocess
 import sys
+import os
 from typing import Optional, List, Tuple, Dict, Callable
 import abc
 from contextlib import suppress
@@ -43,19 +44,11 @@ WHONIX_QUBE_NAME = 'sys-whonix'
 # - disp (needs only actual do_create)
 # - standalone (needs only actual do_create)
 # styling
-# - initial styling pass
 # - style the pretty window
-# commandline
-# window icon
-# cleanup of the combobox model methods
-# cleanup of custom dropdowns: should only activate when selected, or always active and set to selected when chosen
-# light and dark themes: left panel
-
-# TODO: fix blue etc to be more Nina
-
-# move type to the side
-# hide network and maybe template?
-# select default stuff or first
+# TODO: future: commandline
+# TODO: future: window icon
+# TODO: future: dark theme
+# TODO: install application to template
 
 # TODO: resize with advanced is weird.
 
@@ -66,17 +59,22 @@ class ApplicationData:
     """
     def __init__(self, name: str, ident: str, comment: Optional[str] = None,
                  template: Optional[qubesadmin.vm.QubesVM] = None):
+        """
+        :param name: application name
+        :param ident: application id (as expected by qvm-appmenus)
+        :param comment: optional comment
+        :param template: optional qubes VM that is this app's template
+        """
         self.name = name
         self.ident = ident
         self.template = template
         additional_description = ".desktop filename: " + str(self.ident)
-        # TODO: get the icon is should have name related to desktop filename
-        # TODO: template?
 
         file_name_root = self.ident[:-len('.desktop')]
-        # TODO: this does not work for dispvm templates FFS
-        # TODO: maybe let's not hardcode my home dir here, eh?
-        self.icon_path = f'/home/marmarta/.local/share/qubes-appmenus/{template}/apps.tempicons/{file_name_root}.png'
+        # TODO: future: explore ways to make this work for dispvm templates
+        self.icon_path = os.path.expanduser(
+            f'~/.local/share/qubes-appmenus/{template}'
+            f'/apps.tempicons/{file_name_root}.png')
 
         if not comment:
             self.comment = additional_description
@@ -85,11 +83,17 @@ class ApplicationData:
 
     @classmethod
     def from_line(cls, line, template=None):
+        """
+        Create object from output line of qvm-appmenus, with optional template.
+        """
         ident, name, comment = line.split('|', maxsplit=3)
         return cls(name=name, ident=ident, comment=comment, template=template)
 
 
 class ApplicationRow(Gtk.ListBoxRow):
+    """
+    Row representing an app in current template.
+    """
     def __init__(self, appdata: ApplicationData, **properties):
         """
         :param app_info: ApplicationInfo obj with data about related app file
@@ -100,10 +104,17 @@ class ApplicationRow(Gtk.ListBoxRow):
         self.appdata = appdata
         self.label = Gtk.Label()
         self.label.set_text(self.appdata.name)
+        self.label.set_alignment(0, 0.5)
         self.add(self.label)
+        self.set_tooltip_text(self.appdata.comment)
+        self.label.set_alignment(0, 0.5)
+        self.get_style_context().add_class('app_list')
 
 
 class OtherTemplateApplicationRow(Gtk.ListBoxRow):
+    """
+    Row representing an app in another template.
+    """
     def __init__(self, appdata: ApplicationData, **properties):
         """
         :param app_info: ApplicationInfo obj with data about related app file
@@ -123,59 +134,107 @@ class OtherTemplateApplicationRow(Gtk.ListBoxRow):
 
 
 class ApplicationButton(Gtk.Button):
-    # TODO: add application icon and remove icon
+    """
+    Button representing a selected application.
+    """
     def __init__(self, appdata: ApplicationData):
+        """
+        :param appdata: ApplicationData object
+        """
         super(ApplicationButton, self).__init__(label=None)
         self.box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.add(self.box)
         self.appdata = appdata
 
-        # TODO: here do icon
         self.icon = Gtk.Image()
-        self.icon.set_from_pixbuf(
-            GdkPixbuf.Pixbuf.new_from_file_at_size(appdata.icon_path, 18, 18))
+        try:
+            self.icon.set_from_pixbuf(
+                GdkPixbuf.Pixbuf.new_from_file_at_size(appdata.icon_path, 18, 18))
+        except gi.repository.GLib.Error:
+            # icon not available, let's move on
+            pass
 
         self.box.pack_start(self.icon, False, False, 3)
 
         self.label = Gtk.Label()
         self.label.set_text(self.appdata.name)
+        self.label.set_tooltip_text(self.appdata.comment)
         self.box.pack_start(self.label, False, False, 3)
 
         self.remove_icon = Gtk.Image()
         self.remove_icon.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
                 'qubes-delete', 14, 0))
+        self.remove_icon.set_tooltip_text(
+            'Click to remove this application from selection')
         self.box.pack_end(self.remove_icon, False, False, 3)
 
         self.show_all()
 
 
 class AddButton(Gtk.Button):
+    """
+    Button to open 'select apps' window.
+    """
     def __init__(self, **properties):
+        # TODO: future: maybe a dedicated plus icon
         super(AddButton, self).__init__(properties)
         self.set_label("+")
 
 
 class ApplicationBoxHandler:
-    def __init__(self, flowbox: Gtk.FlowBox, gtk_builder: Gtk.Builder, template_selector):
-        # TODO: tooltips
-        # TODO: must hide itself after ESC or click outside
-        # TODO: refresh?
+    """
+    Class to handle popup application box.
+    """
+    def __init__(self, flowbox: Gtk.FlowBox, gtk_builder: Gtk.Builder,
+                 template_selector):
+        """
+        :param flowbox: Gtk.Flowbox containing application button list
+        :param gtk_builder: Gtk.Builder to get relevant objects
+        :param template_selector: TemplateHandler object
+        """
+        # TODO: future enhancement: refresh button
         self.template_selector = template_selector
         self.flowbox = flowbox
         self.apps_window = gtk_builder.get_object('applications_popup')
         self.apps_list: Gtk.ListBox = gtk_builder.get_object('apps_list')
         self.label_apps: Gtk.Label = gtk_builder.get_object('label_apps')
+        self.label_apps_explain: Gtk.Label = gtk_builder.get_object(
+            'label_apps_explain')
         self.apps_close: Gtk.Button = gtk_builder.get_object('apps_close')
-        self.apps_search: Gtk.SearchEntry = gtk_builder.get_object('apps_search')
-        self.apps_list_placeholder: Gtk.Label = gtk_builder.get_object('apps_list_placeholder')
-        self.apps_list_other: Gtk.ListBox = gtk_builder.get_object('apps_list_other_templates')
+        self.apps_search: Gtk.SearchEntry = \
+            gtk_builder.get_object('apps_search')
+        self.apps_list_placeholder: Gtk.Label = \
+            gtk_builder.get_object('apps_list_placeholder')
+        self.apps_list_other: Gtk.ListBox = \
+            gtk_builder.get_object('apps_list_other_templates')
+        self.label_other_templates: Gtk.Label = gtk_builder.get_object(
+            'label_other_templates')
+
+        self.change_template_msg: Gtk.Dialog = gtk_builder.get_object(
+            'msg_change_template')
+        self.change_template_ok: Gtk.Button = gtk_builder.get_object(
+            'change_template_ok')
+        self.change_template_cancel: Gtk.Button = gtk_builder.get_object(
+            'change_template_cancel')
+        self.change_template_box: Gtk.Box = gtk_builder.get_object(
+            'change_template_box')
+        self.target_template_name_widget = None
+
+        self.change_template_cancel.connect(
+            'clicked', self._hide_template_change)
+        self.change_template_ok.connect('clicked', self._do_template_change)
+        self.change_template_msg.connect(
+            'key_press_event', self._keypress_change_template)
+
+        self.apps_window.connect('key_press_event', self._keypress_event)
 
         self.fill_app_list(default=True)
         self.fill_flow_list()
         self.apps_close.connect('clicked', self.hide_window)
         self.apps_list.set_sort_func(self._sort_func_app_list)
         self.apps_search.connect('search-changed', self._do_search)
-        self.template_selector.main_window.connect('template-changed', self.template_change_registered)
+        self.template_selector.main_window.connect(
+            'template-changed', self.template_change_registered)
 
         self.apps_list.set_filter_func(self._filter_func_app_list)
         self.apps_list.set_sort_func(self._sort_func_app_list)
@@ -186,14 +245,12 @@ class ApplicationBoxHandler:
         self._fill_others_list()
 
     def _cmp(self, a, b):
-        if a == b:
-            return 0
-        if a < b:
-            return -1
-        return 1
+        """Helper comparison function, made to comply with Gtk specs"""
+        return (a > b) - (b > a)
 
     def _sort_func_app_list(self, x: ApplicationRow, y: ApplicationRow):
-        selection_comparison = self._cmp(not x.is_selected(), not y.is_selected())
+        selection_comparison = self._cmp(not x.is_selected(),
+                                         not y.is_selected())
         if selection_comparison == 0:
             return self._cmp(x.appdata.name, y.appdata.name)
         return self._cmp(not x.is_selected(), not y.is_selected())
@@ -207,36 +264,46 @@ class ApplicationBoxHandler:
     def _filter_func_other_list(self, x: ApplicationRow):
         if not self.apps_list_placeholder.get_mapped():
             return False
+        if not self.template_selector.is_given_template_available(
+                x.appdata.template):
+            return False
         return self._filter_func_app_list(x)
 
-# TODO: install to template
-# TODO: when looks good, make behavior after clicking nicer
+# TODO: future enhancement: install to template
 
     def _do_search(self, *args, **kwargs):
         self.apps_list.invalidate_filter()
         if self.apps_list_placeholder.get_mapped():
             self.apps_list_other.invalidate_filter()
             self.apps_list_other.set_visible(True)
+            self.label_other_templates.set_visible(True)
         else:
             self.apps_list_other.set_visible(False)
+            self.label_other_templates.set_visible(False)
 
     def template_change_registered(self, *args, **kwargs):
+        """
+        Fired after template change is noticed.
+        """
         self.fill_app_list(default=True)
         self.fill_flow_list()
 
     def fill_app_list(self, default=False):
+        """Fill application list with apps matching current template."""
         for child in self.apps_list.get_children():
             self.apps_list.remove(child)
 
         template_vm = self.template_selector.get_selected_template()
         self.label_apps.set_visible(template_vm is not None)
+        self.label_apps_explain.set_visible(template_vm is not None)
         if not template_vm:
             return
 
-        available_applications = self.template_selector.get_available_apps(template_vm)
+        available_applications = self.template_selector.get_available_apps(
+            template_vm)
         selected = []
         if default:
-            # TODO use get default list when merged
+            # TODO: future: use get default list when enhancement merged
             selected = ['firefox.desktop', 'exo-terminal-emulator.desktop',
                         'xterm.desktop', 'firefox-esr.desktop']
         else:
@@ -260,19 +327,33 @@ class ApplicationBoxHandler:
         self.apps_list_other.set_visible(False)
         self.apps_list_other.connect('row-activated', self._ask_template_change)
 
-    def _ask_template_change(self, widget, row, *args):
-        # TODO: aadd pretty template name and icon
-        msg = Gtk.MessageDialog(self.apps_window,
-                                         Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
-                                         Gtk.MessageType.QUESTION,
-                                         Gtk.ButtonsType.OK_CANCEL,
-                                         "Do you want to switch the template to ?")
-        response = msg.run()
+    def _hide_template_change(self, *_args):
+        self.change_template_msg.hide()
 
-        if response == Gtk.ResponseType.OK:
-            self.template_selector.select_template(row.appdata.template.name)
+    def _do_template_change(self, *_args):
+        self.template_selector.select_template(
+            self.target_template_name_widget.vm)
+        self._hide_template_change()
         self.hide_window()
-        msg.destroy()
+
+    def _ask_template_change(self, _widget, row, *_args):
+        if self.target_template_name_widget:
+            self.change_template_box.remove(self.target_template_name_widget)
+
+        self.target_template_name_widget = QubeName(row.appdata.template)
+        self.change_template_box.pack_start(
+            self.target_template_name_widget, False, False, 0)
+
+        self.change_template_msg.show()
+
+    def _keypress_change_template(self, _widget, event, *_args):
+        if event.keyval == Gdk.KEY_Escape:
+            self._hide_template_change()
+            return True
+        if event.keyval == Gdk.KEY_ISO_Enter:
+            self._do_template_change()
+            return True
+        return False
 
     def fill_flow_list(self):
         template_vm = self.template_selector.get_selected_template()
@@ -289,24 +370,29 @@ class ApplicationBoxHandler:
                 button.connect('clicked', self._app_button_clicked)
                 self.flowbox.add(button)
         plus_button = AddButton()
-        # TODO: prettier plus icon
         plus_button.connect('clicked', self._choose_apps)
         # need interaction with Template object
         self.flowbox.add(plus_button)
         self.flowbox.show_all()
 
-    def _app_button_clicked(self, widget, *args, **kwargs):
+    def _app_button_clicked(self, widget, *_args, **_kwargs):
         self.flowbox.remove(widget)
 
-    def _choose_apps(self, *args, **kwargs):
-        # TODO: KEYBOARD NAV
+    def _choose_apps(self, *_args, **_kwargs):
         self.fill_app_list()
-        self.apps_window.show_all()
+        self.apps_window.show()
 
-    def hide_window(self, *args, **kwargs):
+    def _keypress_event(self, _widget, event, *_args):
+        if event.keyval == Gdk.KEY_Escape:
+            self.hide_window()
+            return True
+        return False
+
+    def hide_window(self, *_args, **_kwargs):
         self.fill_flow_list()
         self.apps_window.hide()
-        return True  # when connected to delete-event, this tells Gtk to not attempt to destroy the window
+        return True  # when connected to delete-event, this tells Gtk to
+        # not attempt to destroy the window
 
 # TODO: accessiblity show help how?
 
@@ -351,7 +437,10 @@ class TemplateSelector(abc.ABC):
         if widget is None or widget.get_active():
             self.main_window.emit('template-changed', None)
 
-# TODO: some error with choosing apps appeared after the refactor
+    def is_vm_available(self, vm: qubesadmin.vm.QubesVM) -> bool:
+        """
+        Check if the given VM is available in the template list.
+        """
 
 
 class TemplateSelectorCombo(TemplateSelector):
@@ -403,6 +492,11 @@ class TemplateSelectorCombo(TemplateSelector):
         """Select qube provided by name."""
         self.modeler.select_entry(vm_name)
 
+    def is_vm_available(self, vm: qubesadmin.vm.QubesVM) -> bool:
+        """
+        Check if the given VM is available in the template list.
+        """
+        return self.modeler.is_vm_available(vm)
 
 class TemplateSelectorNoneCombo(TemplateSelector):
     """
@@ -474,6 +568,12 @@ class TemplateSelectorNoneCombo(TemplateSelector):
             self.radio_none.set_active(True)
         self.modeler.select_entry(vm_name)
 
+    def is_vm_available(self, vm: qubesadmin.vm.QubesVM) -> bool:
+        """
+        Check if the given VM is available in the template list.
+        """
+        return self.modeler.is_vm_available(vm)
+
 
 class TemplateHandler:
     """Class to handle a collection of template selectors"""
@@ -530,6 +630,12 @@ class TemplateHandler:
         """Get currently selected VM."""
         return self.template_selectors[self.selected_type].get_selected_vm()
 
+    def is_given_template_available(self,
+                                    template: qubesadmin.vm.QubesVM) -> bool:
+        """Check if given qubesVM is among available templates."""
+        return self.template_selectors[self.selected_type].is_vm_available(
+            template)
+
     def _collect_application_data(self):
         # TODO: check if this works for dispvms
         for vm in self.qapp.domains:
@@ -556,8 +662,14 @@ class TemplateHandler:
 
 
 class NetworkSelector:
-    # TODO: hide tor if unavailable
+    """
+    Class that handles network configuration.
+    """
     def __init__(self, gtk_builder: Gtk.Builder, qapp: qubesadmin.Qubes):
+        """
+        :param gtk_builder: Gtk.Builder object
+        :param qapp: Qubes object
+        """
         self.qapp = qapp
 
         self.network_default_icon: Optional[Gtk.Image] = None
@@ -565,20 +677,29 @@ class NetworkSelector:
         self.network_tor_icon: Optional[Gtk.Image] = None
         self.network_tor_name: Optional[Gtk.Label] = None
 
-        self.network_default_box: Gtk.Box = gtk_builder.get_object('network_default_box')
-        self.network_default_box.pack_start(QubeName(self.qapp.default_netvm), False, False, 0)
+        self.network_default_box: Gtk.Box = \
+            gtk_builder.get_object('network_default_box')
+        self.network_default_box.pack_start(
+            QubeName(self.qapp.default_netvm), False, False, 0)
 
-        self.network_tor_box: Gtk.Box = gtk_builder.get_object('network_tor_box')
-        self.network_custom: Gtk.RadioButton = gtk_builder.get_object('network_custom')
-        self.network_custom_combo: Gtk.ComboBox = gtk_builder.get_object('network_custom_combo')
+        self.network_tor_box: Gtk.Box = \
+            gtk_builder.get_object('network_tor_box')
+        self.network_custom: Gtk.RadioButton = \
+            gtk_builder.get_object('network_custom')
+        self.network_custom_combo: Gtk.ComboBox = \
+            gtk_builder.get_object('network_custom_combo')
         self.network_custom.connect('toggled', self._custom_toggled)
 
-        self.network_none: Gtk.RadioButton = gtk_builder.get_object('network_none')
-        self.network_tor: Gtk.RadioButton = gtk_builder.get_object('network_tor')
-        self.network_default: Gtk.RadioButton = gtk_builder.get_object('network_default')
+        self.network_none: Gtk.RadioButton = \
+            gtk_builder.get_object('network_none')
+        self.network_tor: Gtk.RadioButton = \
+            gtk_builder.get_object('network_tor')
+        self.network_default: Gtk.RadioButton = \
+            gtk_builder.get_object('network_default')
 
         if WHONIX_QUBE_NAME in self.qapp.domains:
-            self.network_tor_box.pack_start(QubeName(self.qapp.domains[WHONIX_QUBE_NAME]), False, False, 0)
+            self.network_tor_box.pack_start(
+                QubeName(self.qapp.domains[WHONIX_QUBE_NAME]), False, False, 0)
         else:
             self.network_tor_box.set_visible(False)
 
@@ -592,18 +713,36 @@ class NetworkSelector:
         self.network_custom.connect('toggled', self._netvm_changed)
         self.network_custom_combo.connect('changed', self._netvm_changed_combo)
 
-        self.network_current_box: Gtk.Box = gtk_builder.get_object('box_network_current')
-        self.network_current_none: Gtk.Label = gtk_builder.get_object('label_current_network_none')
+        self.network_current_box: Gtk.Box = \
+            gtk_builder.get_object('box_network_current')
+        self.network_current_none: Gtk.Label = \
+            gtk_builder.get_object('label_current_network_none')
         self.network_current_widget = QubeName(self.qapp.default_netvm)
-        self.network_current_box.pack_start(self.network_current_widget, False, False, 3)
+        self.network_current_box.pack_start(
+            self.network_current_widget, False, False, 3)
         self.network_current_none.set_visible(False)
 
-        self.button_toggle_settings: Gtk.Button = gtk_builder.get_object('customize_network_button')
-        self.box_network_settings: Gtk.Box = gtk_builder.get_object('box_network_settings')
-        self.button_toggle_settings.connect('clicked', self._show_hide_more)
+        self.button_toggle_settings: Gtk.EventBox = \
+            gtk_builder.get_object('eventbox_network_current')
+        self.box_network_settings: Gtk.Box = \
+            gtk_builder.get_object('box_network_settings')
+        self.expander_image: Gtk.Image = \
+            gtk_builder.get_object('network_settings_expander_icon')
+        self.button_toggle_settings.connect(
+            'button-release-event', self._show_hide_more)
 
-    def _show_hide_more(self, _widget):
-        self.box_network_settings.set_visible(not self.box_network_settings.get_visible())
+    def _show_hide_more(self, *_args):
+        self.box_network_settings.set_visible(
+            not self.box_network_settings.get_visible())
+        if self.box_network_settings.get_visible():
+            self.expander_image.set_from_pixbuf(
+                Gtk.IconTheme.get_default().load_icon(
+                    'qubes-expander-shown', 20, 0))
+        else:
+            self.expander_image.set_from_pixbuf(
+                Gtk.IconTheme.get_default().load_icon(
+                    'qubes-expander-hidden', 18, 0))
+# TODO: maybe a better abstraction/helper for icon loaders
 
     def _custom_toggled(self, widget):
         self.network_custom_combo.set_sensitive(widget.get_active())
@@ -627,11 +766,12 @@ class NetworkSelector:
             self.network_current_box.pack_start(self.network_current_widget,
                                                 False, False, 3)
 
-    def get_selected_netvm(self):
+    def get_selected_netvm(self) -> Optional[qubesadmin.vm.QubesVM]:
+        """Get which vm (if any) is selected as netvm"""
         if self.network_none.get_active():
             return None
         if self.network_tor.get_active():
-            return self.qapp.domains['sys-whonix']
+            return self.qapp.domains[WHONIX_QUBE_NAME]
         if self.network_custom.get_active():
             tree_iter = self.network_custom_combo.get_active_iter()
             if tree_iter is not None:
@@ -641,13 +781,10 @@ class NetworkSelector:
         return qubesadmin.DEFAULT
 
 
-# TODO: better model...
-
 def init_combobox_with_icons(combobox: Gtk.ComboBox, data: List[Tuple[str, str]]):
     store = Gtk.ListStore(GdkPixbuf.Pixbuf, str)
 
     for text, icon in data:
-        # TODO: icon SIZES
         pixbuf = Gtk.IconTheme.get_default().load_icon(icon, 20, 0)
         store.append([pixbuf, text])
 
@@ -697,13 +834,6 @@ class CreateNewQube(Gtk.Application):
         The function that performs actual widget realization and setup. Should
         be only called once, in the main instance of this application.
         """
-        screen = Gdk.Screen.get_default()
-        provider = Gtk.CssProvider()
-        provider.load_from_path(pkg_resources.resource_filename(
-            __name__, 'qubes-new-qube.css'))
-        Gtk.StyleContext.add_provider_for_screen(
-            screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-
         self.builder = Gtk.Builder()
         self.builder.add_from_file(pkg_resources.resource_filename(
             __name__, 'new_qube.glade'))
@@ -712,6 +842,8 @@ class CreateNewQube(Gtk.Application):
         self.main_window = self.builder.get_object('main_window')
         self.qube_name = self.builder.get_object('qube_name')
         self.qube_label = self.builder.get_object('qube_label')
+
+        self._handle_theme()
 
         self.template_handler = TemplateHandler(self.builder, self.qapp)
 
@@ -751,6 +883,19 @@ class CreateNewQube(Gtk.Application):
 
         self.create_button: Gtk.Button =  self.builder.get_object('qube_create')
         self.create_button.connect('clicked', self.do_create_qube)
+
+    def _handle_theme(self):
+        style_context = self.main_window.get_style_context()
+        window_default_color = style_context.get_background_color(
+            Gtk.StateType.NORMAL)
+        # TODO: determine light or dark scheme by checking if text is lighter
+        # or darker than background
+        screen = Gdk.Screen.get_default()
+        provider = Gtk.CssProvider()
+        provider.load_from_path(pkg_resources.resource_filename(
+            __name__, 'qubes-new-qube.css'))
+        Gtk.StyleContext.add_provider_for_screen(
+            screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     def _name_changed(self, entry: Gtk.Entry):
         if not entry.get_text():

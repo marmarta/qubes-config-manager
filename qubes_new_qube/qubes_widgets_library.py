@@ -25,6 +25,7 @@ class QubeName(Gtk.Box):
         :param vm: Qubes VM to be represented.
         """
         super(QubeName, self).__init__(orientation=Gtk.Orientation.HORIZONTAL)
+        self.vm = vm
         self.image = Gtk.Image()
         self.image.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
                 vm.icon, 20, 0))
@@ -206,3 +207,10 @@ class VMListModeler:
         for display_name, entry in self._entries.items():
             if entry["api_name"] == vm_name:
                 self.combo.set_active_id(display_name)
+
+    def is_vm_available(self, vm: qubesadmin.vm.QubesVM) -> bool:
+        """Check if given VM is available in the list."""
+        for entry in self._entries.values():
+            if entry['vm'] == vm:
+                return True
+        return False
