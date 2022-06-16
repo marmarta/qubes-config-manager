@@ -26,11 +26,12 @@ class QubeName(Gtk.Box):
         """
         super(QubeName, self).__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.vm = vm
-        self.image = Gtk.Image()
-        self.image.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
-                vm.icon, 20, 0))
+        if vm is not None:
+            self.image = Gtk.Image()
+            self.image.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
+                    vm.icon, 20, 0))
         self.label = Gtk.Label()
-        self.label.set_label(vm.name)
+        self.label.set_label(vm.name if vm else 'None')
 
         self.set_spacing(5)
         self.image.set_halign(Gtk.Align.CENTER)
@@ -39,7 +40,10 @@ class QubeName(Gtk.Box):
         self.add(self.label)
 
         self.get_style_context().add_class(f'qube-box-base')
-        self.get_style_context().add_class(f'qube-box-{vm.label}')
+        if vm:
+            self.get_style_context().add_class(f'qube-box-{vm.label}')
+        else:
+            self.get_style_context().add_class(f'qube-box-black')
 
         self.show_all()
 

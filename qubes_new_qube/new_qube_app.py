@@ -498,6 +498,7 @@ class TemplateSelectorCombo(TemplateSelector):
         """
         return self.modeler.is_vm_available(vm)
 
+
 class TemplateSelectorNoneCombo(TemplateSelector):
     """
     Selector for a combination of None/combobox with VMs.
@@ -827,7 +828,6 @@ class CreateNewQube(Gtk.Application):
         self.main_window.show()
         self.hold()
 # TODO: make buttons work
-# TODO: importing should be nicer and refer to an external library
 
     def perform_setup(self):
         """
@@ -866,30 +866,85 @@ class CreateNewQube(Gtk.Application):
         self.qube_type_standalone.connect('toggled', self._type_selected)
         self.qube_type_disposable.connect('toggled', self._type_selected)
 
-        # TODO: make do that icons make sense, e.g. provides network make for a service qube icon
+        # TODO: future enhancement: change label icons to appropriate class,
+        #  e.g. dispvm for a new dispvm
         init_combobox_with_icons(self.qube_label,
                                  [(label, f'appvm-{label}') for label in self.qapp.labels])
         self.qube_label.set_active(0)
         self.qube_name.connect('changed', self._name_changed)
 
-        # TODO: what is def netvm is none - qubename should handle that
-
-        # TODO: order of network buttons
-
         self.network_selector = NetworkSelector(self.builder, self.qapp)
 
-        self.app_box_handler = ApplicationBoxHandler(self.apps, self.builder, self.template_handler)
-        # TODO: react to changed template
+        self.app_box_handler = ApplicationBoxHandler(
+            self.apps, self.builder, self.template_handler)
+
+        self.advanced_events: Gtk.EventBox = \
+            self.builder.get_object('eventbox_advanced')
+        self.advanced_box: Gtk.Box = \
+            self.builder.get_object('advanced_box')
+        self.advanced_expander_icon: Gtk.Image = \
+            self.builder.get_object('advanced_expander')
+        self.advanced_expander_label: Gtk.Label = \
+            self.builder.get_object('advanced_label')
+
+        self.advanced_pool: Gtk.ComboBoxText = \
+            self.builder.get_object('storage_pool_combobox')
+        self.advanced_initram: Gtk.SpinButton = self.builder.get_object(
+            'initram_spin_button')
+
+        self._setup_advanced()
 
         self.create_button: Gtk.Button =  self.builder.get_object('qube_create')
         self.create_button.connect('clicked', self.do_create_qube)
 
+    def _setup_advanced(self):
+        self.advanced_events.connect(
+            'button-release-event', self._show_hide_advanced)
+
+        for pool in self.qapp.pools.values():
+            if pool == self.qapp.default_pool:
+                self.advanced_pool.append(str(pool), f'default ({pool})')
+                self.advanced_pool.set_active_id(str(pool))
+            else:
+                self.advanced_pool.append(str(pool), str(pool))
+
+        # discuss: max ram?
+        self.advanced_initram.configure(
+            Gtk.Adjustment(value=0, lower=0, upper=100000, step_increment=1,
+                           page_increment=10, page_size=100),
+            climb_rate=10, digits=0)
+
+        self.advanced_initram.connect('output', self._format_initram)
+
+    def _format_initram(self, _widget):
+        value = self.advanced_initram.get_adjustment().get_value()
+        if value == 0:
+            text = '(default)'
+        else:
+            text = f'{value} MB'
+        self.advanced_initram.set_text(text)
+        return True
+
+    def _show_hide_advanced(self, *_args):
+        self.advanced_box.set_visible(
+            not self.advanced_box.get_visible())
+        if self.advanced_box.get_visible():
+            self.advanced_expander_icon.set_from_pixbuf(
+                Gtk.IconTheme.get_default().load_icon(
+                    'qubes-expander-shown', 20, 0))
+            self.advanced_expander_label.set_text('Hide advanced settings')
+        else:
+            self.advanced_expander_icon.set_from_pixbuf(
+                Gtk.IconTheme.get_default().load_icon(
+                    'qubes-expander-hidden', 18, 0))
+            self.advanced_expander_label.set_text('Show advanced settings')
+
     def _handle_theme(self):
-        style_context = self.main_window.get_style_context()
-        window_default_color = style_context.get_background_color(
-            Gtk.StateType.NORMAL)
-        # TODO: determine light or dark scheme by checking if text is lighter
-        # or darker than background
+        # style_context = self.main_window.get_style_context()
+        # window_default_color = style_context.get_background_color(
+        #     Gtk.StateType.NORMAL)
+        # TODO: future: determine light or dark scheme by checking if text is
+        #  lighter or darker than background
         screen = Gdk.Screen.get_default()
         provider = Gtk.CssProvider()
         provider.load_from_path(pkg_resources.resource_filename(
@@ -914,7 +969,7 @@ class CreateNewQube(Gtk.Application):
         self.tooltips[button_name].set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
                 'qubes-question-light', 20, 0))
 
-    def do_create_qube(self, *args, **kwargs):
+    def do_create_qube(self, *_args, **_kwargs):
         # TODO: check for validation, this can actually be done with events and make the create inactive until name etc chosen
 
         # TODO: make better label handling because ughhhh
