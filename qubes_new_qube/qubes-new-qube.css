@@ -1,6 +1,4 @@
 @import "qubes-widgets-styling.css";
-@define-color qubes-blue #4180c9;
-@define-color light-gray #979797;
 
 label {
   font-family: SourceSansPro;

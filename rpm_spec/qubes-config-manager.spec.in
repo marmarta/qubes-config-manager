@@ -92,12 +92,16 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 %{python3_sitelib}/qubes_new_qube/__pycache__/*
 %{python3_sitelib}/qubes_new_qube/__init__.py
 %{python3_sitelib}/qubes_new_qube/new_qube_app.py
+%{python3_sitelib}/qubes_new_qube/general_config.py
 %{python3_sitelib}/qubes_new_qube/qubes_widgets_library.py
 %{python3_sitelib}/qubes_new_qube/new_qube.glade
+%{python3_sitelib}/qubes_new_qube/general_config.glade
 %{python3_sitelib}/qubes_new_qube/qubes-new-qube.css
+%{python3_sitelib}/qubes_new_qube/qubes-general-config.css
 %{python3_sitelib}/qubes_new_qube/qubes-widgets-styling.css
 
 %{_bindir}/qubes-new-qube
+%{_bindir}/qubes-general-config
 
 /usr/share/icons/hicolor/scalable/apps/qubes-question.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-question-light.svg

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Main Application Menu class and helpers.
 """
 # pylint: disable=import-error
 import asyncio

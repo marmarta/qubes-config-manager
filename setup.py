@@ -13,10 +13,13 @@ setuptools.setup(name='qubes_new_qube',
                  entry_points={
                      'gui_scripts': [
                          'qubes-new-qube = qubes_new_qube.new_qube_app:main',
+                         'qubes-general-config = qubes_new_qube.general_config:main'
                      ]
                  },
                  package_data={
                      'qubes_new_qube': ["new_qube.glade",
                                         "qubes-new-qube.css",
+                                        "general_config.glade",
+                                        "qubes-general-config.css",
                                         "qubes-widgets-styling.css"]},
 )

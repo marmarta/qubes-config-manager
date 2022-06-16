@@ -1,3 +1,7 @@
+@define-color qubes-blue #4180c9;
+@define-color light-gray #979797;
+
+
 .qube-box-base {
   font-family: SourceSansPro;
   font-weight: 600;
@@ -34,3 +38,4 @@
 .qube-box-black {
     color: #000000;
 }
+
