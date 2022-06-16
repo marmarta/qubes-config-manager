@@ -1,0 +1,55 @@
+@import "qubes-widgets-styling.css";
+
+label {
+  font-family: SourceSansPro;
+}
+
+.content_box {
+    background: @light-gray;
+    border-width: 1px;
+    border-color: @medium-gray;
+    padding-left: 50px;
+    padding-right: 50px;
+}
+
+#main_notebook header {
+    background: white;
+    border-style: solid;
+    border-width: 1px;
+    border-color: @medium-gray;
+}
+
+#main_notebook header {
+    box-shadow: @medium-gray -2px 0 2px -2px inset;
+}
+
+#main_notebook header tabs tab {
+    border-style: solid;
+    border-width: 0px 1px 1px 0px;
+    border-color: @medium-gray;
+    margin: 0px;
+    font-weight: bold;
+}
+
+#main_notebook header tabs tab:checked {
+    background: @qubes-blue;
+    color: white;
+}
+
+#main_notebook header tabs tab:hover {
+    box-shadow: @medium-gray -2px 0 2px -2px inset;
+    border-width: 0px 1px 1px 0px;
+    border-color: @medium-gray;
+}
+
+.category {
+    padding: 20px;
+}
+
+.explanation {
+    margin: 0 0 20px 0;
+}
+
+.section_title {
+    margin-top: 50px;
+}
