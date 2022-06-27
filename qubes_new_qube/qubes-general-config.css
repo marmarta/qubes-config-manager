@@ -53,3 +53,21 @@ label {
 .section_title {
     margin-top: 50px;
 }
+
+.flowbox_container {
+    background: white;
+    border: 1px;
+    border-style: solid;
+    border-radius: 5px;
+    border-color: black;
+}
+
+.flowbox_flowbox {
+    background: white;
+    padding: 10px;
+}
+
+.red_code {
+    font-family: SourceCodePro;
+    color: red;
+}

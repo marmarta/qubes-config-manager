@@ -62,3 +62,11 @@ radiobutton radio {
     min-height: 20px;
     margin-right: 10px;
 }
+
+.combo-changed {
+    font-style: italic;
+}
+
+.combo-changed window.popup {
+    font-style: normal;
+}

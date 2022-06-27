@@ -1,5 +1,6 @@
 import gi
 
+import abc
 import qubesadmin
 import qubesadmin.vm
 import itertools
@@ -7,12 +8,10 @@ import itertools
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GLib, Gio, GdkPixbuf, GObject
 
-from typing import Optional, Callable
+from typing import Optional, Callable, Dict, Any
 
 # TODO: generalize loading icons, too much boilerplate?
 # TODO: or just IconCache
-
-# TODO: question icon needs bolder insides...
 
 
 class QubeName(Gtk.Box):
@@ -47,19 +46,82 @@ class QubeName(Gtk.Box):
 
         self.show_all()
 
-# TODO: adjust colors for readability, e.g. yellow needs to be darker
 # TODO: make a VM cache actually...
 
 
-class VMListModeler:
+class TraitSelector(abc.ABC):
+    @abc.abstractmethod
+    def get_selected(self):
+        """
+        Get selected value
+        """
+
+    @abc.abstractmethod
+    def is_changed(self) -> bool:
+        """
+        Has the value changed from initial value?
+        """
+
+
+class TextModeler(TraitSelector):
+    """
+    Class to handle modeling a text combo box.
+    """
+    def __init__(self, combobox: Gtk.ComboBoxText,
+                 values: Dict[str, Any],
+                 selected_value: Optional[str] = None,
+                 style_changes: bool = False):
+        """
+        :param combobox: target ComboBoxText object
+        :param values: dictionary of displayed strings and corresponding values.
+        :param selected_value: which value should be selected initially, if None
+         the first option will be selected.
+        :param style_changes: if True, combo-changed style class will be
+        applied when combobox value changes
+        """
+        self._combo: Gtk.ComboBoxText = combobox
+        self._values: Dict[str, Any] = values
+
+        for text in self._values.keys():
+            self._combo.append_text(text)
+
+        if selected_value:
+            for key, value in self._values.items():
+                if value == selected_value:
+                    self._combo.set_active_id(key)
+        else:
+            self._combo.set_active(0)
+
+        self._initial_value = self._combo.get_active_text()
+
+        if style_changes:
+            self._combo.connect('changed', self._on_changed)
+
+    def get_selected(self):
+        return self._values[self._combo.get_active_text()]
+
+    def is_changed(self) -> bool:
+        return self._initial_value != self._combo.get_active_text()
+
+    def _on_changed(self, _widget):
+        self._combo.get_style_context().remove_class('combo-changed')
+        if self.is_changed():
+            self._combo.get_style_context().add_class('combo-changed')
+
+
+class VMListModeler(TraitSelector):
     """
     Modeler for Gtk.ComboBox contain a list of qubes VMs.
     Based on boring-stuff's code in core-qrexec qrexec_policy_agent.py.
     """
     def __init__(self, combobox: Gtk.ComboBox, qapp: qubesadmin.Qubes,
-                 filter_function: Optional[Callable[[qubesadmin.vm.QubesVM], bool]]=None,
-                 event_callback: Optional[Callable[[], None]]=None,
-                 default_value: Optional[qubesadmin.vm.QubesVM]=None):
+                 filter_function: Optional[Callable[[qubesadmin.vm.QubesVM],
+                                                    bool]] = None,
+                 event_callback: Optional[Callable[[], None]] = None,
+                 default_value: Optional[qubesadmin.vm.QubesVM] = None,
+                 current_value: Optional[qubesadmin.vm.QubesVM] = None,
+                 style_changes: bool = False,
+                 allow_none: bool = False):
         """
         :param combobox: target ComboBox object
         :param qapp: Qubes object, necessary to retrieve VM info
@@ -68,13 +130,20 @@ class VMListModeler:
         are always available for all VMs, in particular dom0 can cause problems
         :param event_callback: function to be called whenever combobox value
         changes
-        :param default_value: default VM to be selected (will be selected as
-        initial value and get a (default) decoration next to its name)
+        :param default_value: default VM (will get a (default) decoration
+        next to its name), and, if current_value not specified, it will be
+        selected as the initial value
+        :param current_value: value to be selected; if None and there is
+        a default value, it will be selected; if neither exist,
+         first position will be selected
+        :param style_changes: if True, combo-changed style class will be
+        applied when combobox value changes
         """
         self.qapp = qapp
         self.combo = combobox
         self.entry_box = self.combo.get_child()
         self.change_function = event_callback
+        self.style_changes = style_changes
 
         self._entries = {}
 
@@ -84,11 +153,25 @@ class VMListModeler:
         self._theme = Gtk.IconTheme.get_default()
 
         self.initial_value = None
-        self._create_entries(filter_function, default_value)
+        self._create_entries(filter_function, default_value, allow_none)
 
         self._apply_model()
 
-        self.combo.set_active_id(self.initial_value)
+        self._initial_id = None
+
+        if current_value:
+            self.combo.set_active_id(current_value.name)
+        elif default_value:
+            self.combo.set_active_id(default_value.name)
+        else:
+            self.combo.set_active(0)
+
+        self._initial_id = self.combo.get_active_id()
+
+    def is_changed(self) -> bool:
+        if self._initial_id is None:
+            return False
+        return self._initial_id != self.combo.get_active_id()
 
     def _get_icon(self, name):
         if name not in self._icons:
@@ -100,7 +183,17 @@ class VMListModeler:
             self._icons[name] = icon
         return self._icons[name]
 
-    def _create_entries(self, filter_function, default_value):
+    def _create_entries(
+            self, filter_function: Callable[[qubesadmin.vm.QubesVM], bool],
+            default_value: Optional[qubesadmin.vm.QubesVM], allow_none: bool):
+
+        if allow_none:
+            self._entries['(none)'] = {
+                "api_name": "None",
+                "icon": None,
+                "vm": None
+            }
+
         for domain in self.qapp.domains:
             if not filter_function(domain):
                 continue
@@ -145,12 +238,17 @@ class VMListModeler:
         if self.change_function:
             self.change_function()
 
+        if self.style_changes:
+            self.entry_box.get_style_context().remove_class('combo-changed')
+            if self.is_changed():
+                self.entry_box.get_style_context().add_class('combo-changed')
+
     def _apply_model(self):
-        # TODO: discuss connecting to validator - if incorrect template selected, scream
         assert isinstance(self.combo, Gtk.ComboBox)
         list_store = Gtk.ListStore(int, str, GdkPixbuf.Pixbuf, str)
 
-        for entry_no, display_name in zip(itertools.count(), sorted(self._entries)):
+        for entry_no, display_name in zip(itertools.count(),
+                                          sorted(self._entries)):
             entry = self._entries[display_name]
             list_store.append(
                 [

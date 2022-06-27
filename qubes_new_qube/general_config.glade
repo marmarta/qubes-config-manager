@@ -321,6 +321,8 @@
                     <property name="can-focus">False</property>
                     <property name="halign">start</property>
                     <property name="margin-start">5</property>
+                    <property name="margin-end">50</property>
+                    <property name="margin-bottom">5</property>
                     <property name="hexpand">False</property>
                     <property name="has-entry">True</property>
                     <child internal-child="entry">
@@ -341,6 +343,7 @@
                     <property name="can-focus">False</property>
                     <property name="halign">start</property>
                     <property name="margin-start">5</property>
+                    <property name="margin-bottom">5</property>
                     <property name="hexpand">False</property>
                     <property name="has-entry">True</property>
                     <child internal-child="entry">
@@ -361,6 +364,7 @@
                     <property name="can-focus">False</property>
                     <property name="halign">start</property>
                     <property name="margin-start">5</property>
+                    <property name="margin-bottom">5</property>
                     <property name="hexpand">False</property>
                     <property name="has-entry">True</property>
                     <child internal-child="entry">
@@ -379,6 +383,8 @@
                   <object class="GtkComboBoxText" id="basics_fullscreen_combo">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-end">50</property>
+                    <property name="margin-bottom">5</property>
                   </object>
                   <packing>
                     <property name="left-attach">1</property>
@@ -389,6 +395,8 @@
                   <object class="GtkComboBoxText" id="basics_utf_windows_combo">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-end">50</property>
+                    <property name="margin-bottom">5</property>
                   </object>
                   <packing>
                     <property name="left-attach">1</property>
@@ -399,6 +407,8 @@
                   <object class="GtkComboBoxText" id="basics_tray_icon_combo">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-end">50</property>
+                    <property name="margin-bottom">5</property>
                   </object>
                   <packing>
                     <property name="left-attach">1</property>
@@ -420,6 +430,7 @@
                   <object class="GtkComboBoxText" id="basics_copy_combo">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-bottom">5</property>
                   </object>
                   <packing>
                     <property name="left-attach">3</property>
@@ -430,6 +441,7 @@
                   <object class="GtkComboBoxText" id="basics_paste_combo">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-bottom">5</property>
                   </object>
                   <packing>
                     <property name="left-attach">3</property>
@@ -440,6 +452,7 @@
                   <object class="GtkComboBoxText" id="basics_dom0_updates_combo">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-bottom">5</property>
                   </object>
                   <packing>
                     <property name="left-attach">3</property>
@@ -450,6 +463,7 @@
                   <object class="GtkComboBoxText" id="basics_community_templates_combo">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-bottom">5</property>
                   </object>
                   <packing>
                     <property name="left-attach">3</property>
@@ -460,6 +474,7 @@
                   <object class="GtkComboBoxText" id="basics_official_templates_combo">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-bottom">5</property>
                   </object>
                   <packing>
                     <property name="left-attach">3</property>
@@ -486,23 +501,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="orientation">vertical</property>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-              </object>
-              <packing>
-                <property name="position">1</property>
-              </packing>
+              <placeholder/>
             </child>
             <child type="tab">
               <object class="GtkLabel">
@@ -937,17 +936,290 @@
             </child>
             <child>
               <object class="GtkBox">
+                <property name="name">5</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
+                <property name="margin-start">50</property>
                 <property name="orientation">vertical</property>
                 <child>
-                  <placeholder/>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">Split GPG</property>
+                    <property name="xalign">0</property>
+                    <style>
+                      <class name="group_title"/>
+                      <class name="section_title"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
                 </child>
                 <child>
-                  <placeholder/>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">Isolate your GPG encryption keys in their own qubes, separate from the qubes with the apps that need to access them. Qubes OS can proxy your GPG keys through this feature, to protect your keypairs.</property>
+                    <property name="wrap">True</property>
+                    <property name="xalign">0</property>
+                    <style>
+                      <class name="explanation"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
                 </child>
                 <child>
-                  <placeholder/>
+                  <object class="GtkRadioButton" id="splitgpg_disable_radio">
+                    <property name="label" translatable="yes">Not enabled</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">False</property>
+                    <property name="active">True</property>
+                    <property name="draw-indicator">True</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkRadioButton" id="splitgpg_enable_radio">
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">False</property>
+                    <property name="active">True</property>
+                    <property name="draw-indicator">True</property>
+                    <property name="group">splitgpg_disable_radio</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="label" translatable="yes">&lt;b&gt;Enable Split GPG&lt;/b&gt; to allow designated app qubes to access GPG keys from one or more key qubes.</property>
+                        <property name="use-markup">True</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="margin-start">35</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <child>
+                          <object class="GtkImage">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="icon-name">qubes-key</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">&lt;b&gt;My key qubes&lt;/b&gt;</property>
+                            <property name="use-markup">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">Where you store GPG keys for shared access by other qubes.</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <!-- n-columns=2 n-rows=2 -->
+                      <object class="GtkGrid">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="row-spacing">5</property>
+                        <property name="column-spacing">5</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">start</property>
+                            <property name="label" translatable="yes">qubes</property>
+                            <style>
+                              <class name="flowbox_title"/>
+                            </style>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton">
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
+                            <property name="halign">end</property>
+                            <child>
+                              <object class="GtkImage">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                              </object>
+                            </child>
+                            <style>
+                              <class name="flowbox_settings"/>
+                            </style>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkFlowBox">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="margin-bottom">5</property>
+                            <property name="hexpand">True</property>
+                            <style>
+                              <class name="flowbox_flowbox"/>
+                            </style>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">1</property>
+                            <property name="width">2</property>
+                          </packing>
+                        </child>
+                        <style>
+                          <class name="flowbox_container"/>
+                        </style>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="padding">10</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkTreeView">
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <child internal-child="selection">
+                          <object class="GtkTreeSelection"/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">2</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">4</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkEventBox" id="eventbox_advanced">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <child>
+                          <object class="GtkImage" id="advanced_expander">
+                            <property name="width-request">30</property>
+                            <property name="height-request">25</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="xpad">5</property>
+                            <property name="ypad">5</property>
+                            <property name="pixel-size">18</property>
+                            <property name="icon-name">qubes-expander-hidden</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="advanced_label">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">&lt;b&gt;View or edit&lt;/b&gt; raw policy file for:</property>
+                            <property name="use-markup">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">qubes.GPG</property>
+                            <style>
+                              <class name="red_code"/>
+                            </style>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="padding">5</property>
+                    <property name="position">5</property>
+                  </packing>
                 </child>
               </object>
               <packing>
@@ -973,7 +1245,138 @@
               <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
+                <property name="margin-start">50</property>
                 <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">Clipboard Paste</property>
+                    <property name="xalign">0</property>
+                    <style>
+                      <class name="group_title"/>
+                      <class name="section_title"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">Prevent accidental errors when using the inter-qube (global) clipboard. Because we're all human.</property>
+                    <property name="wrap">True</property>
+                    <property name="xalign">0</property>
+                    <style>
+                      <class name="explanation"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkRadioButton" id="clipboard_disable_radio">
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">False</property>
+                    <property name="active">True</property>
+                    <property name="draw-indicator">True</property>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">&lt;b&gt;Not enabled.&lt;/b&gt;</property>
+                            <property name="use-markup">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">Qubes OS will always allow you to paste content from any qube to any other qube, except dom0.</property>
+                            <property name="wrap">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkRadioButton" id="clipboard_enable_radio">
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">False</property>
+                    <property name="active">True</property>
+                    <property name="draw-indicator">True</property>
+                    <property name="group">clipboard_disable_radio</property>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">&lt;b&gt;Enabled.&lt;/b&gt;</property>
+                            <property name="use-markup">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">Qubes OS will restrict which qubes are allowed to paste content into the clipboards of other qubes, as specified below.</property>
+                            <property name="wrap">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
                 <child>
                   <placeholder/>
                 </child>
