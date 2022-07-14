@@ -71,3 +71,36 @@ label {
     font-family: SourceCodePro;
     color: red;
 }
+
+.dotted_separator {
+}
+
+.explanation_text {
+    color: @medium-gray;
+}
+
+.add_label {
+    color: @qubes-blue;
+    font-weight: bold;
+}
+
+.add_button {
+    border: 0;
+}
+
+.permission_row {
+    background: @light-gray;
+}
+
+.permission_row:hover {
+    background: @qubes-blue;
+}
+
+.edited_row {
+    padding: 20px 10px 20px 10px;
+    background: white;
+}
+
+.edited_row:hover {
+    background: white;
+}

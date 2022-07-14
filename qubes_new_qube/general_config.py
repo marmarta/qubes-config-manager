@@ -28,12 +28,16 @@ import abc
 from contextlib import suppress
 import pkg_resources
 import logging
+from functools import partial
+
+from qrexec.policy.admin_client import PolicyClient
+from qrexec.policy.parser import StringPolicy, Rule, Allow, Ask, Deny, Source, Target
 
 import qubesadmin
 import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.vm
-from .qubes_widgets_library import QubeName, VMListModeler, TextModeler, TraitSelector
+from .qubes_widgets_library import QubeName, VMListModeler, TextModeler, TraitSelector, TypeName
 
 import gi
 
@@ -188,6 +192,10 @@ class PageHandler(abc.ABC):
     def save(self):
         """save settings changed in page"""
 
+    @abc.abstractmethod
+    def reset(self):
+        """Undo all of user's changes"""
+
 
 class BasicSettingsHandler(PageHandler):
     """
@@ -201,7 +209,7 @@ class BasicSettingsHandler(PageHandler):
         self.qapp = qapp
         self.vm = self.qapp.domains[self.qapp.local_name]
 
-        # TODO: add (current) to list in some way,
+        # TODO: add (current) to list in some way
 
         self.clockvm_combo = gtk_builder.get_object('basics_clockvm_combo')
         self.clockvm_handler = VMListModeler(
@@ -309,11 +317,372 @@ class BasicSettingsHandler(PageHandler):
             selected_value=get_boolean_feature(self.vm,
                                                'gui-default-trayicon-mode'),
             style_changes=True)
-        # TODO: maybe add some funkier methods to those dropdowns, so that we can just iterate over all of them and apply?
+        # TODO: maybe add some funkier methods to those dropdowns, so that
+        #  we can just iterate over all of them and apply?
 
     def save(self):
         pass
         # TODO: implement
+
+    def reset(self):
+        pass # TODO: implement
+
+
+class PolicyHandler:
+    def __init__(self):
+        self.policy_client = PolicyClient()
+
+    def get_conflicting_policy_files(self, service) -> List[str]:
+        files = self.policy_client.policy_get_files(service)
+        return files
+    # TODO: check for actually conflicting once we add ours
+    # TODO: more info, better wording
+
+    def get_rules_from_filename(self, filename, default):
+        try:
+            rules_text, token = self.policy_client.policy_get(filename)
+        except subprocess.CalledProcessError:
+            self.policy_client.policy_replace(filename, default)
+            rules_text, token = self.policy_client.policy_get(filename)
+
+        rules = StringPolicy(policy={'__main__': rules_text}).rules
+
+        return rules, token
+
+    def new_rule(self, service: str, source: str, target: str, action: str) -> Rule:
+        return Rule.from_line(
+            None, f"{service}\t*\t{source}\t{target}\t{action}",
+            filepath=None, lineno=0)
+
+    def save_rules(self, file_name: str, rules_list: List[Rule], token):
+        new_text = '\n'.join([str(rule) for rule in rules_list]) + '\n'
+        self.policy_client.policy_replace(file_name, new_text, token)
+
+
+class RuleListBoxRow(Gtk.ListBoxRow):
+    def __init__(self, rule: Rule, qapp: qubesadmin.Qubes,
+                 ask_is_allow: bool = False, allow_delete: bool = True):
+        super(RuleListBoxRow, self).__init__()
+
+        self.qapp = qapp
+        self.rule = rule
+        self.ask_is_allow = ask_is_allow
+        self.allow_delete = allow_delete
+
+        self.get_style_context().add_class("permission_row")
+
+        self.outer_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.add(self.outer_box)
+
+        self.main_widget_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.main_widget_box.set_homogeneous(True)
+        self.outer_box.pack_start(self.main_widget_box, False, False,0)
+
+        self.source_widget = None
+        self.source_model = None
+        self.action_widget = None
+        self.action_model = None
+        self.target_widget = None
+        self.target_model = None
+
+        self.set_edit_mode(False)
+        # TODO: maybe this should be a grid, with buttons in lower row?
+        # Or, to avoid weird sizing problems, a vert box of two boxes
+
+    def _setup_delete_button(self):
+        # TODO: this should be used not always?
+        delete_button: Gtk.Button = Gtk.Button()
+        delete_button.connect("clicked", self._delete_self)
+        delete_icon = Gtk.Image()
+        delete_icon.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
+                'qubes-delete', 14, 0))
+        delete_button.add(delete_icon)
+        delete_button.get_style_context().add_class('flat')
+        if not self.allow_delete:
+            delete_button.set_no_show_all(True)
+        return delete_button
+
+    def _changed_combo(self, *_args):
+        self._change_action(self.action_model.get_selected())
+
+    def _change_action(self, new_action: str):
+        if new_action == 'allow':
+            action_obj = Allow(self.rule)
+        elif new_action == 'ask':
+            action_obj = Ask(self.rule)
+        elif new_action == 'deny':
+            action_obj = Deny(self.rule)
+        else:
+            raise ValueError
+        self.rule.action = action_obj
+
+        if self.action_model.get_selected() != new_action:
+            self.action_model.select_value(new_action)
+
+    def _delete_self(self, *_args):
+        parent_widget = self.get_parent()
+        parent_widget.remove(self)
+
+    def _rule_changed(self, *_args):
+        self.rule.source = Source(str(self.source_model.get_selected()))
+        self.rule.target = Target(str(self.target_model.get_selected()))
+
+    def set_edit_mode(self, editing: bool = True):
+        """
+        Change mode from display to edit and back.
+        :param editing: if True, enter editing mode
+        """
+        # verify if can be changed tho?
+        # TODO: add a revert button
+
+        if editing:
+            self.get_style_context().add_class('edited_row')
+        else:
+            self.get_style_context().remove_class('edited_row')
+
+        # remove existing widgets
+        for child in self.main_widget_box.get_children():
+            self.main_widget_box.remove(child)
+
+        if editing:
+            token_function = self._get_token_selector
+            action_function = self._get_action_selector
+        else:
+            token_function = self._get_token_label
+            action_function = self._get_action_label
+
+        self.source_widget, self.source_model = token_function(self.rule.source)
+        self.main_widget_box.pack_start(self.source_widget, False, False, 0)
+
+        self.action_widget, self.action_model = action_function()
+        self.main_widget_box.pack_start(self.action_widget, False, False, 0)
+
+        self.target_widget, self.target_model = token_function(self.rule.target)
+        self.main_widget_box.pack_start(self.target_widget, False, False, 0)
+
+        if self.allow_delete:
+            delete_button = self._setup_delete_button()
+            self.main_widget_box.pack_start(delete_button, False, False, 0)
+
+        self.show_all()
+
+    def _get_token_label(self, token) -> \
+            Tuple[Gtk.Widget, Optional[VMListModeler]]:
+        if token.type == 'keyword':
+            widget = TypeName(token)
+        else:
+            try:
+                widget = QubeName(self.qapp.domains[token])
+            except KeyError:
+                widget = TypeName(f"Unknown Qube: {token}")
+        return widget, None
+
+    def _get_token_selector(self, token) -> \
+            Tuple[Gtk.Widget, Optional[VMListModeler]]:
+        if token.type == 'keyword':
+            current_value = str(token)
+        else:
+            # TODO: handle exceptions
+            current_value = self.qapp.domains[token]
+
+        combobox = Gtk.ComboBox.new_with_entry()
+        # TODO: figure out a better dom0 approach
+        model = VMListModeler(combobox=combobox, qapp=self.qapp,
+                              filter_function=lambda x: str(x) != 'dom0',
+                              event_callback=None,
+                              default_value=None, current_value=current_value,
+                              style_changes=False, allow_none=False,
+                              add_categories=True)
+        # TODO: perhaps the models should be set on init? Investigate efficiency
+        model.connect_change_callback(self._rule_changed)
+        return combobox, model
+
+    def _get_action_label(self) -> Tuple[Gtk.Widget, Optional[TextModeler]]:
+        action_name = type(self.rule.action).__name__.lower()
+        if self.ask_is_allow and action_name == 'ask':
+            action_name = 'allow'
+        # TODO: styling?
+        label = Gtk.Label()
+        label.set_text(action_name)
+        return label, None
+
+    def _get_action_selector(self) -> Tuple[Gtk.Widget, Optional[TextModeler]]:
+        choices = {"deny": "deny"}
+        if self.ask_is_allow:
+            choices["allow"] = "ask"
+            # TODO: some sort of exception? if someone has allow here
+        else:
+            choices["allow"] = "allow"
+            choices["allow"] = "ask"
+
+        combobox = Gtk.ComboBoxText()
+        model = TextModeler(
+            combobox,
+            choices,
+            selected_value=type(self.rule.action).__name__.lower())
+        combobox.connect("changed", self._changed_combo)
+        return combobox, model
+
+
+class RuleListHandler:
+    # TODO: maybe instead of passing objs pass gtk_builder?
+    def __init__(self,
+                 qapp: qubesadmin.Qubes,
+                 gtk_builder: Gtk.Builder,
+                 prefix: str,
+                 policy_handler: PolicyHandler,
+                 service_name: str,
+                 rules: List[Rule],
+                 ask_is_allow: bool):
+
+        self.qapp = qapp
+
+        self.main_list_box: Gtk.ListBox = \
+            gtk_builder.get_object(f'{prefix}_main_list')
+        self.exception_list_box: Gtk.ListBox = \
+            gtk_builder.get_object(f'{prefix}_exception_list')
+        self.add_button: Gtk.Button = \
+            gtk_builder.get_object(f'{prefix}_add_rule_button')
+
+        self.policy_handler = policy_handler
+        self.service_name = service_name
+        self.ask_is_allow = ask_is_allow
+
+        for rule in rules:
+            if rule.source == '@anyvm' and rule.target == '@anyvm':
+                self.main_list_box.add(RuleListBoxRow
+                                       (rule, self.qapp,
+                                        ask_is_allow=self.ask_is_allow,
+                                        allow_delete=False))
+                break
+            self.exception_list_box.add(RuleListBoxRow(
+                rule, self.qapp, ask_is_allow=self.ask_is_allow))
+
+        if not self.main_list_box.get_children():
+            deny_all_rule = self.policy_handler.new_rule(
+                self.service_name, '@anyvm', '@anyvm', 'deny')
+            self.main_list_box.add(
+                RuleListBoxRow(
+                    deny_all_rule, self.qapp, ask_is_allow=self.ask_is_allow,
+                    allow_delete=False))
+
+        self.exception_list_box.connect(
+            'row-activated', self._rule_clicked_exception)
+
+        self.add_button.connect("clicked", self._add_new_rule)
+        self.exception_list_box.set_sort_func(self._sorting_function)
+
+    @staticmethod
+    def _cmp_token(token_1, token_2):
+        # generic tokens go at the end, otherwise compare lexically
+        if token_1 == token_2:
+            return 0
+        if token_1.type == token_2.type:
+            if token_1 < token_2:
+                return -1
+            return 1
+        if token_1.type == 'keyword':
+            return 1
+        return -1
+
+    def _sorting_function(self, row_1: RuleListBoxRow, row_2: RuleListBoxRow):
+        source_cmp = self._cmp_token(row_1.rule.source, row_2.rule.source)
+        if source_cmp != 0:
+            return source_cmp
+        return self._cmp_token(row_1.rule.target, row_2.rule.target)
+
+    def _add_new_rule(self, *_args):
+        deny_all_rule = self.policy_handler.new_rule(
+            self.service_name, '@anyvm', '@anyvm', 'deny')
+        self.exception_list_box.add(RuleListBoxRow(
+            deny_all_rule, self.qapp, ask_is_allow=True))
+
+    def get_current_rules(self) -> List[Rule]:
+        # TODO: maintain sorting
+        rules = [child.rule for child in self.exception_list_box.get_children()]\
+                + [child.rule for child in self.main_list_box.get_children()]
+        return rules
+
+    def _rule_clicked_exception(self, list_box, row, *_args):
+        # first, all rows should stop being editable; this will get a warning #TODO
+        for child in list_box.get_children():
+            child.set_edit_mode(False)
+        list_box.invalidate_sort()
+        row.set_edit_mode(True)
+
+
+# TODO:
+# change allow/deny - maybe only in main
+# ok so how to we deal with order? explain order...
+
+
+class ClipboardHandler(PageHandler):
+
+    # TODO:
+    # - formatting
+    # - saving
+    # - add new window
+    # - icons
+
+    """
+    Handler for the Clipboard page.
+    """
+    def __init__(self, gtk_builder: Gtk.Builder, qapp: qubesadmin.Qubes, policy_handler: PolicyHandler):
+        """
+        :param gtk_builder: gtk_builder object
+        :param qapp: Qubes object
+        """
+        self.qapp = qapp
+        self.vm = self.qapp.domains[self.qapp.local_name]
+        self.policy_handler = policy_handler
+
+        self.service_name = 'qubes.ClipboardPaste'
+        self.policy_file_name = '50-config-clipboard'
+        self.default_policy = "qubes.ClipboardPaste * @anyvm @anyvm ask\n"
+
+        self.problem_label: Gtk.Label = gtk_builder.get_object('clipboard_problem_label')
+        self.problem_list: Gtk.ListBox = gtk_builder.get_object('clipboard_problem_files_list')
+
+        conflicting_files = self.policy_handler.get_conflicting_policy_files(self.service_name)
+        if conflicting_files:
+            self.problem_label.set_visible(True)
+            for file in conflicting_files:
+                row = Gtk.ListBoxRow()
+                text = Gtk.Label()
+                text.set_text(file)
+                text.get_style_context().add_class('red_code')
+                row.add(text)
+                self.problem_list.add(row)
+                # TODO: fix highlighting, the list should be non-clickable
+                # TODO: add info box for legacy files
+            self.problem_list.show_all()
+
+        rules, self.current_token = \
+            self.policy_handler.get_rules_from_filename(
+                self.policy_file_name, self.default_policy)
+
+        self.rule_list_handler = RuleListHandler(
+            qapp=self.qapp,
+            gtk_builder=gtk_builder,
+            prefix="clipboard",
+            policy_handler=self.policy_handler,
+            service_name=self.service_name,
+            rules=rules,
+            ask_is_allow=True)
+
+    def save(self):
+        # TODO: do some sort of sanity checking, e.g. if you add a deny all
+        #  and allow all rule?
+
+        rules = self.rule_list_handler.get_current_rules()
+
+        self.policy_handler.save_rules(self.policy_file_name,
+                                       rules, self.current_token)
+        # TODO: handle exceptions
+
+    def reset(self):
+        pass # TODO: implement
+
 
 ### Policy
 # 1. detect custom changes: opt. 1: add a method that lists files affecting the given service, if there's something before, warn
@@ -322,6 +691,20 @@ class BasicSettingsHandler(PageHandler):
 # 2. handle a single select file (AdminClient to get policy, parse using ????
 # 3. serialize - this will be painful?
 # this file should have comment DON'T EDIT MANUALLY
+
+# import qrexec.policy.admin_client.PolicyClient
+# PolicyClient()
+# .policy_get_files(service_name)
+# check replace: there's a trick to avoid race conditions
+# (get gives token, use in replace)
+
+# the file on parsing will error out horribly if include, which is good.
+
+# treat 4.0 files like: what to do with compat?
+# order: 50-* files
+# maybe getFiles should give some artifician prefix like LEGACY POLICY:
+# to old policy files
+# there is a command line tool qubes-policy
 
 class GeneralConfig(Gtk.Application):
     """
@@ -357,11 +740,40 @@ class GeneralConfig(Gtk.Application):
             __name__, 'general_config.glade'))
 
         self.main_window = self.builder.get_object('main_window')
+        self.main_notebook: Gtk.Notebook = self.builder.get_object('main_notebook')
 
         self._handle_theme()
+        policy_handler = PolicyHandler()
 
-        self.handlers: List[PageHandler] = []
-        self.handlers.append(BasicSettingsHandler(self.builder, self.qapp))
+        self.apply_button: Gtk.Button = self.builder.get_object('apply_button')
+        self.cancel_button: Gtk.Button = self.builder.get_object('cancel_button')
+        self.ok_button: Gtk.Button = self.builder.get_object('ok_button')
+
+        self.apply_button.connect('clicked', self._apply)
+        self.cancel_button.connect('clicked', self._quit)
+        self.ok_button.connect('clicked', self._ok)
+
+        # match page by id to handler; this is not pretty, but Gtk likes
+        # to ID pages by their number, there is no simple page_id
+        self.handlers: Dict[int, PageHandler] = {
+            0: BasicSettingsHandler(self.builder, self.qapp),
+            4: ClipboardHandler(self.builder, self.qapp, policy_handler)}
+
+    # TODO: switching pages with unsaved changes should scream
+
+    def _apply(self, _widget):
+        print("DEBUG: current page ID:", self.main_notebook.get_current_page())
+        current_handler = self.handlers.get(self.main_notebook.get_current_page(), None)
+        if current_handler:
+            current_handler.save()
+        # TODO: scream if not found?
+
+    def _quit(self, _widget):
+        self.quit()
+
+    def _ok(self, widget):
+        self._apply(widget)
+        self._quit(widget)
 
     def _handle_theme(self):
         # style_context = self.main_window.get_style_context()

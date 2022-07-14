@@ -14,6 +14,31 @@ from typing import Optional, Callable, Dict, Any
 # TODO: or just IconCache
 
 
+VM_CATEGORIES = {
+    "@anyvm": "ALL QUBES",
+    "@type:AppVM": "TYPE: APP",
+    "@type:TemplateVM": "TYPE: TEMPLATES",
+    "@type:DispVM" : "TYPE: DISPOSABLE",
+    "@adminvm": "TYPE: ADMINVM"}
+
+
+class TypeName(Gtk.Box):
+    """
+    A Gtk.Box containing type label plus name, nicely formatted.
+    """
+    def __init__(self, vm_type: str):
+        """
+        Type should be one of the VM_CATEGORIES keys.
+        """
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
+        self.vm_type = vm_type
+        nice_name = VM_CATEGORIES.get(self.vm_type, self.vm_type)
+        self.label = Gtk.Label()
+        self.label.set_text(nice_name)
+        self.label.get_style_context().add_class('qube-type')
+        self.pack_start(self.label, False, False, 0)
+
+
 class QubeName(Gtk.Box):
     """
     A Gtk.Box containing qube icon plus name, colored in the label color and
@@ -83,12 +108,12 @@ class TextModeler(TraitSelector):
         self._values: Dict[str, Any] = values
 
         for text in self._values.keys():
-            self._combo.append_text(text)
+            # to ensure that the correct option id is selected, we use
+            # explicit id for both text and id
+            self._combo.append(text, text)
 
         if selected_value:
-            for key, value in self._values.items():
-                if value == selected_value:
-                    self._combo.set_active_id(key)
+            self.select_value(selected_value)
         else:
             self._combo.set_active(0)
 
@@ -103,11 +128,18 @@ class TextModeler(TraitSelector):
     def is_changed(self) -> bool:
         return self._initial_value != self._combo.get_active_text()
 
+    def select_value(self, selected_value):
+        for key, value in self._values.items():
+            if value == selected_value:
+                self._combo.set_active_id(key)
+
     def _on_changed(self, _widget):
         self._combo.get_style_context().remove_class('combo-changed')
         if self.is_changed():
             self._combo.get_style_context().add_class('combo-changed')
 
+# TODO: future improvement: better combobox with custom selection, multiple cols
+# etc., see design doc in Figma
 
 class VMListModeler(TraitSelector):
     """
@@ -121,7 +153,8 @@ class VMListModeler(TraitSelector):
                  default_value: Optional[qubesadmin.vm.QubesVM] = None,
                  current_value: Optional[qubesadmin.vm.QubesVM] = None,
                  style_changes: bool = False,
-                 allow_none: bool = False):
+                 allow_none: bool = False,
+                 add_categories: bool = False):
         """
         :param combobox: target ComboBox object
         :param qapp: Qubes object, necessary to retrieve VM info
@@ -153,20 +186,24 @@ class VMListModeler(TraitSelector):
         self._theme = Gtk.IconTheme.get_default()
 
         self.initial_value = None
-        self._create_entries(filter_function, default_value, allow_none)
+        self._create_entries(filter_function, default_value, allow_none,
+                             add_categories)
 
         self._apply_model()
 
         self._initial_id = None
 
         if current_value:
-            self.combo.set_active_id(current_value.name)
+            self.select_entry(current_value)
         elif default_value:
-            self.combo.set_active_id(default_value.name)
+            self.select_entry(default_value)
         else:
             self.combo.set_active(0)
 
         self._initial_id = self.combo.get_active_id()
+
+    def connect_change_callback(self, event_callback):
+        self.change_function = event_callback
 
     def is_changed(self) -> bool:
         if self._initial_id is None:
@@ -185,7 +222,36 @@ class VMListModeler(TraitSelector):
 
     def _create_entries(
             self, filter_function: Callable[[qubesadmin.vm.QubesVM], bool],
-            default_value: Optional[qubesadmin.vm.QubesVM], allow_none: bool):
+            default_value: Optional[qubesadmin.vm.QubesVM], allow_none: bool,
+            add_categories: bool):
+
+        if add_categories:
+            self._entries["TYPE: TEMPLATES"] = {
+                "api_name": "@type:TemplateVM",
+                "icon": None,
+                "vm": None
+            }
+            # TODO: discuss approach to dom0-adminvm; are they the same? are they not?
+            self._entries["TYPE: ADMINVM"] = {
+                "api_name": "@adminvm",
+                "icon": None,
+                "vm": None
+            }
+            self._entries["TYPE: DISPOSABLE"] = {
+                "api_name": "@type:DispVM",
+                "icon": None,
+                "vm": None
+            }
+            self._entries["TYPE: APP"] = {
+                "api_name": "@type:AppVM",
+                "icon": None,
+                "vm": None
+            }
+            self._entries["ALL QUBES"] = {
+                "api_name": "@anyvm",
+                "icon": None,
+                "vm": None
+            }
 
         if allow_none:
             self._entries['(none)'] = {
@@ -195,7 +261,7 @@ class VMListModeler(TraitSelector):
             }
 
         for domain in self.qapp.domains:
-            if not filter_function(domain):
+            if filter_function and not filter_function(domain):
                 continue
             vm_name = domain.name
             icon = self._get_icon(domain.icon)
@@ -245,7 +311,7 @@ class VMListModeler(TraitSelector):
 
     def _apply_model(self):
         assert isinstance(self.combo, Gtk.ComboBox)
-        list_store = Gtk.ListStore(int, str, GdkPixbuf.Pixbuf, str)
+        list_store = Gtk.ListStore(int, str, GdkPixbuf.Pixbuf, str, str, str)
 
         for entry_no, display_name in zip(itertools.count(),
                                           sorted(self._entries)):
@@ -256,6 +322,8 @@ class VMListModeler(TraitSelector):
                     display_name,
                     entry["icon"],
                     entry["api_name"],
+                    '#f2f2f2' if entry['vm'] is None else None,  # background color
+                    '#000000' if entry['vm'] is None else None,  # foreground color
                 ])
 
         self.combo.set_model(list_store)
@@ -283,12 +351,20 @@ class VMListModeler(TraitSelector):
         entry_box.set_completion(completion)
 
         # A Combo with an entry has a text column already
-        text_column = self.combo.get_cells()[0]
+        text_column: Gtk.CellRenderer = self.combo.get_cells()[0]
         self.combo.reorder(text_column, 1)
 
+        # use list_store's 4th and 5th columns as source for background and
+        # foreground color
+        self.combo.add_attribute(text_column, 'background', 4)
+        self.combo.add_attribute(text_column, 'foreground', 5)
+
         self.combo.connect("changed", self._combo_change)
+        self.entry_box.connect("changed", self._event_callback)
+
+    def _event_callback(self, *_args):
         if self.change_function:
-            self.entry_box.connect("changed", lambda combo: self.change_function())
+            self.change_function()
 
     def get_selected(self) -> qubesadmin.vm.QubesVM:
         """
@@ -298,7 +374,7 @@ class VMListModeler(TraitSelector):
         selected = self._get_valid_qube_name()
 
         if selected in self._entries:
-            return self._entries[selected]["vm"]
+            return self._entries[selected]["vm"] or self._entries[selected]["api_name"]
 
     def select_entry(self, vm_name):
         """
