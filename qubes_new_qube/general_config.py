@@ -331,6 +331,10 @@ class BasicSettingsHandler(PageHandler):
 class PolicyHandler:
     def __init__(self):
         self.policy_client = PolicyClient()
+        self.policy_disclaimer = """
+# THIS IS AN AUTOMATICALLY GENERATED POLICY FILE.
+# Any changes made manually may be overwritten by Qubes Configuration Tools.
+"""
 
     def get_conflicting_policy_files(self, service) -> List[str]:
         files = self.policy_client.policy_get_files(service)
@@ -355,28 +359,59 @@ class PolicyHandler:
             filepath=None, lineno=0)
 
     def save_rules(self, file_name: str, rules_list: List[Rule], token):
-        new_text = '\n'.join([str(rule) for rule in rules_list]) + '\n'
+        new_text = self.rules_to_text(rules_list)
         self.policy_client.policy_replace(file_name, new_text, token)
+
+    def rules_to_text(self, rules_list: List[Rule]):
+        return self.policy_disclaimer + \
+               '\n'.join([str(rule) for rule in rules_list]) + '\n'
 
 
 class RuleListBoxRow(Gtk.ListBoxRow):
     def __init__(self, rule: Rule, qapp: qubesadmin.Qubes,
-                 ask_is_allow: bool = False, allow_delete: bool = True):
+                 ask_is_allow: bool = False,
+                 is_main_rule: bool = True):
         super(RuleListBoxRow, self).__init__()
 
         self.qapp = qapp
         self.rule = rule
         self.ask_is_allow = ask_is_allow
-        self.allow_delete = allow_delete
+        self.is_main_rule = is_main_rule
 
         self.get_style_context().add_class("permission_row")
 
         self.outer_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add(self.outer_box)
 
+        # the weird combination with multiple boxes wthin a box, and not just
+        # Gtk.Grid, is to avoid weird placement and sizing issues
+        self.title_widget_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        title_label = Gtk.Label()
+        title_label.set_text('Editing rule:')
+        title_label.set_visible(True)
+        self.title_widget_box.pack_start(title_label, False, False, 0)
+        self.outer_box.pack_start(self.title_widget_box, False, False,0)
+        self.title_widget_box.set_no_show_all(True)
+
         self.main_widget_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.main_widget_box.set_homogeneous(True)
         self.outer_box.pack_start(self.main_widget_box, False, False,0)
+
+        self.additional_widget_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        cancel_button = Gtk.Button()
+        cancel_button.set_label('Cancel changes')
+        cancel_button.connect("clicked", self.revert)
+        cancel_button.set_visible(True)
+
+        ok_button = Gtk.Button()
+        ok_button.set_label('Accept changes')
+        ok_button.connect("clicked", self.validate_and_save)
+        ok_button.set_visible(True)
+        self.additional_widget_box.pack_end(cancel_button, False, False, 0)
+        self.additional_widget_box.pack_end(ok_button, False, False, 0)
+        self.additional_widget_box.set_no_show_all(True)
+
+        self.outer_box.pack_start(self.additional_widget_box, False, False,0)
 
         self.source_widget = None
         self.source_model = None
@@ -385,12 +420,12 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         self.target_widget = None
         self.target_model = None
 
+        self.editing = None
         self.set_edit_mode(False)
         # TODO: maybe this should be a grid, with buttons in lower row?
         # Or, to avoid weird sizing problems, a vert box of two boxes
 
     def _setup_delete_button(self):
-        # TODO: this should be used not always?
         delete_button: Gtk.Button = Gtk.Button()
         delete_button.connect("clicked", self._delete_self)
         delete_icon = Gtk.Image()
@@ -398,14 +433,12 @@ class RuleListBoxRow(Gtk.ListBoxRow):
                 'qubes-delete', 14, 0))
         delete_button.add(delete_icon)
         delete_button.get_style_context().add_class('flat')
-        if not self.allow_delete:
+        if not self.is_main_rule:
             delete_button.set_no_show_all(True)
         return delete_button
 
-    def _changed_combo(self, *_args):
-        self._change_action(self.action_model.get_selected())
-
-    def _change_action(self, new_action: str):
+    def _parse_action(self):
+        new_action = self.action_model.get_selected()
         if new_action == 'allow':
             action_obj = Allow(self.rule)
         elif new_action == 'ask':
@@ -414,18 +447,11 @@ class RuleListBoxRow(Gtk.ListBoxRow):
             action_obj = Deny(self.rule)
         else:
             raise ValueError
-        self.rule.action = action_obj
-
-        if self.action_model.get_selected() != new_action:
-            self.action_model.select_value(new_action)
+        return action_obj
 
     def _delete_self(self, *_args):
         parent_widget = self.get_parent()
         parent_widget.remove(self)
-
-    def _rule_changed(self, *_args):
-        self.rule.source = Source(str(self.source_model.get_selected()))
-        self.rule.target = Target(str(self.target_model.get_selected()))
 
     def set_edit_mode(self, editing: bool = True):
         """
@@ -437,19 +463,22 @@ class RuleListBoxRow(Gtk.ListBoxRow):
 
         if editing:
             self.get_style_context().add_class('edited_row')
+            self.title_widget_box.set_visible(True)
+            self.additional_widget_box.set_visible(True)
         else:
             self.get_style_context().remove_class('edited_row')
+            self.title_widget_box.set_visible(False)
+            self.additional_widget_box.set_visible(False)
 
         # remove existing widgets
         for child in self.main_widget_box.get_children():
             self.main_widget_box.remove(child)
 
-        if editing:
+        action_function = self._get_action_selector if editing else self._get_action_label
+        if editing and not self.is_main_rule:
             token_function = self._get_token_selector
-            action_function = self._get_action_selector
         else:
             token_function = self._get_token_label
-            action_function = self._get_action_label
 
         self.source_widget, self.source_model = token_function(self.rule.source)
         self.main_widget_box.pack_start(self.source_widget, False, False, 0)
@@ -460,11 +489,12 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         self.target_widget, self.target_model = token_function(self.rule.target)
         self.main_widget_box.pack_start(self.target_widget, False, False, 0)
 
-        if self.allow_delete:
+        if not self.is_main_rule:
             delete_button = self._setup_delete_button()
             self.main_widget_box.pack_start(delete_button, False, False, 0)
 
         self.show_all()
+        self.editing = editing
 
     def _get_token_label(self, token) -> \
             Tuple[Gtk.Widget, Optional[VMListModeler]]:
@@ -493,8 +523,6 @@ class RuleListBoxRow(Gtk.ListBoxRow):
                               default_value=None, current_value=current_value,
                               style_changes=False, allow_none=False,
                               add_categories=True)
-        # TODO: perhaps the models should be set on init? Investigate efficiency
-        model.connect_change_callback(self._rule_changed)
         return combobox, model
 
     def _get_action_label(self) -> Tuple[Gtk.Widget, Optional[TextModeler]]:
@@ -520,8 +548,53 @@ class RuleListBoxRow(Gtk.ListBoxRow):
             combobox,
             choices,
             selected_value=type(self.rule.action).__name__.lower())
-        combobox.connect("changed", self._changed_combo)
         return combobox, model
+
+    def revert(self, *_args):
+        if self.source_model and self.target_model:
+            self.source_model.select_entry(str(self.rule.source))
+            self.target_model.select_entry(str(self.rule.target))
+        self.action_model.select_value(type(self.rule.action).__name__.lower())
+        self.set_edit_mode(False)
+        self.get_parent().invalidate_sort()
+
+    def validate_and_save(self, *_args):
+        if self.source_model:
+            new_source = Source(str(self.source_model.get_selected()))
+        else:
+            new_source = self.rule.source
+        if self.target_model:
+            new_target = Target(str(self.target_model.get_selected()))
+        else:
+            new_target = self.rule.target
+        new_action = self._parse_action()
+
+        error_msg = ""
+        errors = []
+        for child in self.get_parent().get_children():
+            if child == self:
+                continue
+            if child.rule.source == new_source and \
+                    child.rule.target == new_target:
+                # TODO: improve for more granularity
+                if child.rule.action == new_source:
+                    # duplicate
+                    # TODO: test this
+                    error_msg += "Duplicate rule"
+                    errors.append(child)
+                else:
+                    error_msg += "Conflicting rule"
+                    errors.append(child)
+
+        if errors:
+            # TODO: this should be nice
+            raise ValueError
+
+        self.rule.source = new_source
+        self.rule.target = new_target
+        self.rule.action = new_action
+        self.set_edit_mode(False)
+        self.get_parent().invalidate_sort()
 
 
 class RuleListHandler:
@@ -553,7 +626,7 @@ class RuleListHandler:
                 self.main_list_box.add(RuleListBoxRow
                                        (rule, self.qapp,
                                         ask_is_allow=self.ask_is_allow,
-                                        allow_delete=False))
+                                        is_main_rule=True))
                 break
             self.exception_list_box.add(RuleListBoxRow(
                 rule, self.qapp, ask_is_allow=self.ask_is_allow))
@@ -564,13 +637,40 @@ class RuleListHandler:
             self.main_list_box.add(
                 RuleListBoxRow(
                     deny_all_rule, self.qapp, ask_is_allow=self.ask_is_allow,
-                    allow_delete=False))
+                    is_main_rule=True))
 
-        self.exception_list_box.connect(
-            'row-activated', self._rule_clicked_exception)
+        self.exception_list_box.connect('row-activated', self._rule_clicked)
+        self.main_list_box.connect('row-activated', self._rule_clicked)
 
         self.add_button.connect("clicked", self._add_new_rule)
         self.exception_list_box.set_sort_func(self._sorting_function)
+
+        self.raw_event_box: Gtk.EventBox = \
+            gtk_builder.get_object(f'{prefix}_raw_event')
+        self.raw_box: Gtk.Box = \
+            gtk_builder.get_object(f'{prefix}_raw_box')
+        self.raw_expander_icon: Gtk.Image = \
+            gtk_builder.get_object(f'{prefix}_raw_expander')
+
+        self.raw_text: Gtk.TextView = gtk_builder.get_object(f'{prefix}_raw_text')
+        self.text_buffer: Gtk.TextBuffer = self.raw_text.get_buffer()
+        self.text_buffer.set_text(self.policy_handler.rules_to_text(self.get_current_rules()))
+
+        self.raw_event_box.connect(
+            'button-release-event', self._show_hide_raw)
+
+    def _show_hide_raw(self, *_args):
+        self.raw_box.set_visible(
+            not self.raw_box.get_visible())
+        if self.raw_box.get_visible():
+            self.raw_expander_icon.set_from_pixbuf(
+                Gtk.IconTheme.get_default().load_icon(
+                    'qubes-expander-shown', 20, 0))
+        else:
+            self.raw_expander_icon.set_from_pixbuf(
+                Gtk.IconTheme.get_default().load_icon(
+                    'qubes-expander-hidden', 18, 0))
+
 
     @staticmethod
     def _cmp_token(token_1, token_2):
@@ -603,11 +703,12 @@ class RuleListHandler:
                 + [child.rule for child in self.main_list_box.get_children()]
         return rules
 
-    def _rule_clicked_exception(self, list_box, row, *_args):
+    def _rule_clicked(self, _list_box, row, *_args):
         # first, all rows should stop being editable; this will get a warning #TODO
-        for child in list_box.get_children():
-            child.set_edit_mode(False)
-        list_box.invalidate_sort()
+        for list_box in [self.main_list_box, self.exception_list_box]:
+            for child in list_box.get_children():
+                child.set_edit_mode(False)
+            list_box.invalidate_sort()
         row.set_edit_mode(True)
 
 
