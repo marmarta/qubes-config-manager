@@ -392,3 +392,19 @@ class VMListModeler(TraitSelector):
             if entry['vm'] == vm:
                 return True
         return False
+
+
+class ImageTextButton(Gtk.Button):
+    def __init__(self, icon_name: str, label: str, click_function):
+        super().__init__()
+        self.box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.image = Gtk.Image()
+        self.image.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
+                icon_name, 20, 0))
+        self.box.pack_start(self.image, False, False, 0)
+        self.label = Gtk.Label()
+        self.label.set_text(label)
+        self.box.pack_start(self.label, False, False, 0)
+        self.add(self.box)
+        self.show_all()
+        self.connect("clicked", click_function)

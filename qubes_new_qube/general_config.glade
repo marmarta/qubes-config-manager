@@ -1249,7 +1249,6 @@
               <object class="GtkBox" id="clipboard_contents">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="margin-start">50</property>
                 <property name="orientation">vertical</property>
                 <property name="spacing">5</property>
                 <child>

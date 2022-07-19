@@ -37,7 +37,7 @@ import qubesadmin
 import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.vm
-from .qubes_widgets_library import QubeName, VMListModeler, TextModeler, TraitSelector, TypeName
+from .qubes_widgets_library import QubeName, VMListModeler, TextModeler, TraitSelector, TypeName, ImageTextButton
 
 import gi
 
@@ -370,7 +370,7 @@ class PolicyHandler:
 class RuleListBoxRow(Gtk.ListBoxRow):
     def __init__(self, rule: Rule, qapp: qubesadmin.Qubes,
                  ask_is_allow: bool = False,
-                 is_main_rule: bool = True):
+                 is_main_rule: bool = False):
         super(RuleListBoxRow, self).__init__()
 
         self.qapp = qapp
@@ -383,32 +383,24 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         self.outer_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add(self.outer_box)
 
-        # the weird combination with multiple boxes wthin a box, and not just
-        # Gtk.Grid, is to avoid weird placement and sizing issues
-        self.title_widget_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        title_label = Gtk.Label()
-        title_label.set_text('Editing rule:')
-        title_label.set_visible(True)
-        self.title_widget_box.pack_start(title_label, False, False, 0)
-        self.outer_box.pack_start(self.title_widget_box, False, False,0)
-        self.title_widget_box.set_no_show_all(True)
+        self.title_label = Gtk.Label("Editing rule:")
+        self.title_label.set_no_show_all(True)
+        self.error_label = Gtk.Label()
+        self.error_label.set_no_show_all(True)
+        self.outer_box.pack_start(self.title_label, False, False,0)
+        self.outer_box.pack_start(self.error_label, False, False,0)
 
         self.main_widget_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.main_widget_box.set_homogeneous(True)
         self.outer_box.pack_start(self.main_widget_box, False, False,0)
 
         self.additional_widget_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        cancel_button = Gtk.Button()
-        cancel_button.set_label('Cancel changes')
-        cancel_button.connect("clicked", self.revert)
-        cancel_button.set_visible(True)
-
-        ok_button = Gtk.Button()
-        ok_button.set_label('Accept changes')
-        ok_button.connect("clicked", self.validate_and_save)
-        ok_button.set_visible(True)
-        self.additional_widget_box.pack_end(cancel_button, False, False, 0)
-        self.additional_widget_box.pack_end(ok_button, False, False, 0)
+        self.additional_widget_box.pack_end(
+            ImageTextButton("qubes-delete", "Cancel changes", self.revert),
+            False, False, 0)
+        self.additional_widget_box.pack_end(
+            ImageTextButton("qubes-ok", "Accept changes", self.validate_and_save),
+            False, False, 0)
         self.additional_widget_box.set_no_show_all(True)
 
         self.outer_box.pack_start(self.additional_widget_box, False, False,0)
@@ -420,10 +412,10 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         self.target_widget = None
         self.target_model = None
 
+        self._error_msg = None
+
         self.editing = None
         self.set_edit_mode(False)
-        # TODO: maybe this should be a grid, with buttons in lower row?
-        # Or, to avoid weird sizing problems, a vert box of two boxes
 
     def _setup_delete_button(self):
         delete_button: Gtk.Button = Gtk.Button()
@@ -460,14 +452,14 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         """
         # verify if can be changed tho?
         # TODO: add a revert button
-
+        # TODO: when adding start in edit mode
         if editing:
             self.get_style_context().add_class('edited_row')
-            self.title_widget_box.set_visible(True)
+            self.title_label.set_visible(True)
             self.additional_widget_box.set_visible(True)
         else:
             self.get_style_context().remove_class('edited_row')
-            self.title_widget_box.set_visible(False)
+            self.title_label.set_visible(False)
             self.additional_widget_box.set_visible(False)
 
         # remove existing widgets
@@ -569,26 +561,16 @@ class RuleListBoxRow(Gtk.ListBoxRow):
             new_target = self.rule.target
         new_action = self._parse_action()
 
-        error_msg = ""
-        errors = []
+        self.error_msg = None
         for child in self.get_parent().get_children():
             if child == self:
                 continue
             if child.rule.source == new_source and \
                     child.rule.target == new_target:
-                # TODO: improve for more granularity
-                if child.rule.action == new_source:
-                    # duplicate
-                    # TODO: test this
-                    error_msg += "Duplicate rule"
-                    errors.append(child)
+                if str(child.rule.action) == str(new_action):
+                    self.error_msg = "This rule is a duplicate of another rule"
                 else:
-                    error_msg += "Conflicting rule"
-                    errors.append(child)
-
-        if errors:
-            # TODO: this should be nice
-            raise ValueError
+                    self.error_msg = "This rule conflicts with another rule"
 
         self.rule.source = new_source
         self.rule.target = new_target
@@ -596,9 +578,21 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         self.set_edit_mode(False)
         self.get_parent().invalidate_sort()
 
+    @property
+    def error_msg(self):
+        return self._error_msg
+
+    @error_msg.setter
+    def error_msg(self, value):
+        self._error_msg = value
+        if self.error_msg is None:
+            self.error_label.set_visible(False)
+        else:
+            self.error_label.set_visible(True)
+            self.error_label.set_text(self.error_msg)
+
 
 class RuleListHandler:
-    # TODO: maybe instead of passing objs pass gtk_builder?
     def __init__(self,
                  qapp: qubesadmin.Qubes,
                  gtk_builder: Gtk.Builder,
@@ -712,11 +706,6 @@ class RuleListHandler:
         row.set_edit_mode(True)
 
 
-# TODO:
-# change allow/deny - maybe only in main
-# ok so how to we deal with order? explain order...
-
-
 class ClipboardHandler(PageHandler):
 
     # TODO:
@@ -780,6 +769,8 @@ class ClipboardHandler(PageHandler):
         self.policy_handler.save_rules(self.policy_file_name,
                                        rules, self.current_token)
         # TODO: handle exceptions
+
+# TODO: explain dom0 is not part of all?
 
     def reset(self):
         pass # TODO: implement

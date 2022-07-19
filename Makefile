@@ -9,6 +9,7 @@ help:
 
 install-icons:
 	mkdir -p $(DESTDIR)/usr/share/icons/hicolor/scalable/apps
+	cp qubes_new_qube/ok_icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-ok.svg
 	cp qubes_new_qube/question_icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-question.svg
 	cp qubes_new_qube/question_icon_light.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-question-light.svg
 	cp qubes_new_qube/delete_icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-delete.svg
