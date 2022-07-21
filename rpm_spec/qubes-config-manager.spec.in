@@ -107,6 +107,7 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 /usr/share/icons/hicolor/scalable/apps/qubes-question.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-question-light.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-delete.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-padlock.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-logo.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-customize.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-expander-shown.svg

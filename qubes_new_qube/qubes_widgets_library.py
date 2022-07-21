@@ -14,6 +14,18 @@ from typing import Optional, Callable, Dict, Any
 # TODO: or just IconCache
 
 
+def show_error(title, text):
+    """
+    Helper function to display error messages.
+    """
+    dialog = Gtk.MessageDialog(
+        None, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.OK)
+    dialog.set_title(title)
+    dialog.set_markup(text)
+    dialog.connect("response", lambda *x: dialog.destroy())
+    dialog.show()
+
+
 VM_CATEGORIES = {
     "@anyvm": "ALL QUBES",
     "@type:AppVM": "TYPE: APP",
@@ -140,6 +152,7 @@ class TextModeler(TraitSelector):
 
 # TODO: future improvement: better combobox with custom selection, multiple cols
 # etc., see design doc in Figma
+
 
 class VMListModeler(TraitSelector):
     """
@@ -366,6 +379,9 @@ class VMListModeler(TraitSelector):
         if self.change_function:
             self.change_function()
 
+    def __str__(self):
+        return self.entry_box.get_text()
+
     def get_selected(self) -> qubesadmin.vm.QubesVM:
         """
         Get currently selected VM, if any
@@ -374,7 +390,8 @@ class VMListModeler(TraitSelector):
         selected = self._get_valid_qube_name()
 
         if selected in self._entries:
-            return self._entries[selected]["vm"] or self._entries[selected]["api_name"]
+            return self._entries[selected]["vm"] or \
+                   self._entries[selected]["api_name"]
 
     def select_entry(self, vm_name):
         """
@@ -401,10 +418,10 @@ class ImageTextButton(Gtk.Button):
         self.image = Gtk.Image()
         self.image.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
                 icon_name, 20, 0))
-        self.box.pack_start(self.image, False, False, 0)
+        self.box.pack_start(self.image, False, False, 10)
         self.label = Gtk.Label()
         self.label.set_text(label)
-        self.box.pack_start(self.label, False, False, 0)
+        self.box.pack_start(self.label, False, False, 10)
         self.add(self.box)
         self.show_all()
         self.connect("clicked", click_function)

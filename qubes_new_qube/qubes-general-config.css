@@ -4,12 +4,16 @@ label {
   font-family: SourceSansPro;
 }
 
+separator {
+    background: @dark-gray;
+}
+
 .content_box {
     background: @light-gray;
     border-width: 1px;
     border-color: @medium-gray;
-    padding-left: 50px;
-    padding-right: 50px;
+    padding-left: 100px;
+    padding-right: 100px;
 }
 
 #main_notebook header {
@@ -70,9 +74,7 @@ label {
 .red_code {
     font-family: SourceCodePro;
     color: red;
-}
-
-.dotted_separator {
+    margin-left: 5px;
 }
 
 .explanation_text {
@@ -84,12 +86,25 @@ label {
     font-weight: bold;
 }
 
+.add_label:disabled {
+    color: @medium-gray;
+    font-weight: bold;
+}
+
 .add_button {
     border: 0;
 }
 
+.permission_list {
+    background: @light-gray;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
 .permission_row {
     background: @light-gray;
+    padding-top: 10px;
+    padding-bottom: 10px;
 }
 
 .permission_row:hover {
@@ -97,10 +112,82 @@ label {
 }
 
 .edited_row {
-    padding: 20px 10px 20px 10px;
+    padding: 10px 10px 10px 10px;
     background: white;
+    border-color: @medium-gray;
+    border-style: solid;
+    border-width: 1px;
+    margin: 10px;
 }
 
 .edited_row:hover {
     background: white;
+}
+
+.problem_box {
+    margin: 0px 20px 5px 20px;
+    padding: 10px;
+    border: 1px;
+    border-style: solid;
+    border-color: red;
+    background: #fce9e3;
+    color: #ba370d;
+}
+
+.problem_list {
+    margin-top: 20px;
+    background: #fce9e3;
+    padding-left: 50px;
+}
+
+.problem_list:hover {
+    background: #fce9e3;
+}
+
+.enable_opts {
+    margin: 5px 0 5px 0;
+}
+
+.raw_text {
+    margin: 10px 25px 10px 35px;
+    background: white;
+    border-radius: 0px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: @medium-gray;
+}
+
+.flat_button {
+    border-color: @medium-gray;
+    font-weight: 500;
+    margin: 5px;
+    border-radius: 0px;
+}
+
+.button_save {
+    background: @dark-blue;
+    color: white;
+}
+
+.button_cancel {
+    background: @light-gray;
+}
+
+.text_button {
+    color: @dark-blue;
+    font-weight: 700;
+    border: 0px;
+}
+
+.small_title {
+    font-size: 80%;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.didascalia {
+    font-style: italic;
+    color: @dark-gray;
+    margin-right: 20px;
+    margin-left: 20px;
 }
