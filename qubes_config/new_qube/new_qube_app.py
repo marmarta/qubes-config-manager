@@ -16,7 +16,7 @@ import logging
 import qubesadmin
 import qubesadmin.events
 import qubesadmin.vm
-from .qubes_widgets_library import QubeName, VMListModeler
+from ..widgets.qubes_widgets_library import QubeName, VMListModeler
 
 import gi
 
@@ -835,7 +835,7 @@ class CreateNewQube(Gtk.Application):
         """
         self.builder = Gtk.Builder()
         self.builder.add_from_file(pkg_resources.resource_filename(
-            __name__, 'new_qube.glade'))
+            __name__, '../new_qube.glade'))
         # self.builder.add_from_file('new_qube.glade')
 
         self.main_window = self.builder.get_object('main_window')
@@ -947,7 +947,7 @@ class CreateNewQube(Gtk.Application):
         screen = Gdk.Screen.get_default()
         provider = Gtk.CssProvider()
         provider.load_from_path(pkg_resources.resource_filename(
-            __name__, 'qubes-new-qube.css'))
+            __name__, '../qubes-new-qube.css'))
         Gtk.StyleContext.add_provider_for_screen(
             screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 

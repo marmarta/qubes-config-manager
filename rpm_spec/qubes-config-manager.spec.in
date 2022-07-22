@@ -83,25 +83,31 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 %files
 %defattr(-,root,root,-)
 
-%dir %{python3_sitelib}/qubes_new_qube-*.egg-info
-%{python3_sitelib}/qubes_new_qube-*.egg-info/*
+%dir %{python3_sitelib}/qubes_config-*.egg-info
+%{python3_sitelib}/qubes_config-*.egg-info/*
 
+%dir %{python3_sitelib}/qubes_config
+%dir %{python3_sitelib}/qubes_config/__pycache__
+%{python3_sitelib}/qubes_config/__pycache__/*
+%{python3_sitelib}/qubes_config/__init__.py
+%{python3_sitelib}/qubes_config/new_qube/__pycache__/*
+%{python3_sitelib}/qubes_config/new_qube/new_qube_app.py
+%{python3_sitelib}/qubes_config/new_qube/__init__.py
+%{python3_sitelib}/qubes_config/global_config/__pycache__/*
+%{python3_sitelib}/qubes_config/global_config/global_config.py
+%{python3_sitelib}/qubes_config/global_config/__init__.py
+%{python3_sitelib}/qubes_config/widgets/__pycache__/*
+%{python3_sitelib}/qubes_config/widgets/qubes_widgets_library.py
+%{python3_sitelib}/qubes_config/widgets/__init__.py
 
-%dir %{python3_sitelib}/qubes_new_qube
-%dir %{python3_sitelib}/qubes_new_qube/__pycache__
-%{python3_sitelib}/qubes_new_qube/__pycache__/*
-%{python3_sitelib}/qubes_new_qube/__init__.py
-%{python3_sitelib}/qubes_new_qube/new_qube_app.py
-%{python3_sitelib}/qubes_new_qube/general_config.py
-%{python3_sitelib}/qubes_new_qube/qubes_widgets_library.py
-%{python3_sitelib}/qubes_new_qube/new_qube.glade
-%{python3_sitelib}/qubes_new_qube/general_config.glade
-%{python3_sitelib}/qubes_new_qube/qubes-new-qube.css
-%{python3_sitelib}/qubes_new_qube/qubes-general-config.css
-%{python3_sitelib}/qubes_new_qube/qubes-widgets-styling.css
+%{python3_sitelib}/qubes_config/new_qube.glade
+%{python3_sitelib}/qubes_config/global_config.glade
+%{python3_sitelib}/qubes_config/qubes-new-qube.css
+%{python3_sitelib}/qubes_config/qubes-global-config.css
+%{python3_sitelib}/qubes_config/qubes-widgets-styling.css
 
 %{_bindir}/qubes-new-qube
-%{_bindir}/qubes-general-config
+%{_bindir}/qubes-global-config
 
 /usr/share/icons/hicolor/scalable/apps/qubes-ok.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-question.svg

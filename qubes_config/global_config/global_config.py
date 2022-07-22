@@ -38,7 +38,7 @@ import qubesadmin
 import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.vm
-from .qubes_widgets_library import QubeName, VMListModeler, TextModeler, TraitSelector, TypeName, ImageTextButton, show_error
+from ..widgets.qubes_widgets_library import QubeName, VMListModeler, TextModeler, TraitSelector, TypeName, ImageTextButton, show_error
 
 import gi
 
@@ -49,22 +49,6 @@ from gi.repository import Gtk, Gdk, GLib, Gio, GdkPixbuf, GObject
 
 import gbulb
 gbulb.install()
-
-# TODO
-# - use the validate all when changing focus -> maybe just add "do validate" func to the handler?
-# - extract the words to nicer outside place
-# - handle tags
-# - only scream when changes were made
-# - better and nicer dialogs at some point...
-# - lock the dom0 row
-# - save and apply better
-# - switching pages with unsaved changes should scream - add a CHECK CHANGES func or smth
-# - implement reset to clipboard handler
-# - mark changed by something nicer than (current), maybe e.g. cursive or something; can be done with CSS
-
-# remaining:
-    # prettier flat buttons on hover
-    # close on close button, ask if sure you want to change
 
 
 logger = logging.getLogger('qubes-config-manager')
@@ -122,7 +106,6 @@ def get_boolean_feature(vm, feature_name):
     return result
 
 
-# TODO: just... do smth, rethink or what
 class VMFeatureHolder(TraitHolder):
     def __init__(self, feature_name: str, feature_holder: qubesadmin.vm.QubesVM,
                  default_value, relevant_widget: TraitSelector,
@@ -224,6 +207,11 @@ class PageHandler(abc.ABC):
     def reset(self):
         """Undo all of user's changes"""
 
+    @abc.abstractmethod
+    def check_for_unsaved(self) -> bool:
+        """Check if there are any unsaved changes and ask user for an action.
+        Return True if changes have been handled, False if not."""
+
 
 class BasicSettingsHandler(PageHandler):
     """
@@ -236,8 +224,6 @@ class BasicSettingsHandler(PageHandler):
         """
         self.qapp = qapp
         self.vm = self.qapp.domains[self.qapp.local_name]
-
-        # TODO: add (current) to list in some way
 
         self.clockvm_combo = gtk_builder.get_object('basics_clockvm_combo')
         self.clockvm_handler = VMListModeler(
@@ -299,7 +285,6 @@ class BasicSettingsHandler(PageHandler):
                                                'gui-default-trayicon-mode'),
             style_changes=True)
 
-        # TODO: fix this, make a whole set of methods to get to those
         # complex features
         self.official_templates_combo: Gtk.ComboBoxText = \
             gtk_builder.get_object('basics_official_templates_combo')
@@ -355,6 +340,10 @@ class BasicSettingsHandler(PageHandler):
     def reset(self):
         pass # TODO: implement
 
+    def check_for_unsaved(self) -> bool:
+        return True
+    # TODO: implement
+
 
 class PolicyHandler:
     def __init__(self):
@@ -367,7 +356,6 @@ class PolicyHandler:
     def get_conflicting_policy_files(self, service: str,
                                      own_file: str) -> List[str]:
         files = self.policy_client.policy_get_files(service)
-        # TODO: check if this is really in load order?
         conflicting_files = []
         for f in files:
             if f == own_file:
@@ -575,7 +563,6 @@ class RuleListBoxRow(Gtk.ListBoxRow):
             current_value = self.qapp.domains[token]
 
         combobox = Gtk.ComboBox.new_with_entry()
-        # TODO: figure out a better dom0 approach
         model = VMListModeler(combobox=combobox, qapp=self.qapp,
                               filter_function=lambda x: str(x) != 'dom0',
                               event_callback=None,
@@ -756,7 +743,6 @@ class RuleListHandler:
             self._show_hide_raw()
             # TODO: what if user does something weird and unparseable?
         except PolicySyntaxError as ex:
-            # TODO: make this prettier/scarier
             show_error("Policy error",
                        f"Cannot save policy.\n"
                        f"Encountered the following error(s):\n{ex}")
@@ -783,7 +769,7 @@ class RuleListHandler:
                                         ask_is_allow=self.ask_is_allow,
                                         is_main_rule=True))
                 break
-            # TODO: should the dom0 deny rule be here?
+                # TODO: should the dom0 deny rule be here?
             self.exception_list_box.add(RuleListBoxRow(
                 rule, self.qapp, ask_is_allow=self.ask_is_allow))
 
@@ -878,7 +864,6 @@ class RuleListHandler:
 
 
 class ConflictFileListRow(Gtk.ListBoxRow):
-    # TODO: maybe all the conflict and custom should also be handled by rulelist
     def __init__(self, file_name: str):
         super().__init__()
         self.box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -976,30 +961,12 @@ qubes.ClipboardPaste * @anyvm @anyvm ask\n"""
     def reset(self):
         pass # TODO: implement
 
+    def check_for_unsaved(self) -> bool:
+        return True
+    # TODO: implement
 
-### Policy
-# 1. detect custom changes: opt. 1: add a method that lists files affecting the given service, if there's something before, warn
-#
-#### establishing my policy
-# 2. handle a single select file (AdminClient to get policy, parse using ????
-# 3. serialize - this will be painful?
-# this file should have comment DON'T EDIT MANUALLY
 
-# import qrexec.policy.admin_client.PolicyClient
-# PolicyClient()
-# .policy_get_files(service_name)
-# check replace: there's a trick to avoid race conditions
-# (get gives token, use in replace)
-
-# the file on parsing will error out horribly if include, which is good.
-
-# treat 4.0 files like: what to do with compat?
-# order: 50-* files
-# maybe getFiles should give some artifician prefix like LEGACY POLICY:
-# to old policy files
-# there is a command line tool qubes-policy
-
-class GeneralConfig(Gtk.Application):
+class GlobalConfig(Gtk.Application):
     """
     Main Gtk.Application for new qube widget.
     """
@@ -1007,7 +974,7 @@ class GeneralConfig(Gtk.Application):
         """
         :param qapp: qubesadmin.Qubes object
         """
-        super().__init__(application_id='org.qubesos.generalconfig')
+        super().__init__(application_id='org.qubesos.globalconfig')
         self.qapp: qubesadmin.Qubes = qapp
 
         self.builder: Optional[Gtk.Builder] = None
@@ -1036,7 +1003,7 @@ class GeneralConfig(Gtk.Application):
 
         self.builder = Gtk.Builder()
         self.builder.add_from_file(pkg_resources.resource_filename(
-            __name__, 'general_config.glade'))
+            __name__, '../global_config.glade'))
 
         self.main_window = self.builder.get_object('main_window')
         self.main_notebook: Gtk.Notebook = self.builder.get_object('main_notebook')
@@ -1080,7 +1047,7 @@ class GeneralConfig(Gtk.Application):
         screen = Gdk.Screen.get_default()
         provider = Gtk.CssProvider()
         provider.load_from_path(pkg_resources.resource_filename(
-            __name__, 'qubes-general-config.css'))
+            __name__, '../qubes-global-config.css'))
         Gtk.StyleContext.add_provider_for_screen(
             screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
@@ -1089,7 +1056,7 @@ def main():
     Start the app
     """
     qapp = qubesadmin.Qubes()
-    app = GeneralConfig(qapp)
+    app = GlobalConfig(qapp)
     app.run(sys.argv)
 
 

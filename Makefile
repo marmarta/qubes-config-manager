@@ -9,15 +9,15 @@ help:
 
 install-icons:
 	mkdir -p $(DESTDIR)/usr/share/icons/hicolor/scalable/apps
-	cp qubes_new_qube/ok_icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-ok.svg
-	cp qubes_new_qube/question_icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-question.svg
-	cp qubes_new_qube/question_icon_light.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-question-light.svg
-	cp qubes_new_qube/delete_icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-delete.svg
-	cp qubes_new_qube/qubes_logo.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-logo.svg
-	cp qubes_new_qube/qubes_customize.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-customize.svg
-	cp qubes_new_qube/qubes_expander_shown.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-expander-shown.svg
-	cp qubes_new_qube/qubes_expander_hidden.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-expander-hidden.svg
-	cp qubes_new_qube/padlock_icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-padlock.svg
+	cp icons/ok_icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-ok.svg
+	cp icons/question_icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-question.svg
+	cp icons/question_icon_light.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-question-light.svg
+	cp icons/delete_icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-delete.svg
+	cp icons/qubes_logo.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-logo.svg
+	cp icons/qubes_customize.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-customize.svg
+	cp icons/qubes_expander_shown.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-expander-shown.svg
+	cp icons/qubes_expander_hidden.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-expander-hidden.svg
+	cp icons/padlock_icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-padlock.svg
 
 install-autostart:
 	mkdir -p $(DESTDIR)/etc/xdg/autostart
