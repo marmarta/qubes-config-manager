@@ -181,7 +181,8 @@ class VMListModeler(TraitSelector):
         selected as the initial value
         :param current_value: value to be selected; if None and there is
         a default value, it will be selected; if neither exist,
-         first position will be selected
+         first position will be selected. If this value is not available in the
+         entries, it will be added as top entry.
         :param style_changes: if True, combo-changed style class will be
         applied when combobox value changes
         """
@@ -200,7 +201,7 @@ class VMListModeler(TraitSelector):
 
         self.initial_value = None
         self._create_entries(filter_function, default_value, allow_none,
-                             add_categories)
+                             add_categories, current_value)
 
         self._apply_model()
 
@@ -235,8 +236,10 @@ class VMListModeler(TraitSelector):
 
     def _create_entries(
             self, filter_function: Callable[[qubesadmin.vm.QubesVM], bool],
-            default_value: Optional[qubesadmin.vm.QubesVM], allow_none: bool,
-            add_categories: bool):
+            default_value: Optional[qubesadmin.vm.QubesVM],
+            allow_none: bool,
+            add_categories: bool,
+            current_value: Optional = None):
 
         if add_categories:
             self._entries["TYPE: TEMPLATES"] = {
@@ -291,6 +294,19 @@ class VMListModeler(TraitSelector):
                 "icon": icon,
                 "vm": domain,
             }
+
+        if current_value:
+            found_current = False
+            for key, value in self._entries.items():
+                if value["api_name"] == current_value:
+                    found_current = True
+                    break
+            if not found_current:
+                self._entries[current_value] = {
+                    "api_name": str(current_value),
+                    "icon": None,
+                    "vm": None
+                }
 
     def _get_valid_qube_name(self):
         selected = self.combo.get_active_id()

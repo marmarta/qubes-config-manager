@@ -92,4 +92,7 @@ ENV/
 # Vim swap files
 *.swp
 
+# Temporary Glade files
+*glade~
+
 *.~undo-tree~

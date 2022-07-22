@@ -95,6 +95,7 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 %{python3_sitelib}/qubes_config/new_qube/__init__.py
 %{python3_sitelib}/qubes_config/global_config/__pycache__/*
 %{python3_sitelib}/qubes_config/global_config/global_config.py
+%{python3_sitelib}/qubes_config/global_config/policy_handler.py
 %{python3_sitelib}/qubes_config/global_config/__init__.py
 %{python3_sitelib}/qubes_config/widgets/__pycache__/*
 %{python3_sitelib}/qubes_config/widgets/qubes_widgets_library.py
