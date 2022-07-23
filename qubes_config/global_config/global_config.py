@@ -35,6 +35,7 @@ import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.vm
 from ..widgets.qubes_widgets_library import QubeName, VMListModeler, TextModeler, TraitSelector, TypeName, ImageTextButton, show_error
+from .page_handler import PageHandler
 from .policy_handler import PolicyManager, PolicyClient, ConflictFileHandler, PolicyHandler
 
 import gi
@@ -182,22 +183,6 @@ class VMPropertyHolder(TraitHolder):
         return self.current_value
 
 
-class PageHandler(abc.ABC):
-    """abstract class for page handlers"""
-    @abc.abstractmethod
-    def save(self):
-        """save settings changed in page"""
-
-    @abc.abstractmethod
-    def reset(self):
-        """Undo all of user's changes"""
-
-    @abc.abstractmethod
-    def check_for_unsaved(self) -> bool:
-        """Check if there are any unsaved changes and ask user for an action.
-        Return True if changes have been handled, False if not."""
-
-
 class BasicSettingsHandler(PageHandler):
     """
     Handler for the Basic Settings page.
@@ -330,51 +315,6 @@ class BasicSettingsHandler(PageHandler):
     # TODO: implement
 
 
-class ClipboardHandler(PageHandler):
-    """
-    Handler for the Clipboard page.
-    """
-    def __init__(self, gtk_builder: Gtk.Builder, qapp: qubesadmin.Qubes,
-                 policy_manager: PolicyManager):
-        """
-        :param gtk_builder: gtk_builder object
-        :param qapp: Qubes object
-        """
-        # TODO: what do I want to put here?
-
-        self.qapp = qapp
-        self.vm = self.qapp.domains[self.qapp.local_name]
-        self.policy_manager = policy_manager
-
-        self.service_name = 'qubes.ClipboardPaste'
-        self.policy_file_name = '50-config-clipboard'
-        self.default_policy = """
-qubes.ClipboardPaste * @adminvm @anyvm deny\n
-qubes.ClipboardPaste * @anyvm @anyvm ask\n"""
-        self.verb_description = ' be allowed to paste\n into clipboard of '
-
-        self.policy_handler = PolicyHandler(
-            qapp=self.qapp,
-            gtk_builder=gtk_builder,
-            prefix="clipboard",
-            policy_manager=self.policy_manager,
-            default_policy=self.default_policy,
-            service_name=self.service_name,
-            policy_file_name=self.policy_file_name,
-            verb_description=self.verb_description,
-            ask_is_allow=True)
-
-    def save(self):
-        self.policy_handler.save_rules()
-
-    def reset(self):
-        pass # TODO: implement
-
-    def check_for_unsaved(self) -> bool:
-        return True
-    # TODO: implement
-
-
 class GlobalConfig(Gtk.Application):
     """
     Main Gtk.Application for new qube widget.
@@ -418,7 +358,7 @@ class GlobalConfig(Gtk.Application):
         self.main_notebook: Gtk.Notebook = self.builder.get_object('main_notebook')
 
         self._handle_theme()
-        policy_handler = PolicyManager()
+        policy_manager = PolicyManager()
 
         self.apply_button: Gtk.Button = self.builder.get_object('apply_button')
         self.cancel_button: Gtk.Button = self.builder.get_object('cancel_button')
@@ -428,11 +368,45 @@ class GlobalConfig(Gtk.Application):
         self.cancel_button.connect('clicked', self._quit)
         self.ok_button.connect('clicked', self._ok)
 
+        self.main_window.connect('delete-event', self._ask_to_quit)
+
         # match page by id to handler; this is not pretty, but Gtk likes
         # to ID pages by their number, there is no simple page_id
         self.handlers: Dict[int, PageHandler] = {
             0: BasicSettingsHandler(self.builder, self.qapp),
-            4: ClipboardHandler(self.builder, self.qapp, policy_handler)}
+            5: PolicyHandler(
+                qapp=self.qapp,
+                gtk_builder=self.builder,
+                policy_manager=policy_manager,
+                prefix="clipboard",
+                service_name='qubes.ClipboardPaste',
+                policy_file_name='50-config-clipboard',
+                default_policy="""qubes.ClipboardPaste * @adminvm @anyvm deny\n
+qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
+                verb_description=' be allowed to paste\n into clipboard of ',
+                ask_is_allow=True),
+            7: PolicyHandler(
+                qapp=self.qapp,
+                gtk_builder=self.builder,
+                policy_manager=policy_manager,
+                prefix="url",
+                service_name='qubes.OpenURL',
+                policy_file_name='50-config-openurl',
+                default_policy="""qubes.OpenURL * @adminvm @anyvm deny\n
+qubes.OpenURL * @anyvm @dispvm allow\n
+qubes.OpenURL * @anyvm @anyvm ask\n""",
+                verb_description=' be allowed to open URLs in ',
+                ask_is_allow=False),
+        }
+
+        self.main_notebook.connect("switch-page", self._page_switched)
+
+    def _page_switched(self, *_args):
+        old_page_num = self.main_notebook.get_current_page()
+        old_page = self.handlers.get(old_page_num, None)
+        if old_page and not old_page.check_for_unsaved():
+            GLib.timeout_add(1, lambda: self.main_notebook.set_current_page(
+                old_page_num))
 
     def _apply(self, _widget):
         current_handler = self.handlers.get(
@@ -446,6 +420,12 @@ class GlobalConfig(Gtk.Application):
     def _ok(self, widget):
         self._apply(widget)
         self._quit(widget)
+
+    def _ask_to_quit(self, *_args):
+        current_page = self.handlers.get(self.main_notebook.get_current_page(), None)
+        if current_page and not current_page.check_for_unsaved():
+            return True
+        self.quit()
 
     def _handle_theme(self):
         # style_context = self.main_window.get_style_context()

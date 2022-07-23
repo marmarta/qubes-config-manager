@@ -38,6 +38,7 @@ import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.vm
 from ..widgets.qubes_widgets_library import QubeName, VMListModeler, TextModeler, TraitSelector, TypeName, ImageTextButton, show_error
+from .page_handler import PageHandler
 
 import gi
 
@@ -57,7 +58,7 @@ CHOICE_NAMES_ASK_IS_ALLOW = {
 
 CHOICE_NAMES = {
     'always': 'allow',
-    'ask': 'allow',
+    'ask': 'ask',
     'never': 'deny'
 }
 
@@ -282,7 +283,12 @@ class RuleListBoxRow(Gtk.ListBoxRow):
 
         self.action_widget, self.action_model = action_function()
         self.action_widget.set_halign(Gtk.Align.START)
-        label = Gtk.Label(self.verb_description)
+        if isinstance(self.rule.action, Ask):
+            # I'm so sorry, but English is terrible
+            description = "to " + self.verb_description
+        else:
+            description = self.verb_description
+        label = Gtk.Label(description)
         label.set_halign(Gtk.Align.END)
         label.get_style_context().add_class('didascalia')
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -338,7 +344,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
     def _get_action_label(self) -> Tuple[Gtk.Widget, Optional[TextModeler]]:
         choices = CHOICE_NAMES_ASK_IS_ALLOW if self.ask_is_allow \
             else CHOICE_NAMES
-        name = None
+        name = type(self.rule.action).__name__.lower()
         for readable_name, action_name in choices.items():
             if action_name == type(self.rule.action).__name__.lower():
                 name = readable_name
@@ -349,7 +355,6 @@ class RuleListBoxRow(Gtk.ListBoxRow):
     def _get_action_selector(self) -> Tuple[Gtk.Widget, Optional[TextModeler]]:
         if self.ask_is_allow:
             choices = CHOICE_NAMES_ASK_IS_ALLOW
-            # TODO: some sort of exception? if someone has allow here
         else:
             choices = CHOICE_NAMES
 
@@ -361,7 +366,6 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         return combobox, model
 
     def __str__(self):
-        # TODO: make this nicer?
         result = "From: "
         if self.source_model:
             result += str(self.source_model)
@@ -375,6 +379,20 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         result += " Action: " + str(self._parse_action())
         return result
 
+    def is_changed(self) -> bool:
+        if not self.editing:
+            return False
+        if self.source_model:
+            if str(self.source_model.get_selected()) != str(self.rule.source):
+                return True
+        if self.target_model:
+            if str(self.target_model.get_selected()) != str(self.rule.target):
+                return True
+        new_action = self._parse_action()
+        if str(new_action) != str(self.rule.action):
+            return True
+        return False
+
     def revert(self, *_args):
         """Revert all changes to the Rule."""
         if self.source_model and self.target_model:
@@ -384,9 +402,9 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         self.set_edit_mode(False)
         self.get_parent().invalidate_sort()
 
-    def validate_and_save(self, *_args):
+    def validate_and_save(self, *_args) -> bool:
         """Validate if the rule is not duplicate or conflicting with another
-        rule, then save."""
+        rule, then save. If this fails, return False, else return True."""
         if self.source_model:
             new_source = Source(str(self.source_model.get_selected()))
         else:
@@ -415,7 +433,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
                        'The following errors occurred when trying to save '
                        f'this rule:\n{self.error_msg}\n')
             self.error_msg = None
-            return
+            return False
 
         self.rule.source = new_source
         self.rule.target = new_target
@@ -424,9 +442,10 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         self.get_parent().invalidate_sort()
 
         self.get_parent().emit('rules-changed', None)
+        return True
 
 
-class PolicyHandler:
+class PolicyHandler(PageHandler):
     """
     Handler for generic simple list of policy rules.
     """
@@ -464,7 +483,7 @@ class PolicyHandler:
         self.ask_is_allow = ask_is_allow
 
         # load rules
-        rules, self.current_token = \
+        self.initial_rules, self.current_token = \
             self.policy_manager.get_rules_from_filename(
                 self.policy_file_name, self.default_policy)
 
@@ -500,7 +519,7 @@ class PolicyHandler:
             f'{prefix}_disable_radio')
 
         # fill data
-        self._load_rules(rules)
+        self._load_rules(self.initial_rules)
         self._fill_raw_rules()
 
         # connect events
@@ -520,7 +539,7 @@ class PolicyHandler:
         self.raw_save.connect("clicked", self._save_raw)
         self.raw_cancel.connect("clicked", self._cancel_raw)
 
-        self.check_custom_rules(rules)
+        self.check_custom_rules(self.initial_rules)
 
         self.conflict_handler = ConflictFileHandler(
             gtk_builder, "clipboard", self.service_name,
@@ -539,6 +558,8 @@ class PolicyHandler:
         self._custom_toggled()
 
     def _custom_toggled(self, _widget=None):
+        if not self.close_all_edits():
+            return
         self._set_custom_editable(self.enable_radio.get_active())
         self.main_list_box.emit('rules-changed', None)
 
@@ -599,6 +620,10 @@ class PolicyHandler:
                     is_fundamental_rule=True))
 
     def _show_hide_raw(self, *_args):
+        # if showing raws, make sure editing is done
+        if not self.raw_box.get_visible():
+            if not self.close_all_edits():
+                return
         self.raw_box.set_visible(
             not self.raw_box.get_visible())
         if self.raw_box.get_visible():
@@ -634,20 +659,15 @@ class PolicyHandler:
         return self._cmp_token(row_1.rule.target, row_2.rule.target)
 
     def _add_new_rule(self, *_args):
-        self.close_all_edits()
+        if not self.close_all_edits():
+            return
         deny_all_rule = self.policy_manager.new_rule(
             self.service_name, '@anyvm', '@anyvm', 'deny')
         new_row = RuleListBoxRow(
-            deny_all_rule, self.qapp, self.verb_description, ask_is_allow=True)
+            deny_all_rule, self.qapp, self.verb_description,
+            ask_is_allow=self.ask_is_allow)
         self.exception_list_box.add(new_row)
         new_row.activate()
-
-    def save_rules(self):
-        """Save current rules, whatever they are - custom or default."""
-        rules = self.get_current_rules()
-        self.policy_manager.save_rules(self.policy_file_name,
-                                       rules, self.current_token)
-        # TODO: handle exceptions
 
     def get_current_rules(self) -> List[Rule]:
         """Get the current set of rules, taking into account default and
@@ -665,38 +685,95 @@ class PolicyHandler:
         if row.editing:
             # if the current row was clicked, nothing should happen
             return
-        self.close_all_edits()
+        if not self.close_all_edits():
+            return
         row.set_edit_mode(True)
 
-    def close_all_edits(self):
+    def close_all_edits(self) -> bool:
+        """Attempt to close all edited rows; if failed, return False, else
+        return True"""
         for list_box in [self.main_list_box, self.exception_list_box]:
             for child in list_box.get_children():
-                assert isinstance(child, RuleListBoxRow)
                 if child.editing:
+                    if not child.is_changed():
+                        child.set_edit_mode(False)
+                        continue
                     dialog = Gtk.MessageDialog(
                         None,
                         Gtk.DialogFlags.MODAL,
                         Gtk.MessageType.QUESTION, Gtk.ButtonsType.YES_NO)
-                    dialog.set_title("A rule is currently edited")
+                    dialog.set_title("A rule is currently being edited")
                     dialog.set_markup(
                         "Do you want to save changes to the following "
                         f"rule?\n{str(child)}")
                     response = dialog.run()
                     if response == Gtk.ResponseType.YES:
-                        # TODO: what if this fails?
-                        child.validate_and_save()
+                        if not child.validate_and_save():
+                            return False
                     else:
                         child.revert()
                     dialog.destroy()
+        return True
+
+    def check_for_unsaved(self) -> bool:
+        """Check if there are any unsaved changes and ask user for an action.
+        Return True if changes have been handled, False if not."""
+        if not self.close_all_edits():
+            return False
+        unsaved_found = False
+        current_rules = self.get_current_rules()
+        if len(self.initial_rules) != len(current_rules):
+            unsaved_found = True
+        for rule1, rule2 in zip(self.initial_rules, current_rules):
+            if str(rule1) != str(rule2):
+                unsaved_found = True
+
+        if unsaved_found:
+            dialog = Gtk.MessageDialog(
+                None,
+                Gtk.DialogFlags.MODAL,
+                Gtk.MessageType.QUESTION, Gtk.ButtonsType.YES_NO)
+            dialog.set_title("")
+            dialog.set_markup(
+                "Do you want to save changes to current "
+                             "policy rules?")
+            # TODO: nicer name? improve when improving message dialogs
+            response = dialog.run()
+            if response == Gtk.ResponseType.YES:
+                dialog.destroy()
+                return self.save()
+            else:
+                dialog.destroy()
+                self.reset()
+        return True
+
+    def save(self):
+        """Save current rules, whatever they are - custom or default.
+        Return True if successful, False otherwise"""
+        rules = self.get_current_rules()
+        try:
+            self.policy_manager.save_rules(self.policy_file_name,
+                                           rules, self.current_token)
+        except Exception as ex:
+            show_error("Failed to save rules", f"Error {str(ex)}")
+            return False
+        self.initial_rules = rules
+        return True
+
+    def reset(self):
+        self._load_rules(self.initial_rules)
+        self._fill_raw_rules()
+        self.check_custom_rules(self.initial_rules)
 
 
 class ConflictFileListRow(Gtk.ListBoxRow):
+    """A ListBox row representing a policy file with conflicting info."""
     def __init__(self, file_name: str):
         super().__init__()
         self.box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.add(self.box)
 
-        # TODO: explore options for not making this sensitive/reacting to clicks
+        self.get_style_context().add_class('problem_row')
 
         self.label = Gtk.Label()
         self.label.set_text(file_name)
@@ -715,18 +792,19 @@ class ConflictFileListRow(Gtk.ListBoxRow):
 
 
 class ConflictFileHandler:
-    def __init__(self, gtk_builder, prefix, service_name, own_file_name,
-                 policy_handler):
+    """Handler for conflicting policy files."""
+    def __init__(self, gtk_builder: Gtk.Builder, prefix: str, service_name: str,
+                 own_file_name: str, policy_manager: PolicyManager):
         self.service_name = service_name
         self.own_file_name = own_file_name
-        self.policy_handler = policy_handler
+        self.policy_manager = policy_manager
 
         self.problem_box: Gtk.Box = gtk_builder.get_object(
             f'{prefix}_problem_box')
         self.problem_list: Gtk.ListBox = gtk_builder.get_object(
             f'{prefix}_problem_files_list')
 
-        conflicting_files = self.policy_handler.get_conflicting_policy_files(
+        conflicting_files = self.policy_manager.get_conflicting_policy_files(
             self.service_name, self.own_file_name)
 
         if conflicting_files:

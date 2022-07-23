@@ -103,8 +103,7 @@ separator {
 
 .permission_row {
     background: @light-gray;
-    padding-top: 10px;
-    padding-bottom: 10px;
+    padding:10px;
 }
 
 .permission_row:hover {
@@ -140,7 +139,7 @@ separator {
     padding-left: 50px;
 }
 
-.problem_list:hover {
+.problem_row:hover {
     background: #fce9e3;
 }
 

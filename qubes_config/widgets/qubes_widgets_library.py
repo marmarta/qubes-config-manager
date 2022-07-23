@@ -30,7 +30,7 @@ VM_CATEGORIES = {
     "@anyvm": "ALL QUBES",
     "@type:AppVM": "TYPE: APP",
     "@type:TemplateVM": "TYPE: TEMPLATES",
-    "@type:DispVM" : "TYPE: DISPOSABLE",
+    "@dispvm": "TYPE: DISPOSABLE",
     "@adminvm": "TYPE: ADMINVM"}
 
 
@@ -83,8 +83,6 @@ class QubeName(Gtk.Box):
 
         self.show_all()
 
-# TODO: make a VM cache actually...
-
 
 class TraitSelector(abc.ABC):
     @abc.abstractmethod
@@ -112,12 +110,16 @@ class TextModeler(TraitSelector):
         :param combobox: target ComboBoxText object
         :param values: dictionary of displayed strings and corresponding values.
         :param selected_value: which value should be selected initially, if None
-         the first option will be selected.
+         the first option will be selected; if not in available choices, will be
+         added.
         :param style_changes: if True, combo-changed style class will be
         applied when combobox value changes
         """
         self._combo: Gtk.ComboBoxText = combobox
         self._values: Dict[str, Any] = values
+
+        if selected_value and selected_value not in self._values.values():
+            self._values[selected_value] = selected_value
 
         for text in self._values.keys():
             # to ensure that the correct option id is selected, we use
@@ -242,32 +244,13 @@ class VMListModeler(TraitSelector):
             current_value: Optional = None):
 
         if add_categories:
-            self._entries["TYPE: TEMPLATES"] = {
-                "api_name": "@type:TemplateVM",
-                "icon": None,
-                "vm": None
-            }
+            for api_name, display_name in VM_CATEGORIES.items():
+                self._entries[display_name] = {
+                    "api_name": api_name,
+                    "icon": None,
+                    "vm": None
+                }
             # TODO: discuss approach to dom0-adminvm; are they the same? are they not?
-            self._entries["TYPE: ADMINVM"] = {
-                "api_name": "@adminvm",
-                "icon": None,
-                "vm": None
-            }
-            self._entries["TYPE: DISPOSABLE"] = {
-                "api_name": "@type:DispVM",
-                "icon": None,
-                "vm": None
-            }
-            self._entries["TYPE: APP"] = {
-                "api_name": "@type:AppVM",
-                "icon": None,
-                "vm": None
-            }
-            self._entries["ALL QUBES"] = {
-                "api_name": "@anyvm",
-                "icon": None,
-                "vm": None
-            }
 
         if allow_none:
             self._entries['(none)'] = {
