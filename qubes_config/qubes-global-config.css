@@ -8,29 +8,36 @@ separator {
     background: @dark-gray;
 }
 
+.qubes_version_label {
+    margin: 10px 0 10px 0;
+    color: @dark-gray-2;
+    font-size: 120%;
+    font-weight: 700;
+}
+
 .content_box {
     background: @light-gray;
-    border-width: 1px;
+    border-width: 2px;
     border-color: @medium-gray;
     padding-left: 100px;
     padding-right: 100px;
+    box-shadow: @medium-gray 2px -2px 2px -2px inset;
+}
+
+#main_notebook {
+    border-width: 1px;
+    border-color: @dark-gray-2;
+    border-style: solid;
 }
 
 #main_notebook header {
     background: white;
-    border-style: solid;
-    border-width: 1px;
-    border-color: @medium-gray;
-}
-
-#main_notebook header {
-    box-shadow: @medium-gray -2px 0 2px -2px inset;
+    border-width: 0px;
 }
 
 #main_notebook header tabs tab {
-    border-style: solid;
-    border-width: 0px 1px 1px 0px;
-    border-color: @medium-gray;
+    border-width: 0;
+    box-shadow: @medium-gray 0px 2px 2px -2px inset;
     margin: 0px;
     font-weight: bold;
 }
@@ -41,8 +48,8 @@ separator {
 }
 
 #main_notebook header tabs tab:hover {
-    box-shadow: @medium-gray -2px 0 2px -2px inset;
-    border-width: 0px 1px 1px 0px;
+    box-shadow: @medium-gray 0px 2px 2px -2px inset;
+    border-width: 0px;
     border-color: @medium-gray;
 }
 
@@ -190,3 +197,8 @@ separator {
     margin-right: 20px;
     margin-left: 20px;
 }
+
+.background {
+    background: @dark-gray-2;
+}
+
