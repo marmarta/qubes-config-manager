@@ -2,7 +2,7 @@
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
-# Copyright (C) 2020 Marta Marczykowska-Górecka
+# Copyright (C) 2022 Marta Marczykowska-Górecka
 #                               <marmarta@invisiblethingslab.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -19,31 +19,26 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 
 # pylint: disable=import-error
-import asyncio
-import subprocess
+"""Global Qubes Config tool."""
 import sys
-import os
-from typing import Optional, List, Tuple, Dict, Callable, Union
+from typing import Optional, Dict, Union, Any
 import abc
-from contextlib import suppress
 import pkg_resources
 import logging
-from functools import partial
 
 import qubesadmin
 import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.vm
-from ..widgets.qubes_widgets_library import QubeName, VMListModeler, TextModeler, TraitSelector, TypeName, ImageTextButton, show_error
+from ..widgets.qubes_widgets_library import VMListModeler, \
+    TextModeler, TraitSelector
 from .page_handler import PageHandler
-from .policy_handler import PolicyManager, PolicyClient, ConflictFileHandler, PolicyHandler
+from .policy_handler import PolicyManager, PolicyHandler
 
 import gi
 
-import qubesadmin
-
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GLib, Gio, GdkPixbuf, GObject
+from gi.repository import Gtk, Gdk, GLib, GObject
 
 import gbulb
 gbulb.install()
@@ -51,7 +46,9 @@ gbulb.install()
 
 logger = logging.getLogger('qubes-config-manager')
 
+
 class TraitHolder(abc.ABC):
+    """Abstract trait (property, feature, anything)"""
     def __init__(self, relevant_widget: TraitSelector):
         """
         :param relevant_widget: widget that contains relevant property data
@@ -93,6 +90,7 @@ def get_boolean_feature(vm, feature_name):
 
 
 class VMFeatureHolder(TraitHolder):
+    """VM Feature."""
     def __init__(self, feature_name: str, feature_holder: qubesadmin.vm.QubesVM,
                  default_value, relevant_widget: TraitSelector,
                  is_boolean: bool = False):
@@ -128,9 +126,9 @@ class VMFeatureHolder(TraitHolder):
             return self.default_value
 
     def _get_boolean_feature(self):
-        """helper function to get a feature converted to a Bool if it does exist.
-        Necessary because of the true/false in features being coded as 1/empty
-        string."""
+        """helper function to get a feature converted to a Bool if it does
+        exist. Necessary because of the true/false in features being coded as
+        1/empty string."""
         result = self._get_feature(force_default_none=True)
         if result is not None:
             result = bool(result)
@@ -151,12 +149,13 @@ class VMFeatureHolder(TraitHolder):
 
 
 class VMPropertyHolder(TraitHolder):
+    """A property that holds VMs."""
     def __init__(self, property_name: str,
-                 property_holder: Union[qubesadmin.vm.QubesVM, qubesadmin.Qubes],
+                 property_holder: Union[qubesadmin.vm.QubesVM,
+                                        qubesadmin.Qubes],
                  relevant_widget: TraitSelector,
-                 default_value: Optional = None):
+                 default_value: Optional[Any] = None):
         """
-        A property that holds VMs.
         :param property_name: name of the property
         :param property_holder: object that has the property
         :param relevant_widget: widget that contains relevant property data
@@ -270,36 +269,6 @@ class BasicSettingsHandler(PageHandler):
             selected_value=get_boolean_feature(self.vm,
                                                'gui-default-trayicon-mode'),
             style_changes=True)
-
-        self.tray_icon_combo: Gtk.ComboBoxText = \
-            gtk_builder.get_object('basics_tray_icon_combo')
-        self.tray_icon_handler = TextModeler(
-            self.tray_icon_combo,
-            {'default (thin border)': None,
-             'full background': 'bg',
-             'thin border': 'border1',
-             'thick border': 'border2',
-             'tinted icon': 'tint',
-             'tinted icon with modified white': 'tint+whitehack',
-             'tinted icon with 50% saturation': 'tint+saturation50'},
-            selected_value=get_boolean_feature(self.vm,
-                                               'gui-default-trayicon-mode'),
-            style_changes=True)
-
-        self.tray_icon_combo: Gtk.ComboBoxText = \
-            gtk_builder.get_object('basics_tray_icon_combo')
-        self.tray_icon_handler = TextModeler(
-            self.tray_icon_combo,
-            {'default (thin border)': None,
-             'full background': 'bg',
-             'thin border': 'border1',
-             'thick border': 'border2',
-             'tinted icon': 'tint',
-             'tinted icon with modified white': 'tint+whitehack',
-             'tinted icon with 50% saturation': 'tint+saturation50'},
-            selected_value=get_boolean_feature(self.vm,
-                                               'gui-default-trayicon-mode'),
-            style_changes=True)
         # TODO: maybe add some funkier methods to those dropdowns, so that
         #  we can just iterate over all of them and apply?
 
@@ -336,10 +305,12 @@ class GlobalConfig(Gtk.Application):
         to user.
         """
         self.perform_setup()
+        assert self.main_window
         self.main_window.show()
         self.hold()
 
     def perform_setup(self):
+        # pylint: disable=attribute-defined-outside-init
         """
         The function that performs actual widget realization and setup. Should
         be only called once, in the main instance of this application.
@@ -355,13 +326,15 @@ class GlobalConfig(Gtk.Application):
             __name__, '../global_config.glade'))
 
         self.main_window = self.builder.get_object('main_window')
-        self.main_notebook: Gtk.Notebook = self.builder.get_object('main_notebook')
+        self.main_notebook: Gtk.Notebook = \
+            self.builder.get_object('main_notebook')
 
         self._handle_theme()
         policy_manager = PolicyManager()
 
         self.apply_button: Gtk.Button = self.builder.get_object('apply_button')
-        self.cancel_button: Gtk.Button = self.builder.get_object('cancel_button')
+        self.cancel_button: Gtk.Button = \
+            self.builder.get_object('cancel_button')
         self.ok_button: Gtk.Button = self.builder.get_object('ok_button')
 
         self.apply_button.connect('clicked', self._apply)
@@ -422,12 +395,15 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
         self._quit(widget)
 
     def _ask_to_quit(self, *_args):
-        current_page = self.handlers.get(self.main_notebook.get_current_page(), None)
+        current_page = self.handlers.get(
+            self.main_notebook.get_current_page(), None)
         if current_page and not current_page.check_for_unsaved():
             return True
         self.quit()
+        return False
 
-    def _handle_theme(self):
+    @staticmethod
+    def _handle_theme():
         # style_context = self.main_window.get_style_context()
         # window_default_color = style_context.get_background_color(
         #     Gtk.StateType.NORMAL)
@@ -439,6 +415,7 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
             __name__, '../qubes-global-config.css'))
         Gtk.StyleContext.add_provider_for_screen(
             screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
 
 def main():
     """

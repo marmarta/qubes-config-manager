@@ -2,7 +2,7 @@
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
-# Copyright (C) 2020 Marta Marczykowska-Górecka
+# Copyright (C) 2022 Marta Marczykowska-Górecka
 #                               <marmarta@invisiblethingslab.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -18,26 +18,19 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 # pylint: disable=import-error
-import asyncio
+"""
+RPC Policy-related functionality.
+"""
 import subprocess
-import sys
-import os
-from typing import Optional, List, Tuple, Dict, Callable, Union
-import abc
-from contextlib import suppress
-import pkg_resources
-import logging
-from functools import partial
+from typing import Optional, List, Tuple, Union
 
 from qrexec.policy.admin_client import PolicyClient
-from qrexec.policy.parser import StringPolicy, Rule, Allow, Ask, Deny, Source, Target
+from qrexec.policy.parser import StringPolicy, Rule, Allow, Ask, Deny, \
+    Source, Target
 from qrexec.exc import PolicySyntaxError
 
-import qubesadmin
-import qubesadmin.events
-import qubesadmin.exc
-import qubesadmin.vm
-from ..widgets.qubes_widgets_library import QubeName, VMListModeler, TextModeler, TraitSelector, TypeName, ImageTextButton, show_error
+from ..widgets.qubes_widgets_library import QubeName, VMListModeler, \
+    TextModeler, TypeName, ImageTextButton, show_error
 from .page_handler import PageHandler
 
 import gi
@@ -45,7 +38,7 @@ import gi
 import qubesadmin
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GLib, Gio, GdkPixbuf, GObject
+from gi.repository import Gtk
 
 import gbulb
 gbulb.install()
@@ -64,6 +57,10 @@ CHOICE_NAMES = {
 
 
 class PolicyManager:
+    """
+    Single manager for interacting with Qubes Policy.
+    Should be used as a singleton.
+    """
     def __init__(self):
         self.policy_client = PolicyClient()
         self.policy_disclaimer = """
@@ -135,7 +132,8 @@ class PolicyManager:
         return self.policy_disclaimer + \
                '\n'.join([str(rule) for rule in rules_list]) + '\n'
 
-    def text_to_rules(self, text: str) -> List[Rule]:
+    @staticmethod
+    def text_to_rules(text: str) -> List[Rule]:
         """Convert policy file text to a list of Rules."""
         return StringPolicy(policy={'__main__': text}).rules
 
@@ -158,7 +156,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         :param is_fundamental_rule: can this rule be deleted/can its objects be
         changed
         """
-        super(RuleListBoxRow, self).__init__()
+        super().__init__()
 
         self.qapp = qapp
         self.rule = rule
@@ -199,15 +197,15 @@ class RuleListBoxRow(Gtk.ListBoxRow):
 
         self.outer_box.pack_start(self.additional_widget_box, False, False, 10)
 
-        self.source_widget = None
-        self.source_model = None
-        self.action_widget = None
-        self.action_model = None
-        self.target_widget = None
-        self.target_model = None
+        self.source_widget: Optional[Gtk.Widget] = None
+        self.source_model: Optional[VMListModeler] = None
+        self.action_widget: Optional[Gtk.Widget] = None
+        self.action_model: Optional[TextModeler] = None
+        self.target_widget: Optional[Gtk.Widget] = None
+        self.target_model: Optional[VMListModeler] = None
 
-        self.error_msg = None
-        self.editing = None
+        self.error_msg: Optional[str] = None
+        self.editing: bool = False
 
         self.set_edit_mode(False)
 
@@ -228,6 +226,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
 
     def _parse_action(self) -> Union[Allow, Ask, Deny]:
         """Turn selected action to Action object."""
+        assert self.action_model
         new_action = self.action_model.get_selected()
         if new_action == 'allow':
             action_obj = Allow(self.rule)
@@ -365,7 +364,8 @@ class RuleListBoxRow(Gtk.ListBoxRow):
             selected_value=type(self.rule.action).__name__.lower())
         return combobox, model
 
-    def __str__(self):
+    def __str__(self):  # pylint: disable=arguments-differ
+        # base class has automatically generated params
         result = "From: "
         if self.source_model:
             result += str(self.source_model)
@@ -380,6 +380,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         return result
 
     def is_changed(self) -> bool:
+        """Return True if rule was changed."""
         if not self.editing:
             return False
         if self.source_model:
@@ -398,7 +399,9 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         if self.source_model and self.target_model:
             self.source_model.select_entry(str(self.rule.source))
             self.target_model.select_entry(str(self.rule.target))
-        self.action_model.select_value(type(self.rule.action).__name__.lower())
+        if self.action_model:
+            self.action_model.select_value(
+                type(self.rule.action).__name__.lower())
         self.set_edit_mode(False)
         self.get_parent().invalidate_sort()
 
@@ -424,9 +427,8 @@ class RuleListBoxRow(Gtk.ListBoxRow):
                 if str(child.rule.action) == str(new_action):
                     self.error_msg = "This rule is a duplicate of another rule"
                     break
-                else:
-                    self.error_msg = "This rule conflicts with another rule"
-                    break
+                self.error_msg = "This rule conflicts with another rule"
+                break
 
         if self.error_msg:
             show_error("Cannot save rule",
@@ -599,10 +601,7 @@ class PolicyHandler(PageHandler):
                                         ask_is_allow=self.ask_is_allow,
                                         is_fundamental_rule=True))
                 break
-            if rule.source == '@adminvm' and rule.target == '@anyvm':
-                fundamental = True
-            else:
-                fundamental = False
+            fundamental = rule.source == '@adminvm' and rule.target == '@anyvm'
             self.exception_list_box.add(RuleListBoxRow(
                 rule=rule, qapp=self.qapp,
                 verb_description=self.verb_description,
@@ -681,7 +680,7 @@ class PolicyHandler(PageHandler):
                        self.main_list_box.get_children()]
         return rules
 
-    def _rule_clicked(self, _list_box: Gtk.ListBox, row: RuleListBoxRow, *_args):
+    def _rule_clicked(self, _list_box, row: RuleListBoxRow, *_args):
         if row.editing:
             # if the current row was clicked, nothing should happen
             return
@@ -736,15 +735,14 @@ class PolicyHandler(PageHandler):
             dialog.set_title("")
             dialog.set_markup(
                 "Do you want to save changes to current "
-                             "policy rules?")
+                "policy rules?")
             # TODO: nicer name? improve when improving message dialogs
             response = dialog.run()
             if response == Gtk.ResponseType.YES:
                 dialog.destroy()
                 return self.save()
-            else:
-                dialog.destroy()
-                self.reset()
+            dialog.destroy()
+            self.reset()
         return True
 
     def save(self):
@@ -813,4 +811,3 @@ class ConflictFileHandler:
                 row = ConflictFileListRow(file)
                 self.problem_list.add(row)
             self.problem_box.show_all()
-

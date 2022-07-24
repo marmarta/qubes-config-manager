@@ -2,7 +2,7 @@
 #
 # The Qubes OS Project, http://www.qubes-os.org
 #
-# Copyright (C) 2020 Marta Marczykowska-Górecka
+# Copyright (C) 2022 Marta Marczykowska-Górecka
 #                               <marmarta@invisiblethingslab.com>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
-
+"""Abstract class representing Settings pages."""
 import abc
 
 

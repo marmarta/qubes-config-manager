@@ -1,17 +1,35 @@
+# -*- encoding: utf8 -*-
+#
+# The Qubes OS Project, http://www.qubes-os.org
+#
+# Copyright (C) 2022 Marta Marczykowska-Górecka
+#                               <marmarta@invisiblethingslab.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License along
+# with this program; if not, see <http://www.gnu.org/licenses/>.
+"""
+Various Gtk widgets for use in Qubes tools.
+"""
 import gi
 
 import abc
-import qubesadmin
 import qubesadmin.vm
 import itertools
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GLib, Gio, GdkPixbuf, GObject
+from gi.repository import Gtk, GLib, GdkPixbuf
 
 from typing import Optional, Callable, Dict, Any
-
-# TODO: generalize loading icons, too much boilerplate?
-# TODO: or just IconCache
 
 
 def show_error(title, text):
@@ -60,7 +78,7 @@ class QubeName(Gtk.Box):
         """
         :param vm: Qubes VM to be represented.
         """
-        super(QubeName, self).__init__(orientation=Gtk.Orientation.HORIZONTAL)
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.vm = vm
         if vm is not None:
             self.image = Gtk.Image()
@@ -75,16 +93,17 @@ class QubeName(Gtk.Box):
         self.add(self.image)
         self.add(self.label)
 
-        self.get_style_context().add_class(f'qube-box-base')
+        self.get_style_context().add_class('qube-box-base')
         if vm:
             self.get_style_context().add_class(f'qube-box-{vm.label}')
         else:
-            self.get_style_context().add_class(f'qube-box-black')
+            self.get_style_context().add_class('qube-box-black')
 
         self.show_all()
 
 
 class TraitSelector(abc.ABC):
+    """abstract class representing various widgets for selecting trait value."""
     @abc.abstractmethod
     def get_selected(self):
         """
@@ -137,12 +156,15 @@ class TextModeler(TraitSelector):
             self._combo.connect('changed', self._on_changed)
 
     def get_selected(self):
+        """Get currently selected value."""
         return self._values[self._combo.get_active_text()]
 
     def is_changed(self) -> bool:
+        """Return True is selected value has changed from initial."""
         return self._initial_value != self._combo.get_active_text()
 
     def select_value(self, selected_value):
+        """Select provided value."""
         for key, value in self._values.items():
             if value == selected_value:
                 self._combo.set_active_id(key)
@@ -151,9 +173,6 @@ class TextModeler(TraitSelector):
         self._combo.get_style_context().remove_class('combo-changed')
         if self.is_changed():
             self._combo.get_style_context().add_class('combo-changed')
-
-# TODO: future improvement: better combobox with custom selection, multiple cols
-# etc., see design doc in Figma
 
 
 class VMListModeler(TraitSelector):
@@ -194,14 +213,14 @@ class VMListModeler(TraitSelector):
         self.change_function = event_callback
         self.style_changes = style_changes
 
-        self._entries = {}
+        self._entries: Dict[str, Dict[str, Any]] = {}
 
-        self._icons = {}
+        self._icons: Dict[str, Gtk.Image] = {}
         self._icon_size = 20
 
         self._theme = Gtk.IconTheme.get_default()
 
-        self.initial_value = None
+        self.initial_value: Optional[str] = None
         self._create_entries(filter_function, default_value, allow_none,
                              add_categories, current_value)
 
@@ -219,9 +238,12 @@ class VMListModeler(TraitSelector):
         self._initial_id = self.combo.get_active_id()
 
     def connect_change_callback(self, event_callback):
+        """Add a function to be run after combobox value is changed."""
         self.change_function = event_callback
 
     def is_changed(self) -> bool:
+        """Return True if the combobox selected value has changed from the
+        initial value."""
         if self._initial_id is None:
             return False
         return self._initial_id != self.combo.get_active_id()
@@ -231,17 +253,17 @@ class VMListModeler(TraitSelector):
             try:
                 icon = self._theme.load_icon(name, self._icon_size, 0)
             except GLib.Error:  # pylint: disable=catching-non-exception
-                # TODO: check why how what?
                 icon = self._theme.load_icon("edit-find", self._icon_size, 0)
             self._icons[name] = icon
         return self._icons[name]
 
     def _create_entries(
-            self, filter_function: Callable[[qubesadmin.vm.QubesVM], bool],
+            self,
+            filter_function: Optional[Callable[[qubesadmin.vm.QubesVM], bool]],
             default_value: Optional[qubesadmin.vm.QubesVM],
             allow_none: bool,
             add_categories: bool,
-            current_value: Optional = None):
+            current_value: Optional[str] = None):
 
         if add_categories:
             for api_name, display_name in VM_CATEGORIES.items():
@@ -250,7 +272,6 @@ class VMListModeler(TraitSelector):
                     "icon": None,
                     "vm": None
                 }
-            # TODO: discuss approach to dom0-adminvm; are they the same? are they not?
 
         if allow_none:
             self._entries['(none)'] = {
@@ -280,7 +301,7 @@ class VMListModeler(TraitSelector):
 
         if current_value:
             found_current = False
-            for key, value in self._entries.items():
+            for _, value in self._entries.items():
                 if value["api_name"] == current_value:
                     found_current = True
                     break
@@ -299,6 +320,8 @@ class VMListModeler(TraitSelector):
         typed = self.entry_box.get_text()
         if typed in self._entries:
             return typed
+
+        return None
 
     def _combo_change(self, _widget):
         name = self._get_valid_qube_name()
@@ -334,8 +357,8 @@ class VMListModeler(TraitSelector):
                     display_name,
                     entry["icon"],
                     entry["api_name"],
-                    '#f2f2f2' if entry['vm'] is None else None,  # background color
-                    '#000000' if entry['vm'] is None else None,  # foreground color
+                    '#f2f2f2' if entry['vm'] is None else None,  # background
+                    '#000000' if entry['vm'] is None else None,  # foreground
                 ])
 
         self.combo.set_model(list_store)
@@ -381,7 +404,7 @@ class VMListModeler(TraitSelector):
     def __str__(self):
         return self.entry_box.get_text()
 
-    def get_selected(self) -> qubesadmin.vm.QubesVM:
+    def get_selected(self) -> Optional[qubesadmin.vm.QubesVM]:
         """
         Get currently selected VM, if any
         :return: QubesVM object
@@ -391,6 +414,7 @@ class VMListModeler(TraitSelector):
         if selected in self._entries:
             return self._entries[selected]["vm"] or \
                    self._entries[selected]["api_name"]
+        return None
 
     def select_entry(self, vm_name):
         """
@@ -411,6 +435,8 @@ class VMListModeler(TraitSelector):
 
 
 class ImageTextButton(Gtk.Button):
+    """Button with image and callback function. A simple helper
+    to avoid boilerplate."""
     def __init__(self, icon_name: str, label: str, click_function):
         super().__init__()
         self.box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
