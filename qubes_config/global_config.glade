@@ -1854,11 +1854,11 @@
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
+                            <property name="margin-top">30</property>
                             <property name="label" translatable="yes">Moving and Copying Files</property>
                             <property name="xalign">0</property>
                             <style>
                               <class name="group_title"/>
-                              <class name="section_title"/>
                             </style>
                           </object>
                           <packing>
@@ -2401,6 +2401,7 @@ Files cannot be copied to dom0.</property>
                           <object class="GtkSeparator">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
+                            <property name="margin-top">50</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>

@@ -284,6 +284,51 @@ class BasicSettingsHandler(PageHandler):
     # TODO: implement
 
 
+class FileAccessHandler(PageHandler):
+    """Handler for FileAccess page. Requires separate handler because
+    it combines two policies in itself."""
+    def __init__(self, qapp: qubesadmin.Qubes,
+                 gtk_builder: Gtk.Builder,
+                 policy_manager: PolicyManager):
+        self.qapp = qapp
+        self.policy_manager = policy_manager
+
+        self.filecopy_handler = PolicyHandler(
+            qapp=self.qapp,
+            gtk_builder=gtk_builder,
+            prefix="filecopy",
+            policy_manager=self.policy_manager,
+            default_policy="""qubes.Filecopy * @adminvm @anyvm deny\n
+qubes.Filecopy * @anyvm @anyvm ask""",
+            service_name="qubes.Filecopy",
+            policy_file_name="50-config-filecopy",
+            verb_description="be allowed to copy files to",
+            ask_is_allow=False)
+        self.openinvm_handler = PolicyHandler(
+            qapp=self.qapp,
+            gtk_builder=gtk_builder,
+            prefix="openinvm",
+            policy_manager=self.policy_manager,
+            default_policy="""qubes.OpenInVM * @adminvm @anyvm deny\n
+qubes.OpenInVM * @anyvm @dispvm allow\n
+qubes.OpenInVM * @anyvm @anyvm ask""",
+            service_name="qubes.OpenInVM",
+            policy_file_name="50-config-openinvm",
+            verb_description="allow files to be opened in",
+            ask_is_allow=False)
+
+    def reset(self):
+        self.filecopy_handler.reset()
+        self.openinvm_handler.reset()
+
+    def save(self):
+        return self.filecopy_handler.save() and self.openinvm_handler.save()
+
+    def check_for_unsaved(self) -> bool:
+        return self.filecopy_handler.check_for_unsaved() \
+               and self.openinvm_handler.check_for_unsaved()
+
+
 class GlobalConfig(Gtk.Application):
     """
     Main Gtk.Application for new qube widget.
@@ -346,7 +391,11 @@ class GlobalConfig(Gtk.Application):
         # match page by id to handler; this is not pretty, but Gtk likes
         # to ID pages by their number, there is no simple page_id
         self.handlers: Dict[int, PageHandler] = {
-            0: BasicSettingsHandler(self.builder, self.qapp),
+            0: BasicSettingsHandler(self.builder, self.qapp),  # TODO
+            1: None,  # TODO
+            2: None,  # TODO
+            3: None,  # TODO
+            4: None,  # TODO
             5: PolicyHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
@@ -358,6 +407,11 @@ class GlobalConfig(Gtk.Application):
 qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
                 verb_description=' be allowed to paste\n into clipboard of ',
                 ask_is_allow=True),
+            6: FileAccessHandler(
+                qapp=self.qapp,
+                gtk_builder=self.builder,
+                policy_manager=policy_manager
+            ),  # TODO
             7: PolicyHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
@@ -369,7 +423,8 @@ qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
 qubes.OpenURL * @anyvm @dispvm allow\n
 qubes.OpenURL * @anyvm @anyvm ask\n""",
                 verb_description=' be allowed to open URLs in ',
-                ask_is_allow=False),
+                ask_is_allow=False),  # TODO
+            8: None,  # TODO
         }
 
         self.main_notebook.connect("switch-page", self._page_switched)
