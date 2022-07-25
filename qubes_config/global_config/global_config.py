@@ -33,7 +33,8 @@ import qubesadmin.vm
 from ..widgets.qubes_widgets_library import VMListModeler, \
     TextModeler, TraitSelector, NONE_CATEGORY
 from .page_handler import PageHandler
-from .policy_handler import PolicyManager, PolicyHandler, RuleSimple, \
+from .policy_handler import PolicyManager, PolicyHandler
+from .policy_rules import RuleSimple, \
     RuleSimpleAskIsAllow, RuleTargeted
 
 import gi

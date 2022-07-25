@@ -26,13 +26,13 @@ from copy import deepcopy
 from typing import Optional, List, Tuple, Union, Dict
 
 from qrexec.policy.admin_client import PolicyClient
-from qrexec.policy.parser import StringPolicy, Rule, Allow, Ask, Deny, \
-    Source, Target, Action
+from qrexec.policy.parser import StringPolicy, Rule
 from qrexec.exc import PolicySyntaxError
 
 from ..widgets.qubes_widgets_library import VMListModeler, TextModeler,\
     ImageTextButton, show_error, VM_CATEGORIES, TokenName, BiDictionary
 from .page_handler import PageHandler
+from .policy_rules import AbstractRuleWrapper
 
 import gi
 
@@ -279,147 +279,16 @@ class ActionWidget(Gtk.Box):
         self.model.select_value(self.selected_value)
 
 
-class RuleSimple:
-    """
-    Simple Rule wrapper, where:
-    source = source
-    target = target
-    action = just action, without params.
-    Returns and accepts strings as target/source/action.
-    """
-    ACTION_CHOICES = {
-        "ask": "ask",
-        "allow": "always",
-        "deny": "never"
-    }
-
-    def __init__(self, rule: Rule):
-        self._rule = rule
-
-    @property
-    def target(self):
-        return str(self._rule.target)
-
-    @target.setter
-    def target(self, new_value):
-        new_target = Target(new_value)
-        self._rule.target = new_target
-
-    @property
-    def source(self):
-        return str(self._rule.source)
-
-    @source.setter
-    def source(self, new_value):
-        new_source = Source(new_value)
-        self._rule.source = new_source
-
-    @property
-    def action(self):
-        return str(self._rule.action)
-
-    @action.setter
-    def action(self, new_value):
-        new_action = Action[new_value].value(self._rule)
-        self._rule.action = new_action
-
-    @property
-    def raw_rule(self):
-        return self._rule
-
-
-class RuleSimpleAskIsAllow(RuleSimple):
-    ACTION_CHOICES = {
-        "ask": "always",
-        "deny": "never"
-    }
-
-# TODO: RuleTypes need a DEFAULTRULE?
-
-
-class RuleTargeted:
-    """
-    Rule wrapper, where:
-    source = source
-    action = action
-    target = action's target= if action is allow,
-    action's default_target if action is ask, target if action is deny;
-    if action is ask or allow, target should be @default
-    Returns and accepts strings as target/source/action.
-    """
-    ACTION_CHOICES = {
-        "ask": "ask",
-        "allow": "always",
-        "deny": "never"
-    }
-
-    def __init__(self, rule: Rule):
-        self._rule = rule
-
-    @property
-    def target(self):
-        if isinstance(self._rule.action, Ask):
-            if self._rule.target == '@default':
-                return str(self._rule.action.default_target)
-        if isinstance(self._rule.action, Allow):
-            if self._rule.target == '@default':
-                return str(self._rule.action.target)
-        return str(self._rule.target)
-
-    @target.setter
-    def target(self, new_value):
-        new_target = Target(new_value)
-
-        if new_value.startswith('@'):
-            self._rule.target = new_target
-            return
-
-        if isinstance(self._rule.action, Ask):
-            self._rule.target = Target('@default')
-            self._rule.action.default_target = new_target
-            return
-        if isinstance(self._rule.action, Allow):
-            self._rule.target = Target('@default')
-            self._rule.action.target = new_target
-            return
-
-        self._rule.target = new_target
-
-    @property
-    def source(self):
-        return str(self._rule.source)
-
-    @source.setter
-    def source(self, new_value):
-        new_source = Source(new_value)
-        self._rule.source = new_source
-
-    @property
-    def action(self):
-        return type(self._rule.action).__name__.lower()
-
-    @action.setter
-    def action(self, new_value):
-        old_target = self.target
-        new_action = Action[new_value].value(self._rule)
-        self._rule.action = new_action
-        self.target = old_target
-
-    @property
-    def raw_rule(self):
-        return self._rule
-
-
 class RuleListBoxRow(Gtk.ListBoxRow):
     """Row in a listbox representing a policy rule"""
     def __init__(self,
-                 rule: RuleSimple,
+                 rule: AbstractRuleWrapper,
                  qapp: qubesadmin.Qubes,
                  verb_description: Dict[str, str],
                  ask_is_allow: bool = False,
                  is_fundamental_rule: bool = False):
         """
-        :param rule: Rule object to be represented
+        :param rule: Rule object, wrapped in a helper object
         :param qapp: Qubes object
         :param verb_description: description of what the rule does, to be used
         as Qube1 (will) NEVER/ALWAYS (verb_description) Qube2, for example
