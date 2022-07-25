@@ -33,7 +33,8 @@ import qubesadmin.vm
 from ..widgets.qubes_widgets_library import VMListModeler, \
     TextModeler, TraitSelector, NONE_CATEGORY
 from .page_handler import PageHandler
-from .policy_handler import PolicyManager, PolicyHandler
+from .policy_handler import PolicyManager, PolicyHandler, RuleSimple, \
+    RuleSimpleAskIsAllow, RuleTargeted
 
 import gi
 
@@ -302,8 +303,12 @@ class FileAccessHandler(PageHandler):
 qubes.Filecopy * @anyvm @anyvm ask""",
             service_name="qubes.Filecopy",
             policy_file_name="50-config-filecopy",
-            verb_description="be allowed to copy files to",
-            ask_is_allow=False)
+            verb_description={
+                "ask": "to be allowed to copy files to",
+                "allow": "allow files to copied to",
+                "deny": "be allowed to copy files to"
+            },
+            rule_class=RuleSimple)
         self.openinvm_handler = PolicyHandler(
             qapp=self.qapp,
             gtk_builder=gtk_builder,
@@ -314,8 +319,12 @@ qubes.OpenInVM * @anyvm @dispvm allow\n
 qubes.OpenInVM * @anyvm @anyvm ask""",
             service_name="qubes.OpenInVM",
             policy_file_name="50-config-openinvm",
-            verb_description="allow files to be opened in",
-            ask_is_allow=False)
+            verb_description={
+                "allow": "allow files to be opened in",
+                "ask": "to allow files to be opened in",
+                "deny": "allow files to be opened in"
+            },
+            rule_class=RuleTargeted)
 
     def reset(self):
         self.filecopy_handler.reset()
@@ -394,8 +403,8 @@ class ThisDeviceHandler(PageHandler):
 # ask + target? check?
 
 
-
-# use target=??? for openURL and openinVM instead of actual target, target must be @default or @anyvm
+# use target=??? for openURL and openinVM instead of actual target,
+# target must be @default or @anyvm
 
 class GlobalConfig(Gtk.Application):
     """
@@ -473,8 +482,11 @@ class GlobalConfig(Gtk.Application):
                 policy_file_name='50-config-clipboard',
                 default_policy="""qubes.ClipboardPaste * @adminvm @anyvm deny\n
 qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
-                verb_description=' be allowed to paste\n into clipboard of ',
-                ask_is_allow=True),
+                verb_description={
+                    "ask": 'be allowed to paste\n into clipboard of',
+                    "deny": 'be allowed to paste\n into clipboard of'
+                },
+                rule_class=RuleSimpleAskIsAllow),
             6: FileAccessHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
@@ -490,8 +502,12 @@ qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
                 default_policy="""qubes.OpenURL * @adminvm @anyvm deny\n
 qubes.OpenURL * @anyvm @dispvm allow\n
 qubes.OpenURL * @anyvm @anyvm ask\n""",
-                verb_description=' be allowed to open URLs in ',
-                ask_is_allow=False),  # TODO
+                verb_description={
+                    "allow": 'be allowed to open URLs in',
+                    "ask": 'to be allowed to open URLs in',
+                    "deny": 'be allowed to open URLs in',
+                },
+                rule_class=RuleTargeted),  # TODO
             8: ThisDeviceHandler(self.qapp, self.builder),  # TODO
         }
 

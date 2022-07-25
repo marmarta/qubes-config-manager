@@ -23,15 +23,15 @@ RPC Policy-related functionality.
 """
 import subprocess
 from copy import deepcopy
-from typing import Optional, List, Tuple, Union, Dict, Any
+from typing import Optional, List, Tuple, Union, Dict
 
 from qrexec.policy.admin_client import PolicyClient
 from qrexec.policy.parser import StringPolicy, Rule, Allow, Ask, Deny, \
-    Source, Target, VMToken
+    Source, Target, Action
 from qrexec.exc import PolicySyntaxError
 
-from ..widgets.qubes_widgets_library import QubeName, VMListModeler, \
-    TextModeler, TypeName, ImageTextButton, show_error, VM_CATEGORIES
+from ..widgets.qubes_widgets_library import VMListModeler, TextModeler,\
+    ImageTextButton, show_error, VM_CATEGORIES, TokenName, BiDictionary
 from .page_handler import PageHandler
 
 import gi
@@ -44,18 +44,6 @@ from gi.repository import Gtk
 
 import gbulb
 gbulb.install()
-
-
-CHOICE_NAMES_ASK_IS_ALLOW = {
-    'always': 'ask',
-    'never': 'deny'
-}
-
-CHOICE_NAMES = {
-    'always': 'allow',
-    'ask': 'ask',
-    'never': 'deny'
-}
 
 
 class PolicyManager:
@@ -141,57 +129,293 @@ class PolicyManager:
 
 
 class VMWidget(Gtk.Box):
+    """VM/category selection widget."""
     def __init__(self,
                  qapp: qubesadmin.Qubes,
                  categories: Optional[Dict[str, str]],
                  initial_value: str,
-                 token_holder: Any,
-                 token_property_name: str
-                 ):
+                 additional_text: Optional[str] = None,
+                 additional_widget: Optional[Gtk.Widget] = None):
+        """
+        :param qapp: Qubes object
+        :param categories: list of additional categories available for this
+        VM, in the form of token/api name: readable name
+        :param initial_value: initial selected value as str
+        :param additional_text: additional text to be added after
+        selector widget
+        :param additional_widget: additional widget to be packed after selector
+        widget
+        """
+
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.qapp = qapp
-        current_value: VMToken = getattr(token_holder, token_property_name)
+        self.selected_value = initial_value
 
         self.combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
-        self.pack_start(self.combobox, False, False, 0)
+        self.model = VMListModeler(combobox=self.combobox,
+                                   qapp=self.qapp,
+                                   filter_function=lambda x: str(x) != 'dom0',
+                                   current_value=str(self.selected_value),
+                                   additional_options=categories)
 
-        self.name_label: Optional[Gtk.Widget] = None
+        self.name_widget = TokenName(self.selected_value, self.qapp)
 
-        model = VMListModeler(combobox=self.combobox, qapp=self.qapp,
-                              filter_function=lambda x: str(x) != 'dom0',
-                              event_callback=None,
-                              default_value=None, current_value=None,
-                              style_changes=False, additional_options=VM_CATEGORIES)
+        self.combobox.set_no_show_all(True)
+        self.name_widget.set_no_show_all(True)
+
+        self.pack_start(self.combobox, True, True, 0)
+        self.pack_start(self.name_widget, True, True, 0)
+        self.combobox.set_halign(Gtk.Align.START)
+
+        if additional_text:
+            additional_text_widget = \
+                Gtk.Label(additional_text)
+            additional_text_widget.get_style_context().add_class(
+                'didascalia')
+            additional_text_widget.set_halign(Gtk.Align.END)
+            self.pack_end(additional_text_widget, False, False, 0)
+        if additional_widget:
+            additional_widget.set_halign(Gtk.Align.END)
+            self.pack_end(additional_widget, False, False, 0)
+
+        self.set_editable(False)
 
     def set_editable(self, editable: bool):
-        """Set widget to editable state."""
-        # hide combo show label
-        pass
+        """Change state between editable and non-editable."""
+        self.combobox.set_visible(editable)
+        self.name_widget.set_visible(not editable)
 
-    def get_selected(self) -> Union[str, qubesadmin.vm.QubesVM]:
-        """get selected VM or category"""
+    def is_changed(self) -> bool:
+        """Return True if widget was changed from its initial state."""
+        new_value = self.model.get_selected()
+        return str(self.selected_value) == str(new_value)
 
-    # def _get_token_label(self, token) -> \
-    #         Tuple[Gtk.Widget, Optional[VMListModeler]]:
-    #     """Make a pretty token widget, appropriately formatted for
-    #     keywords/vms."""
-    #     if token.type == 'keyword':
-    #         widget = TypeName(token)
-    #     else:
-    #         try:
-    #             widget = QubeName(self.qapp.domains[token])
-    #         except KeyError:
-    #             widget = TypeName(f"Unknown Qube: {token}")
-    #     return widget, None
+    def save_changes(self):
+        """Store changes in model; must be used before set_editable(True) if
+        it's desired to see changes reflected in non-editable state"""
+        new_value = str(self.model.get_selected())
+        self.selected_value = new_value
+        self.name_widget.set_token(new_value)
 
+    def get_selected(self):
+        """Get currently selected value."""
+        return self.model.get_selected()
+
+    def revert_changes(self):
+        """Roll back to last saved state."""
+        self.model.select_entry(self.selected_value)
+
+
+class ActionWidget(Gtk.Box):
+    """Action selection widget."""
+    def __init__(self,
+                 choices: Dict[str, str],
+                 initial_value: str,
+                 additional_text: Dict[str, str]):
+        """
+        :param choices: dictionary of policy value: readable name
+        :param initial_value: initial policy value
+        :param additional_text: dictionary of policy value: readable description
+        """
+        # choice is code: readable
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
+
+        self.choices = BiDictionary(choices)
+        self.additional_text = additional_text
+
+        # to avoid inconsistencies
+        self.selected_value = initial_value.lower()
+        self.combobox = Gtk.ComboBoxText()
+        self.model = TextModeler(
+            self.combobox,
+            self.choices.inverted,
+            selected_value=self.selected_value)
+        self.name_widget = Gtk.Label()
+        self.additional_text_widget = Gtk.Label()
+        self.additional_text_widget.get_style_context().add_class(
+            'didascalia')
+
+        self.combobox.set_no_show_all(True)
+        self.name_widget.set_no_show_all(True)
+
+        self.pack_start(self.combobox, True, True, 0)
+        self.pack_start(self.name_widget, True, True, 0)
+        self.pack_end(self.additional_text_widget, False, False, 0)
+        self.combobox.set_halign(Gtk.Align.START)
+        self.name_widget.set_halign(Gtk.Align.START)
+        self.additional_text_widget.set_halign(Gtk.Align.END)
+
+        self._format_new_value(initial_value)
+        self.set_editable(False)
+
+    def _format_new_value(self, new_value):
+        self.name_widget.set_markup(f'<b>{self.choices[new_value]}</b>')
+        self.additional_text_widget.set_text(
+            self.additional_text[new_value])
+
+    def set_editable(self, editable: bool):
+        """Change state between editable and non-editable."""
+        self.combobox.set_visible(editable)
+        self.name_widget.set_visible(not editable)
+
+    def is_changed(self) -> bool:
+        """Return True if widget was changed from its initial state."""
+        new_value = self.model.get_selected()
+        return str(self.selected_value) == str(new_value)
+
+    def save_changes(self):
+        """Store changes in model; must be used before set_editable(True) if
+        it's desired to see changes reflected in non-editable state"""
+        new_value = self.model.get_selected()
+        self.selected_value = new_value
+        self._format_new_value(new_value)
+
+    def get_selected(self):
+        """Get currently selected value."""
+        return self.model.get_selected()
+
+    def revert_changes(self):
+        """Roll back to last saved state."""
+        self.model.select_value(self.selected_value)
+
+
+class RuleSimple:
+    """
+    Simple Rule wrapper, where:
+    source = source
+    target = target
+    action = just action, without params.
+    Returns and accepts strings as target/source/action.
+    """
+    ACTION_CHOICES = {
+        "ask": "ask",
+        "allow": "always",
+        "deny": "never"
+    }
+
+    def __init__(self, rule: Rule):
+        self._rule = rule
+
+    @property
+    def target(self):
+        return str(self._rule.target)
+
+    @target.setter
+    def target(self, new_value):
+        new_target = Target(new_value)
+        self._rule.target = new_target
+
+    @property
+    def source(self):
+        return str(self._rule.source)
+
+    @source.setter
+    def source(self, new_value):
+        new_source = Source(new_value)
+        self._rule.source = new_source
+
+    @property
+    def action(self):
+        return str(self._rule.action)
+
+    @action.setter
+    def action(self, new_value):
+        new_action = Action[new_value].value(self._rule)
+        self._rule.action = new_action
+
+    @property
+    def raw_rule(self):
+        return self._rule
+
+
+class RuleSimpleAskIsAllow(RuleSimple):
+    ACTION_CHOICES = {
+        "ask": "always",
+        "deny": "never"
+    }
+
+# TODO: RuleTypes need a DEFAULTRULE?
+
+
+class RuleTargeted:
+    """
+    Rule wrapper, where:
+    source = source
+    action = action
+    target = action's target= if action is allow,
+    action's default_target if action is ask, target if action is deny;
+    if action is ask or allow, target should be @default
+    Returns and accepts strings as target/source/action.
+    """
+    ACTION_CHOICES = {
+        "ask": "ask",
+        "allow": "always",
+        "deny": "never"
+    }
+
+    def __init__(self, rule: Rule):
+        self._rule = rule
+
+    @property
+    def target(self):
+        if isinstance(self._rule.action, Ask):
+            if self._rule.target == '@default':
+                return str(self._rule.action.default_target)
+        if isinstance(self._rule.action, Allow):
+            if self._rule.target == '@default':
+                return str(self._rule.action.target)
+        return str(self._rule.target)
+
+    @target.setter
+    def target(self, new_value):
+        new_target = Target(new_value)
+
+        if new_value.startswith('@'):
+            self._rule.target = new_target
+            return
+
+        if isinstance(self._rule.action, Ask):
+            self._rule.target = Target('@default')
+            self._rule.action.default_target = new_target
+            return
+        if isinstance(self._rule.action, Allow):
+            self._rule.target = Target('@default')
+            self._rule.action.target = new_target
+            return
+
+        self._rule.target = new_target
+
+    @property
+    def source(self):
+        return str(self._rule.source)
+
+    @source.setter
+    def source(self, new_value):
+        new_source = Source(new_value)
+        self._rule.source = new_source
+
+    @property
+    def action(self):
+        return type(self._rule.action).__name__.lower()
+
+    @action.setter
+    def action(self, new_value):
+        old_target = self.target
+        new_action = Action[new_value].value(self._rule)
+        self._rule.action = new_action
+        self.target = old_target
+
+    @property
+    def raw_rule(self):
+        return self._rule
 
 
 class RuleListBoxRow(Gtk.ListBoxRow):
     """Row in a listbox representing a policy rule"""
     def __init__(self,
-                 rule: Rule,
+                 rule: RuleSimple,
                  qapp: qubesadmin.Qubes,
-                 verb_description: str,
+                 verb_description: Dict[str, str],
                  ask_is_allow: bool = False,
                  is_fundamental_rule: bool = False):
         """
@@ -199,7 +423,8 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         :param qapp: Qubes object
         :param verb_description: description of what the rule does, to be used
         as Qube1 (will) NEVER/ALWAYS (verb_description) Qube2, for example
-        "be allowed to paste into clipboard of"
+        "be allowed to paste into clipboard of", in the form of dictionary
+        of policy values: description
         :param ask_is_allow: should 'ask' be treated the same as 'allow'
         :param is_fundamental_rule: can this rule be deleted/can its objects be
         changed
@@ -225,32 +450,37 @@ class RuleListBoxRow(Gtk.ListBoxRow):
 
         self.main_widget_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.main_widget_box.set_homogeneous(True)
+
+        self.source_widget = VMWidget(
+            self.qapp, VM_CATEGORIES, self.rule.source,
+            additional_text="will")
+        self.target_widget = VMWidget(
+            self.qapp, VM_CATEGORIES, self.rule.target,
+            additional_widget=self._get_delete_button())
+        self.action_widget = ActionWidget(self.rule.ACTION_CHOICES,
+            self.rule.action,
+            self.verb_description)
+
+        self.main_widget_box.pack_start(self.source_widget, False, True, 0)
+        self.main_widget_box.pack_start(self.action_widget, False, True, 0)
+        self.main_widget_box.pack_start(self.target_widget, False, True, 0)
         self.outer_box.pack_start(self.main_widget_box, False, False, 0)
 
         self.additional_widget_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL)
-
-        save_button = ImageTextButton("qubes-ok", "ACCEPT",
-                                      self.validate_and_save)
-        save_button.get_style_context().add_class('button_save')
-        save_button.get_style_context().add_class('flat_button')
-        self.additional_widget_box.pack_end(save_button, False, False, 10)
-        self.additional_widget_box.set_no_show_all(True)
-
+        save_button = ImageTextButton(
+            icon_name="qubes-ok", label="ACCEPT",
+            click_function=self.validate_and_save,
+            style_classes=["button_save", "flat_button"])
         cancel_button = ImageTextButton(
-            "qubes-delete", "CANCEL", self.revert)
-        cancel_button.get_style_context().add_class('flat_button')
-        cancel_button.get_style_context().add_class('button_cancel')
+            icon_name="qubes-delete", label="CANCEL",
+            click_function=self.revert,
+            style_classes=["button_cancel", "flat_button"])
+        self.additional_widget_box.pack_end(save_button, False, False, 10)
         self.additional_widget_box.pack_end(cancel_button, False, False, 10)
 
+        self.additional_widget_box.set_no_show_all(True)
         self.outer_box.pack_start(self.additional_widget_box, False, False, 10)
-
-        self.source_widget: Optional[Gtk.Widget] = None
-        self.source_model: Optional[VMListModeler] = None
-        self.action_widget: Optional[Gtk.Widget] = None
-        self.action_model: Optional[TextModeler] = None
-        self.target_widget: Optional[Gtk.Widget] = None
-        self.target_model: Optional[VMListModeler] = None
 
         self.error_msg: Optional[str] = None
         self.editing: bool = False
@@ -259,32 +489,17 @@ class RuleListBoxRow(Gtk.ListBoxRow):
 
     def _get_delete_button(self) -> Gtk.Button:
         """Get a delete button appropriate for the class."""
-        delete_button: Gtk.Button = Gtk.Button()
-        delete_icon = Gtk.Image()
-        delete_icon.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
-                'qubes-delete' if not self.is_fundamental_rule
-                else 'qubes-padlock', 14, 0))
-        delete_button.add(delete_icon)
-        delete_button.get_style_context().add_class('flat')
-        if not self.is_fundamental_rule:
-            delete_button.connect("clicked", self._delete_self)
+        if self.is_fundamental_rule:
+            delete_button = ImageTextButton(icon_name='qubes-padlock',
+                                            label=None,
+                                            click_function=None,
+                                            style_classes=["flat"])
         else:
-            delete_button.set_sensitive(False)
+            delete_button = ImageTextButton(icon_name='qubes-delete',
+                                            label=None,
+                                            click_function=self._delete_self,
+                                            style_classes=["flat"])
         return delete_button
-
-    def _parse_action(self) -> Union[Allow, Ask, Deny]:
-        """Turn selected action to Action object."""
-        assert self.action_model
-        new_action = self.action_model.get_selected()
-        if new_action == 'allow':
-            action_obj = Allow(self.rule)
-        elif new_action == 'ask':
-            action_obj = Ask(self.rule)
-        elif new_action == 'deny':
-            action_obj = Deny(self.rule)
-        else:
-            raise ValueError
-        return action_obj
 
     def _delete_self(self, *_args):
         """Remove self from parent. Used to delete the rule."""
@@ -305,165 +520,46 @@ class RuleListBoxRow(Gtk.ListBoxRow):
             self.title_label.set_visible(False)
             self.additional_widget_box.set_visible(False)
 
-        # remove existing widgets
-        for child in self.main_widget_box.get_children():
-            self.main_widget_box.remove(child)
-
-        action_function = self._get_action_selector if editing \
-            else self._get_action_label
-
-        if editing and not self.is_fundamental_rule:
-            token_function = self._get_token_selector
-        else:
-            token_function = self._get_token_label
-
-        self.source_widget, self.source_model = token_function(self.rule.source)
-        self.source_widget.set_halign(Gtk.Align.START)
-
-        label = Gtk.Label('will')
-        label.set_halign(Gtk.Align.END)
-        label.get_style_context().add_class('didascalia')
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        box.pack_start(self.source_widget, True, True, 0)
-        box.pack_start(label, False, False, 0)
-        self.main_widget_box.pack_start(box, False, True, 0)
-
-        self.action_widget, self.action_model = action_function()
-        self.action_widget.set_halign(Gtk.Align.START)
-        if isinstance(self.rule.action, Ask):
-            # I'm so sorry, but English is terrible
-            description = "to " + self.verb_description
-        else:
-            description = self.verb_description
-        label = Gtk.Label(description)
-        label.set_halign(Gtk.Align.END)
-        label.get_style_context().add_class('didascalia')
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        box.pack_start(self.action_widget, True, True, 0)
-        box.pack_start(label, False, False, 0)
-        self.main_widget_box.pack_start(box, False, True, 0)
-
-        self.target_widget, self.target_model = token_function(self.rule.target)
-        delete_button = self._get_delete_button()
-        delete_button.set_halign(Gtk.Align.START)
-        self.target_widget.set_halign(Gtk.Align.START)
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        box.pack_start(self.target_widget, True, True, 0)
-        box.pack_start(delete_button, False, False, 0)
-        self.main_widget_box.pack_start(box, False, True, 0)
+        self.source_widget.set_editable(editing)
+        self.action_widget.set_editable(editing)
+        self.target_widget.set_editable(editing)
 
         self.show_all()
         self.editing = editing
 
-    def _get_token_label(self, token) -> \
-            Tuple[Gtk.Widget, Optional[VMListModeler]]:
-        """Make a pretty token widget, appropriately formatted for
-        keywords/vms."""
-        if token.type == 'keyword':
-            widget = TypeName(token)
-        else:
-            try:
-                widget = QubeName(self.qapp.domains[token])
-            except KeyError:
-                widget = TypeName(f"Unknown Qube: {token}")
-        return widget, None
-
-    def _get_token_selector(self, token) -> \
-            Tuple[Gtk.Widget, Optional[VMListModeler]]:
-        if token.type == 'keyword':
-            current_value = str(token)
-        else:
-            try:
-                current_value = self.qapp.domains[token]
-            except KeyError:
-                # The VM was not found
-                current_value = str(token)
-
-        combobox = Gtk.ComboBox.new_with_entry()
-        model = VMListModeler(combobox=combobox, qapp=self.qapp,
-                              filter_function=lambda x: str(x) != 'dom0',
-                              event_callback=None,
-                              default_value=None, current_value=current_value,
-                              style_changes=False, additional_options=VM_CATEGORIES)
-        return combobox, model
-
-    def _get_action_label(self) -> Tuple[Gtk.Widget, Optional[TextModeler]]:
-        choices = CHOICE_NAMES_ASK_IS_ALLOW if self.ask_is_allow \
-            else CHOICE_NAMES
-        name = type(self.rule.action).__name__.lower()
-        for readable_name, action_name in choices.items():
-            if action_name == type(self.rule.action).__name__.lower():
-                name = readable_name
-        label = Gtk.Label()
-        label.set_markup(f'<b>{name}</b>')
-        return label, None
-
-    def _get_action_selector(self) -> Tuple[Gtk.Widget, Optional[TextModeler]]:
-        if self.ask_is_allow:
-            choices = CHOICE_NAMES_ASK_IS_ALLOW
-        else:
-            choices = CHOICE_NAMES
-
-        combobox = Gtk.ComboBoxText()
-        model = TextModeler(
-            combobox,
-            choices,
-            selected_value=type(self.rule.action).__name__.lower())
-        return combobox, model
-
     def __str__(self):  # pylint: disable=arguments-differ
         # base class has automatically generated params
         result = "From: "
-        if self.source_model:
-            result += str(self.source_model)
-        else:
-            result += str(self.rule.source)
+        result += str(self.source_widget.get_selected())
         result += " to: "
-        if self.target_model:
-            result += str(self.target_model)
-        else:
-            result += str(self.rule.target)
-        result += " Action: " + str(self._parse_action())
+        result += str(self.target_widget.get_selected())
+        result += " Action: " + self.action_widget.get_selected()
         return result
 
     def is_changed(self) -> bool:
         """Return True if rule was changed."""
         if not self.editing:
             return False
-        if self.source_model:
-            if str(self.source_model.get_selected()) != str(self.rule.source):
-                return True
-        if self.target_model:
-            if str(self.target_model.get_selected()) != str(self.rule.target):
-                return True
-        new_action = self._parse_action()
-        if str(new_action) != str(self.rule.action):
-            return True
-        return False
+        return self.source_widget.is_changed() or \
+            self.action_widget.is_changed() or \
+            self.target_widget.is_changed()
 
     def revert(self, *_args):
         """Revert all changes to the Rule."""
-        if self.source_model and self.target_model:
-            self.source_model.select_entry(str(self.rule.source))
-            self.target_model.select_entry(str(self.rule.target))
-        if self.action_model:
-            self.action_model.select_value(
-                type(self.rule.action).__name__.lower())
+        self.source_widget.revert_changes()
+        self.action_widget.revert_changes()
+        self.target_widget.revert_changes()
         self.set_edit_mode(False)
         self.get_parent().invalidate_sort()
 
     def validate_and_save(self, *_args) -> bool:
         """Validate if the rule is not duplicate or conflicting with another
         rule, then save. If this fails, return False, else return True."""
-        if self.source_model:
-            new_source = Source(str(self.source_model.get_selected()))
-        else:
-            new_source = self.rule.source
-        if self.target_model:
-            new_target = Target(str(self.target_model.get_selected()))
-        else:
-            new_target = self.rule.target
-        new_action = self._parse_action()
+        new_source = str(self.source_widget.get_selected())
+        new_target = str(self.target_widget.get_selected())
+        new_action = self.action_widget.get_selected()
+
+        print("TRYING TO SAVE RULE", new_source, new_target, new_action)
 
         self.error_msg = None
         for child in self.get_parent().get_children():
@@ -471,7 +567,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
                 continue
             if child.rule.source == new_source and \
                     child.rule.target == new_target:
-                if str(child.rule.action) == str(new_action):
+                if child.rule.action == new_action:
                     self.error_msg = "This rule is a duplicate of another rule"
                     break
                 self.error_msg = "This rule conflicts with another rule"
@@ -487,6 +583,9 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         self.rule.source = new_source
         self.rule.target = new_target
         self.rule.action = new_action
+        self.source_widget.save_changes()
+        self.target_widget.save_changes()
+        self.action_widget.save_changes()
         self.set_edit_mode(False)
         self.get_parent().invalidate_sort()
 
@@ -506,8 +605,8 @@ class PolicyHandler(PageHandler):
                  default_policy: str,
                  service_name: str,
                  policy_file_name: str,
-                 verb_description: str,
-                 ask_is_allow: bool):
+                 verb_description: Dict[str, str],
+                 rule_class):
         """
         :param qapp: Qubes object
         :param gtk_builder: gtk_builder; to avoid inelegant design, this should
@@ -519,8 +618,10 @@ class PolicyHandler(PageHandler):
         :param policy_file_name: name of the config's policy file for this
         service
         :param verb_description: description used in policy rows, as in
-        Qube1 (will) NEVER (verb_description) Qube2
-        :param ask_is_allow: should ask be treated the same as allow
+        Qube1 (will) NEVER (verb_description) Qube2, in the form of dictionary
+        of policy values: verb description
+        :param rule_class: class to be used for Rules, can be one of
+         RuleSimple, RuleSimpleAskIsAllow or RuleTargeted
         """
 
         self.qapp = qapp
@@ -529,7 +630,7 @@ class PolicyHandler(PageHandler):
         self.service_name = service_name
         self.policy_file_name = policy_file_name
         self.verb_description = verb_description
-        self.ask_is_allow = ask_is_allow
+        self.rule_class = rule_class
 
         # load rules
         rules, self.current_token = \
@@ -645,15 +746,14 @@ class PolicyHandler(PageHandler):
         for rule in rules:
             if rule.source == '@anyvm' and rule.target == '@anyvm':
                 self.main_list_box.add(RuleListBoxRow
-                                       (rule, self.qapp, self.verb_description,
-                                        ask_is_allow=self.ask_is_allow,
+                                       (self.rule_class(rule),
+                                        self.qapp, self.verb_description,
                                         is_fundamental_rule=True))
                 break
             fundamental = rule.source == '@adminvm' and rule.target == '@anyvm'
             self.exception_list_box.add(RuleListBoxRow(
-                rule=rule, qapp=self.qapp,
+                rule=self.rule_class(rule), qapp=self.qapp,
                 verb_description=self.verb_description,
-                ask_is_allow=self.ask_is_allow,
                 is_fundamental_rule=fundamental))
 
         if not self.main_list_box.get_children():
@@ -661,9 +761,8 @@ class PolicyHandler(PageHandler):
                 self.service_name, '@anyvm', '@anyvm', 'deny')
             self.main_list_box.add(
                 RuleListBoxRow(
-                    deny_all_rule, self.qapp,
+                    self.rule_class(deny_all_rule), self.qapp,
                     self.verb_description,
-                    ask_is_allow=self.ask_is_allow,
                     is_fundamental_rule=True))
 
     def _show_hide_raw(self, *_args):
@@ -691,11 +790,13 @@ class PolicyHandler(PageHandler):
         # generic tokens go at the end, otherwise compare lexically
         if token_1 == token_2:
             return 0
-        if token_1.type == token_2.type:
+        is_token_1_keyword = token_1.startswith('@')
+        is_token_2_keyword = token_2.startswith('@')
+        if is_token_1_keyword == is_token_2_keyword:
             if token_1 < token_2:
                 return -1
             return 1
-        if token_1.type == 'keyword':
+        if is_token_1_keyword:
             return 1
         return -1
 
@@ -711,8 +812,7 @@ class PolicyHandler(PageHandler):
         deny_all_rule = self.policy_manager.new_rule(
             self.service_name, '@anyvm', '@anyvm', 'deny')
         new_row = RuleListBoxRow(
-            deny_all_rule, self.qapp, self.verb_description,
-            ask_is_allow=self.ask_is_allow)
+            self.rule_class(deny_all_rule), self.qapp, self.verb_description)
         self.exception_list_box.add(new_row)
         new_row.activate()
 
@@ -722,9 +822,9 @@ class PolicyHandler(PageHandler):
         if self.disable_radio.get_active():
             rules = self.policy_manager.text_to_rules(self.default_policy)
         else:
-            rules = [child.rule for child in
+            rules = [child.rule.raw_rule for child in
                      self.exception_list_box.get_children()]\
-                    + [child.rule for child in
+                    + [child.rule.raw_rule for child in
                        self.main_list_box.get_children()]
         return rules
 

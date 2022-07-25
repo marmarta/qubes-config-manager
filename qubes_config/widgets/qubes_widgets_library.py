@@ -29,7 +29,7 @@ import itertools
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib, GdkPixbuf
 
-from typing import Optional, Callable, Dict, Any
+from typing import Optional, Callable, Dict, Any, Union, List
 
 
 def show_error(title, text):
@@ -54,6 +54,69 @@ VM_CATEGORIES = {
 NONE_CATEGORY = {
     "None": "(none)"
 }
+
+
+class BiDictionary(dict):
+    """Helper bi-directional dictionary. By design, duplicate values
+    cause errors."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.inverted: Dict[Any, Any] = {}
+        for key, value in self.items():
+            if value in self.inverted:
+                raise ValueError
+            self.inverted[value] = key
+
+    def __setitem__(self, key, value):
+        if key in self:
+            del self.inverted[self[key]]
+        super().__setitem__(key, value)
+        if value in self.inverted:
+            raise ValueError
+        self.inverted[value] = key
+
+    def __delitem__(self, key):
+        del self.inverted[self[key]]
+        super().__delitem__(key)
+
+
+class TokenName(Gtk.Box):
+    """
+    A Gtk.Box containing a (optionally changing) nicely formatted token/vm name.
+    """
+    def __init__(self, token_name: str, qapp: qubesadmin.Qubes):
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
+        self.qapp = qapp
+        self.set_spacing(5)
+        self.set_token(token_name)
+
+    def set_token(self, token_name):
+        """Set appropriate token/style for a given string."""
+        for child in self.get_children():
+            self.remove(child)
+        try:
+            vm = self.qapp.domains[token_name]
+            image = Gtk.Image()
+            image.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
+                    vm.icon, 20, 0))
+            label = Gtk.Label()
+            label.set_label(vm.name)
+            image.set_halign(Gtk.Align.CENTER)
+            label.get_style_context().add_class('qube-box-base')
+            label.get_style_context().add_class(f'qube-box-{vm.label}')
+            label.show_all()
+            image.show_all()
+            self.pack_start(image, False, False, 0)
+            self.pack_start(label, False, False, 0)
+        except KeyError:
+            # TODO: optionally stop referring to VM_CATEGORIES here?
+            nice_name = VM_CATEGORIES.get(token_name, token_name)
+            label = Gtk.Label()
+            label.set_text(nice_name)
+            label.get_style_context().add_class('qube-type')
+            label.show_all()
+            self.pack_start(label, False, False, 0)
+
 
 class TypeName(Gtk.Box):
     """
@@ -188,7 +251,8 @@ class VMListModeler(TraitSelector):
                                                     bool]] = None,
                  event_callback: Optional[Callable[[], None]] = None,
                  default_value: Optional[qubesadmin.vm.QubesVM] = None,
-                 current_value: Optional[qubesadmin.vm.QubesVM] = None,
+                 current_value: Optional[Union[qubesadmin.vm.QubesVM, str]] =
+                 None,
                  style_changes: bool = False,
                  additional_options: Optional[Dict[str, str]] = None):
         """
@@ -433,16 +497,28 @@ class VMListModeler(TraitSelector):
 class ImageTextButton(Gtk.Button):
     """Button with image and callback function. A simple helper
     to avoid boilerplate."""
-    def __init__(self, icon_name: str, label: str, click_function):
+    def __init__(self, icon_name: str,
+                 label: Optional[str],
+                 click_function: Optional[Callable[[Any], Any]],
+                 style_classes: Optional[List[str]]):
         super().__init__()
         self.box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.image = Gtk.Image()
         self.image.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
                 icon_name, 20, 0))
         self.box.pack_start(self.image, False, False, 10)
-        self.label = Gtk.Label()
-        self.label.set_text(label)
-        self.box.pack_start(self.label, False, False, 10)
+        if label:
+            self.label = Gtk.Label()
+            self.label.set_text(label)
+            self.box.pack_start(self.label, False, False, 10)
         self.add(self.box)
+
+        if style_classes:
+            for cls in style_classes:
+                self.get_style_context().add_class(cls)
+        if click_function:
+            self.connect("clicked", click_function)
+        else:
+            self.set_sensitive(False)
+
         self.show_all()
-        self.connect("clicked", click_function)
