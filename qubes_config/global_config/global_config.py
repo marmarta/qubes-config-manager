@@ -31,7 +31,7 @@ import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.vm
 from ..widgets.qubes_widgets_library import VMListModeler, \
-    TextModeler, TraitSelector
+    TextModeler, TraitSelector, NONE_CATEGORY
 from .page_handler import PageHandler
 from .policy_handler import PolicyManager, PolicyHandler
 
@@ -200,7 +200,7 @@ class BasicSettingsHandler(PageHandler):
             filter_function=lambda x: x.klass != 'TemplateVM',
             event_callback=None, default_value=None,
             current_value=self.qapp.clockvm, style_changes=True,
-            allow_none=True)
+            additional_options=NONE_CATEGORY)
 
         self.deftemplate_combo: Gtk.ComboBox = \
             gtk_builder.get_object('basics_deftemplate_combo')
@@ -209,7 +209,7 @@ class BasicSettingsHandler(PageHandler):
             filter_function=lambda x: x.klass == 'TemplateVM',
             event_callback=None, default_value=None,
             current_value=self.qapp.default_template, style_changes=True,
-            allow_none=True)
+            additional_options=NONE_CATEGORY)
 
         self.defdispvm_combo: Gtk.ComboBox = \
             gtk_builder.get_object('basics_defdispvm_combo')
@@ -219,7 +219,7 @@ class BasicSettingsHandler(PageHandler):
                 x, 'template_for_dispvms', False),
             event_callback=None, default_value=None,
             current_value=self.qapp.default_dispvm, style_changes=True,
-            allow_none=True)
+            additional_options=NONE_CATEGORY)
 
         self.fullscreen_combo: Gtk.ComboBoxText = \
             gtk_builder.get_object('basics_fullscreen_combo')
@@ -329,6 +329,74 @@ qubes.OpenInVM * @anyvm @anyvm ask""",
                and self.openinvm_handler.check_for_unsaved()
 
 
+class ThisDeviceHandler(PageHandler):
+    """Handler for the ThisDevice page."""
+    def __init__(self,
+                 qapp: qubesadmin.Qubes,
+                 gtk_builder: Gtk.Builder):
+        self.qapp = qapp
+
+        self.model_label: Gtk.Label = gtk_builder.get_object(
+            'thisdevice_model_label')
+        self.data_label: Gtk.Label = gtk_builder.get_object(
+            'thisdevice_data_label')
+
+        computer_model = ""
+        cpu_model = ""
+        chipset = ""
+        graphics_card = ""
+        storage = ""
+        ram = ""
+        qubes_version = ""
+        bios_version = ""
+        kernel = ""
+        xen = ""
+
+        label_text = f"""<b>Model:</b> {computer_model}
+        
+<b>CPU:</b> {cpu_model}
+<b>Chipset:</b> {chipset}
+<b>Graphics:</b> {graphics_card}
+
+<b>Storage:</b> {storage}
+<b>RAM:</b> {ram}
+
+<b>QubesOS version:</b> {qubes_version}
+<b>BIOS:</b> {bios_version}
+<b>Kernel:</b> {kernel}
+<b>Xen:</b> {xen}
+"""
+        self.data_label.set_markup(label_text)
+        self.model_label.set_text("Lenovo Thinkpad")
+
+    def reset(self):
+        # does not apply
+        pass
+
+    def save(self):
+        # does not apply
+        pass
+
+    def check_for_unsaved(self) -> bool:
+        # does not apply
+        return True
+
+# TODO: qvm-open is used in both safe-url and file access
+# qvm-open-in-vm can be default browser?
+
+# target: @default
+# by default open in: ask z default target
+# bez pytania open in: allow target=
+# deny for a certain combinantion
+
+# future: separate "open in dispvms"
+# for target dispvm
+# ask + target? check?
+
+
+
+# use target=??? for openURL and openinVM instead of actual target, target must be @default or @anyvm
+
 class GlobalConfig(Gtk.Application):
     """
     Main Gtk.Application for new qube widget.
@@ -424,7 +492,7 @@ qubes.OpenURL * @anyvm @dispvm allow\n
 qubes.OpenURL * @anyvm @anyvm ask\n""",
                 verb_description=' be allowed to open URLs in ',
                 ask_is_allow=False),  # TODO
-            8: None,  # TODO
+            8: ThisDeviceHandler(self.qapp, self.builder),  # TODO
         }
 
         self.main_notebook.connect("switch-page", self._page_switched)

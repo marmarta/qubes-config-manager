@@ -22,6 +22,7 @@ separator {
     padding-left: 100px;
     padding-right: 100px;
     box-shadow: @medium-gray 2px -2px 2px -2px inset;
+    padding-top: 50px;
 }
 
 #main_notebook {
@@ -63,6 +64,7 @@ separator {
 
 .section_title {
     margin-top: 10px;
+    margin-bottom: 5px;
 }
 
 .flowbox_container {
@@ -86,6 +88,7 @@ separator {
 
 .explanation_text {
     color: @medium-gray;
+    margin-left: 5px;
 }
 
 .add_label {

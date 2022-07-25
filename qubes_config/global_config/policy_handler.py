@@ -22,20 +22,22 @@
 RPC Policy-related functionality.
 """
 import subprocess
-from typing import Optional, List, Tuple, Union
+from copy import deepcopy
+from typing import Optional, List, Tuple, Union, Dict, Any
 
 from qrexec.policy.admin_client import PolicyClient
 from qrexec.policy.parser import StringPolicy, Rule, Allow, Ask, Deny, \
-    Source, Target
+    Source, Target, VMToken
 from qrexec.exc import PolicySyntaxError
 
 from ..widgets.qubes_widgets_library import QubeName, VMListModeler, \
-    TextModeler, TypeName, ImageTextButton, show_error
+    TextModeler, TypeName, ImageTextButton, show_error, VM_CATEGORIES
 from .page_handler import PageHandler
 
 import gi
 
 import qubesadmin
+import qubesadmin.vm
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
@@ -136,6 +138,52 @@ class PolicyManager:
     def text_to_rules(text: str) -> List[Rule]:
         """Convert policy file text to a list of Rules."""
         return StringPolicy(policy={'__main__': text}).rules
+
+
+class VMWidget(Gtk.Box):
+    def __init__(self,
+                 qapp: qubesadmin.Qubes,
+                 categories: Optional[Dict[str, str]],
+                 initial_value: str,
+                 token_holder: Any,
+                 token_property_name: str
+                 ):
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
+        self.qapp = qapp
+        current_value: VMToken = getattr(token_holder, token_property_name)
+
+        self.combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+        self.pack_start(self.combobox, False, False, 0)
+
+        self.name_label: Optional[Gtk.Widget] = None
+
+        model = VMListModeler(combobox=self.combobox, qapp=self.qapp,
+                              filter_function=lambda x: str(x) != 'dom0',
+                              event_callback=None,
+                              default_value=None, current_value=None,
+                              style_changes=False, additional_options=VM_CATEGORIES)
+
+    def set_editable(self, editable: bool):
+        """Set widget to editable state."""
+        # hide combo show label
+        pass
+
+    def get_selected(self) -> Union[str, qubesadmin.vm.QubesVM]:
+        """get selected VM or category"""
+
+    # def _get_token_label(self, token) -> \
+    #         Tuple[Gtk.Widget, Optional[VMListModeler]]:
+    #     """Make a pretty token widget, appropriately formatted for
+    #     keywords/vms."""
+    #     if token.type == 'keyword':
+    #         widget = TypeName(token)
+    #     else:
+    #         try:
+    #             widget = QubeName(self.qapp.domains[token])
+    #         except KeyError:
+    #             widget = TypeName(f"Unknown Qube: {token}")
+    #     return widget, None
+
 
 
 class RuleListBoxRow(Gtk.ListBoxRow):
@@ -336,8 +384,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
                               filter_function=lambda x: str(x) != 'dom0',
                               event_callback=None,
                               default_value=None, current_value=current_value,
-                              style_changes=False, allow_none=False,
-                              add_categories=True)
+                              style_changes=False, additional_options=VM_CATEGORIES)
         return combobox, model
 
     def _get_action_label(self) -> Tuple[Gtk.Widget, Optional[TextModeler]]:
@@ -485,9 +532,10 @@ class PolicyHandler(PageHandler):
         self.ask_is_allow = ask_is_allow
 
         # load rules
-        self.initial_rules, self.current_token = \
+        rules, self.current_token = \
             self.policy_manager.get_rules_from_filename(
                 self.policy_file_name, self.default_policy)
+        self.initial_rules = deepcopy(rules)
 
         # main widgets
         self.main_list_box: Gtk.ListBox = \
@@ -521,7 +569,7 @@ class PolicyHandler(PageHandler):
             f'{prefix}_disable_radio')
 
         # fill data
-        self._load_rules(self.initial_rules)
+        self._load_rules(rules)
         self._fill_raw_rules()
 
         # connect events
@@ -541,7 +589,7 @@ class PolicyHandler(PageHandler):
         self.raw_save.connect("clicked", self._save_raw)
         self.raw_cancel.connect("clicked", self._cancel_raw)
 
-        self.check_custom_rules(self.initial_rules)
+        self.check_custom_rules(rules)
 
         self.conflict_handler = ConflictFileHandler(
             gtk_builder, "clipboard", self.service_name,
@@ -755,13 +803,14 @@ class PolicyHandler(PageHandler):
         except Exception as ex:
             show_error("Failed to save rules", f"Error {str(ex)}")
             return False
-        self.initial_rules = rules
+        self.initial_rules = deepcopy(rules)
         return True
 
     def reset(self):
-        self._load_rules(self.initial_rules)
+        rules = deepcopy(self.initial_rules)
+        self._load_rules(rules)
         self._fill_raw_rules()
-        self.check_custom_rules(self.initial_rules)
+        self.check_custom_rules(rules)
 
 
 class ConflictFileListRow(Gtk.ListBoxRow):

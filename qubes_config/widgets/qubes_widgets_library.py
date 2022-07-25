@@ -51,6 +51,9 @@ VM_CATEGORIES = {
     "@dispvm": "TYPE: DISPOSABLE",
     "@adminvm": "TYPE: ADMINVM"}
 
+NONE_CATEGORY = {
+    "None": "(none)"
+}
 
 class TypeName(Gtk.Box):
     """
@@ -187,8 +190,7 @@ class VMListModeler(TraitSelector):
                  default_value: Optional[qubesadmin.vm.QubesVM] = None,
                  current_value: Optional[qubesadmin.vm.QubesVM] = None,
                  style_changes: bool = False,
-                 allow_none: bool = False,
-                 add_categories: bool = False):
+                 additional_options: Optional[Dict[str, str]] = None):
         """
         :param combobox: target ComboBox object
         :param qapp: Qubes object, necessary to retrieve VM info
@@ -206,6 +208,8 @@ class VMListModeler(TraitSelector):
          entries, it will be added as top entry.
         :param style_changes: if True, combo-changed style class will be
         applied when combobox value changes
+        :param additional_options: Dictionary of token: readable name of
+        addiitonal options to be added to the combobox
         """
         self.qapp = qapp
         self.combo = combobox
@@ -221,8 +225,8 @@ class VMListModeler(TraitSelector):
         self._theme = Gtk.IconTheme.get_default()
 
         self.initial_value: Optional[str] = None
-        self._create_entries(filter_function, default_value, allow_none,
-                             add_categories, current_value)
+        self._create_entries(filter_function, default_value, additional_options,
+                             current_value)
 
         self._apply_model()
 
@@ -261,24 +265,16 @@ class VMListModeler(TraitSelector):
             self,
             filter_function: Optional[Callable[[qubesadmin.vm.QubesVM], bool]],
             default_value: Optional[qubesadmin.vm.QubesVM],
-            allow_none: bool,
-            add_categories: bool,
+            additional_options: Optional[Dict[str, str]] = None,
             current_value: Optional[str] = None):
 
-        if add_categories:
-            for api_name, display_name in VM_CATEGORIES.items():
+        if additional_options:
+            for api_name, display_name in additional_options.items():
                 self._entries[display_name] = {
                     "api_name": api_name,
                     "icon": None,
                     "vm": None
                 }
-
-        if allow_none:
-            self._entries['(none)'] = {
-                "api_name": "None",
-                "icon": None,
-                "vm": None
-            }
 
         for domain in self.qapp.domains:
             if filter_function and not filter_function(domain):
