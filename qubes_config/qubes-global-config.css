@@ -138,7 +138,7 @@ separator {
     padding: 10px;
     border: 1px;
     border-style: solid;
-    border-color: red;
+    border-color: white;
     background: #fce9e3;
     color: #ba370d;
 }
@@ -205,3 +205,10 @@ separator {
     background: @dark-gray-2;
 }
 
+.info_box {
+    padding: 20px 40px 20px 40px;
+    background: #f0e9e3;
+    border-width: 1px;
+    border-style: solid;
+    border-color: white;
+}

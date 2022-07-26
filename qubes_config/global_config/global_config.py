@@ -21,9 +21,11 @@
 # pylint: disable=import-error
 """Global Qubes Config tool."""
 import sys
+import threading
 from typing import Optional, Dict, Union, Any
 import abc
 import pkg_resources
+import subprocess
 import logging
 
 import qubesadmin
@@ -35,7 +37,8 @@ from ..widgets.qubes_widgets_library import VMListModeler, \
 from .page_handler import PageHandler
 from .policy_handler import PolicyManager, PolicyHandler
 from .policy_rules import RuleSimple, \
-    RuleSimpleAskIsAllow, RuleTargeted
+    RuleSimpleAskIsAllow, RuleTargeted, SimpleVerbDescription, \
+    TargetedVerbDescription
 
 import gi
 
@@ -304,11 +307,11 @@ class FileAccessHandler(PageHandler):
 qubes.Filecopy * @anyvm @anyvm ask""",
             service_name="qubes.Filecopy",
             policy_file_name="50-config-filecopy",
-            verb_description={
+            verb_description=SimpleVerbDescription({
                 "ask": "to be allowed to copy files to",
                 "allow": "allow files to copied to",
                 "deny": "be allowed to copy files to"
-            },
+            }),
             rule_class=RuleSimple)
         self.openinvm_handler = PolicyHandler(
             qapp=self.qapp,
@@ -320,11 +323,11 @@ qubes.OpenInVM * @anyvm @dispvm allow\n
 qubes.OpenInVM * @anyvm @anyvm ask""",
             service_name="qubes.OpenInVM",
             policy_file_name="50-config-openinvm",
-            verb_description={
+            verb_description=SimpleVerbDescription({
                 "allow": "allow files to be opened in",
                 "ask": "to allow files to be opened in",
                 "deny": "allow files to be opened in"
-            },
+            }),
             rule_class=RuleTargeted)
 
     def reset(self):
@@ -399,13 +402,6 @@ class ThisDeviceHandler(PageHandler):
 # bez pytania open in: allow target=
 # deny for a certain combinantion
 
-# future: separate "open in dispvms"
-# for target dispvm
-# ask + target? check?
-
-
-# use target=??? for openURL and openinVM instead of actual target,
-# target must be @default or @anyvm
 
 class GlobalConfig(Gtk.Application):
     """
@@ -483,10 +479,10 @@ class GlobalConfig(Gtk.Application):
                 policy_file_name='50-config-clipboard',
                 default_policy="""qubes.ClipboardPaste * @adminvm @anyvm deny\n
 qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
-                verb_description={
+                verb_description=SimpleVerbDescription({
                     "ask": 'be allowed to paste\n into clipboard of',
                     "deny": 'be allowed to paste\n into clipboard of'
-                },
+                }),
                 rule_class=RuleSimpleAskIsAllow),
             6: FileAccessHandler(
                 qapp=self.qapp,
@@ -503,16 +499,43 @@ qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
                 default_policy="""qubes.OpenURL * @adminvm @anyvm deny\n
 qubes.OpenURL * @anyvm @dispvm allow\n
 qubes.OpenURL * @anyvm @anyvm ask\n""",
-                verb_description={
-                    "allow": 'be allowed to open URLs in',
-                    "ask": 'to be allowed to open URLs in',
-                    "deny": 'be allowed to open URLs in',
-                },
-                rule_class=RuleTargeted),  # TODO
+                verb_description=TargetedVerbDescription(
+                    single_target_descr={
+                        "allow": 'open URLs in',
+                        "ask": 'where to open URLs,\nand select by default',
+                        "deny": 'be allowed to open URLs in'
+                    },
+                    multi_target_descr={
+                        "allow": 'open URLs in',
+                        "ask": 'where to open URLs in',
+                        "deny": 'be allowed to open URLs in'
+                    }
+                ),
+                rule_class=RuleTargeted),
             8: ThisDeviceHandler(self.qapp, self.builder),  # TODO
         }
 
         self.main_notebook.connect("switch-page", self._page_switched)
+
+        self._handle_urls()
+
+    def _handle_urls(self):
+        url_label_ids = ["url_info"]
+        for url_label_id in url_label_ids:
+            label: Gtk.Label = self.builder.get_object(url_label_id)
+            label.connect("activate-link", self._activate_link)
+
+    def _activate_link(self, _widget, url):
+        open_thread = threading.Thread(group=None,
+                                       target=self._open_url_in_dvm, args=[url])
+        open_thread.start()
+        return True
+
+    def _open_url_in_dvm(self, url):
+        default_dvm = self.qapp.default_dispvm
+        subprocess.run(
+            ['qvm-run', '-p', '--service', f'--dispvm={default_dvm}',
+             'qubes.OpenURL'], input=url.encode())
 
     def _page_switched(self, *_args):
         old_page_num = self.main_notebook.get_current_page()

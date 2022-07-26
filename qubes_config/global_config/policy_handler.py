@@ -23,16 +23,16 @@ RPC Policy-related functionality.
 """
 import subprocess
 from copy import deepcopy
-from typing import Optional, List, Tuple, Union, Dict
+from typing import Optional, List, Tuple, Type, Dict
 
 from qrexec.policy.admin_client import PolicyClient
 from qrexec.policy.parser import StringPolicy, Rule
 from qrexec.exc import PolicySyntaxError
 
 from ..widgets.qubes_widgets_library import VMListModeler, TextModeler,\
-    ImageTextButton, show_error, VM_CATEGORIES, TokenName, BiDictionary
+    ImageTextButton, show_error, TokenName, BiDictionary
 from .page_handler import PageHandler
-from .policy_rules import AbstractRuleWrapper
+from .policy_rules import AbstractRuleWrapper, AbstractVerbDescription
 
 import gi
 
@@ -44,6 +44,24 @@ from gi.repository import Gtk
 
 import gbulb
 gbulb.install()
+
+SOURCE_CATEGORIES = {
+    "@anyvm": "ALL QUBES",
+    "@type:AppVM": "TYPE: APP",
+    "@type:TemplateVM": "TYPE: TEMPLATES",
+    "@type:DispVM": "TYPE: DISPOSABLE",
+    "@adminvm": "TYPE: ADMINVM"
+}
+
+TARGET_CATEGORIES = {
+    "@anyvm": "ALL QUBES",
+    "@dispvm": "Default Disposable Qube",
+    "@type:AppVM": "TYPE: APP",
+    "@type:TemplateVM": "TYPE: TEMPLATES",
+    "@type:DispVM": "TYPE: DISPOSABLE",
+    "@adminvm": "TYPE: ADMINVM"
+}
+
 
 
 class PolicyManager:
@@ -152,13 +170,15 @@ class VMWidget(Gtk.Box):
         self.selected_value = initial_value
 
         self.combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+        self.combobox.get_child().set_width_chars(24)
         self.model = VMListModeler(combobox=self.combobox,
                                    qapp=self.qapp,
                                    filter_function=lambda x: str(x) != 'dom0',
                                    current_value=str(self.selected_value),
                                    additional_options=categories)
 
-        self.name_widget = TokenName(self.selected_value, self.qapp)
+        self.name_widget = TokenName(self.selected_value, self.qapp,
+                                     categories=categories)
 
         self.combobox.set_no_show_all(True)
         self.name_widget.set_no_show_all(True)
@@ -188,7 +208,7 @@ class VMWidget(Gtk.Box):
     def is_changed(self) -> bool:
         """Return True if widget was changed from its initial state."""
         new_value = self.model.get_selected()
-        return str(self.selected_value) == str(new_value)
+        return str(self.selected_value) != str(new_value)
 
     def save_changes(self):
         """Store changes in model; must be used before set_editable(True) if
@@ -211,17 +231,21 @@ class ActionWidget(Gtk.Box):
     def __init__(self,
                  choices: Dict[str, str],
                  initial_value: str,
-                 additional_text: Dict[str, str]):
+                 verb_description: AbstractVerbDescription,
+                 rule: AbstractRuleWrapper):
         """
         :param choices: dictionary of policy value: readable name
         :param initial_value: initial policy value
-        :param additional_text: dictionary of policy value: readable description
+        :param verb_description: AbstractVerbDescription object to get
+        additional text
+        :param rule: relevant Rule
         """
         # choice is code: readable
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
 
         self.choices = BiDictionary(choices)
-        self.additional_text = additional_text
+        self.verb_description = verb_description
+        self.rule = rule
 
         # to avoid inconsistencies
         self.selected_value = initial_value.lower()
@@ -251,7 +275,8 @@ class ActionWidget(Gtk.Box):
     def _format_new_value(self, new_value):
         self.name_widget.set_markup(f'<b>{self.choices[new_value]}</b>')
         self.additional_text_widget.set_text(
-            self.additional_text[new_value])
+            self.verb_description.get_verb_for_action_and_target(
+                new_value, self.rule.target))
 
     def set_editable(self, editable: bool):
         """Change state between editable and non-editable."""
@@ -261,7 +286,7 @@ class ActionWidget(Gtk.Box):
     def is_changed(self) -> bool:
         """Return True if widget was changed from its initial state."""
         new_value = self.model.get_selected()
-        return str(self.selected_value) == str(new_value)
+        return str(self.selected_value) != str(new_value)
 
     def save_changes(self):
         """Store changes in model; must be used before set_editable(True) if
@@ -282,18 +307,17 @@ class ActionWidget(Gtk.Box):
 class RuleListBoxRow(Gtk.ListBoxRow):
     """Row in a listbox representing a policy rule"""
     def __init__(self,
+                 parent_handler: 'PolicyHandler',
                  rule: AbstractRuleWrapper,
                  qapp: qubesadmin.Qubes,
-                 verb_description: Dict[str, str],
+                 verb_description: AbstractVerbDescription,
                  ask_is_allow: bool = False,
                  is_fundamental_rule: bool = False):
         """
+        :param parent_handler: PolicyHandler object this rule belongs to.
         :param rule: Rule object, wrapped in a helper object
         :param qapp: Qubes object
-        :param verb_description: description of what the rule does, to be used
-        as Qube1 (will) NEVER/ALWAYS (verb_description) Qube2, for example
-        "be allowed to paste into clipboard of", in the form of dictionary
-        of policy values: description
+        :param verb_description: AbstractVerbDescription object
         :param ask_is_allow: should 'ask' be treated the same as 'allow'
         :param is_fundamental_rule: can this rule be deleted/can its objects be
         changed
@@ -305,6 +329,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         self.ask_is_allow = ask_is_allow
         self.is_fundamental_rule = is_fundamental_rule
         self.verb_description = verb_description
+        self.parent_handler = parent_handler
 
         self.get_style_context().add_class("permission_row")
 
@@ -321,14 +346,14 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         self.main_widget_box.set_homogeneous(True)
 
         self.source_widget = VMWidget(
-            self.qapp, VM_CATEGORIES, self.rule.source,
+            self.qapp, SOURCE_CATEGORIES, self.rule.source,
             additional_text="will")
         self.target_widget = VMWidget(
-            self.qapp, VM_CATEGORIES, self.rule.target,
+            self.qapp, TARGET_CATEGORIES, self.rule.target,
             additional_widget=self._get_delete_button())
         self.action_widget = ActionWidget(self.rule.ACTION_CHOICES,
             self.rule.action,
-            self.verb_description)
+            self.verb_description, self.rule)
 
         self.main_widget_box.pack_start(self.source_widget, False, True, 0)
         self.main_widget_box.pack_start(self.action_widget, False, True, 0)
@@ -351,7 +376,6 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         self.additional_widget_box.set_no_show_all(True)
         self.outer_box.pack_start(self.additional_widget_box, False, False, 10)
 
-        self.error_msg: Optional[str] = None
         self.editing: bool = False
 
         self.set_edit_mode(False)
@@ -389,9 +413,10 @@ class RuleListBoxRow(Gtk.ListBoxRow):
             self.title_label.set_visible(False)
             self.additional_widget_box.set_visible(False)
 
-        self.source_widget.set_editable(editing)
+        if not self.is_fundamental_rule:
+            self.source_widget.set_editable(editing)
+            self.target_widget.set_editable(editing)
         self.action_widget.set_editable(editing)
-        self.target_widget.set_editable(editing)
 
         self.show_all()
         self.editing = editing
@@ -428,25 +453,17 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         new_target = str(self.target_widget.get_selected())
         new_action = self.action_widget.get_selected()
 
-        print("TRYING TO SAVE RULE", new_source, new_target, new_action)
+        error = self.rule.is_rule_valid(new_source, new_target, new_action)
+        if error:
+            show_error("Invalid rule", f'This rule is not valid: {error}')
+            return False
 
-        self.error_msg = None
-        for child in self.get_parent().get_children():
-            if child == self:
-                continue
-            if child.rule.source == new_source and \
-                    child.rule.target == new_target:
-                if child.rule.action == new_action:
-                    self.error_msg = "This rule is a duplicate of another rule"
-                    break
-                self.error_msg = "This rule conflicts with another rule"
-                break
-
-        if self.error_msg:
+        error = self.parent_handler.verify_new_rule(self, new_source,
+                                                    new_target, new_action)
+        if error:
             show_error("Cannot save rule",
-                       'The following errors occurred when trying to save '
-                       f'this rule:\n{self.error_msg}\n')
-            self.error_msg = None
+                       'This rule conflicts with the following existing rule:'
+                       f'\n{error}\n')
             return False
 
         self.rule.source = new_source
@@ -474,8 +491,8 @@ class PolicyHandler(PageHandler):
                  default_policy: str,
                  service_name: str,
                  policy_file_name: str,
-                 verb_description: Dict[str, str],
-                 rule_class):
+                 verb_description: AbstractVerbDescription,
+                 rule_class: Type[AbstractRuleWrapper]):
         """
         :param qapp: Qubes object
         :param gtk_builder: gtk_builder; to avoid inelegant design, this should
@@ -486,11 +503,9 @@ class PolicyHandler(PageHandler):
         :param service_name: name of the service being handled by this page
         :param policy_file_name: name of the config's policy file for this
         service
-        :param verb_description: description used in policy rows, as in
-        Qube1 (will) NEVER (verb_description) Qube2, in the form of dictionary
-        of policy values: verb description
-        :param rule_class: class to be used for Rules, can be one of
-         RuleSimple, RuleSimpleAskIsAllow or RuleTargeted
+        :param verb_description: AbstractVerbDescription object
+        :param rule_class: class to be used for Rules, must inherit from
+         AbstractRuleWrapper
         """
 
         self.qapp = qapp
@@ -613,15 +628,16 @@ class PolicyHandler(PageHandler):
             self.exception_list_box.remove(child)
 
         for rule in rules:
-            if rule.source == '@anyvm' and rule.target == '@anyvm':
+            wrapped_rule = self.rule_class(rule)
+            if wrapped_rule.is_rule_fundamental():
                 self.main_list_box.add(RuleListBoxRow
-                                       (self.rule_class(rule),
+                                       (self, wrapped_rule,
                                         self.qapp, self.verb_description,
                                         is_fundamental_rule=True))
-                break
+                continue
             fundamental = rule.source == '@adminvm' and rule.target == '@anyvm'
-            self.exception_list_box.add(RuleListBoxRow(
-                rule=self.rule_class(rule), qapp=self.qapp,
+            self.exception_list_box.add(RuleListBoxRow(self,
+                rule=wrapped_rule, qapp=self.qapp,
                 verb_description=self.verb_description,
                 is_fundamental_rule=fundamental))
 
@@ -629,7 +645,7 @@ class PolicyHandler(PageHandler):
             deny_all_rule = self.policy_manager.new_rule(
                 self.service_name, '@anyvm', '@anyvm', 'deny')
             self.main_list_box.add(
-                RuleListBoxRow(
+                RuleListBoxRow(self,
                     self.rule_class(deny_all_rule), self.qapp,
                     self.verb_description,
                     is_fundamental_rule=True))
@@ -656,9 +672,14 @@ class PolicyHandler(PageHandler):
 
     @staticmethod
     def _cmp_token(token_1, token_2):
-        # generic tokens go at the end, otherwise compare lexically
+        # @anyvm goes at the end, then other generic tokens,
+        # otherwise compare lexically
         if token_1 == token_2:
             return 0
+        if token_1 == '@anyvm':
+            return 1
+        if token_2 == '@anyvm':
+            return -1
         is_token_1_keyword = token_1.startswith('@')
         is_token_2_keyword = token_2.startswith('@')
         if is_token_1_keyword == is_token_2_keyword:
@@ -680,7 +701,7 @@ class PolicyHandler(PageHandler):
             return
         deny_all_rule = self.policy_manager.new_rule(
             self.service_name, '@anyvm', '@anyvm', 'deny')
-        new_row = RuleListBoxRow(
+        new_row = RuleListBoxRow(self,
             self.rule_class(deny_all_rule), self.qapp, self.verb_description)
         self.exception_list_box.add(new_row)
         new_row.activate()
@@ -780,6 +801,22 @@ class PolicyHandler(PageHandler):
         self._load_rules(rules)
         self._fill_raw_rules()
         self.check_custom_rules(rules)
+
+    def verify_new_rule(self, row: RuleListBoxRow,
+                        new_source: str, new_target: str,
+                        _new_action: str) -> Optional[str]:
+        """
+        Verify correctness of a rule with new_source, new_target and new_action
+        if it was to be associated with provided row. Return None if rule would
+        be correct, and string description of error otherwise.
+        """
+        for child in self.main_list_box.get_children() + \
+                     self.exception_list_box.get_children():
+            if child == row:
+                continue
+            if child.rule.is_rule_conflicting(new_source, new_target):
+                return str(child)
+        return None
 
 
 class ConflictFileListRow(Gtk.ListBoxRow):

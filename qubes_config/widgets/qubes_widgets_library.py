@@ -84,9 +84,16 @@ class TokenName(Gtk.Box):
     """
     A Gtk.Box containing a (optionally changing) nicely formatted token/vm name.
     """
-    def __init__(self, token_name: str, qapp: qubesadmin.Qubes):
+    def __init__(self, token_name: str, qapp: qubesadmin.Qubes,
+                 categories: Dict[str, str]):
+        """
+        :param token_name: string for of the token
+        :param qapp: Qubes object
+        :param categories: dict of human-readable names for token strings
+        """
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.qapp = qapp
+        self.categories = categories
         self.set_spacing(5)
         self.set_token(token_name)
 
@@ -109,8 +116,7 @@ class TokenName(Gtk.Box):
             self.pack_start(image, False, False, 0)
             self.pack_start(label, False, False, 0)
         except KeyError:
-            # TODO: optionally stop referring to VM_CATEGORIES here?
-            nice_name = VM_CATEGORIES.get(token_name, token_name)
+            nice_name = self.categories.get(token_name, token_name)
             label = Gtk.Label()
             label.set_text(nice_name)
             label.get_style_context().add_class('qube-type')

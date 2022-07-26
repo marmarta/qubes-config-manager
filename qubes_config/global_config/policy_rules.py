@@ -20,7 +20,7 @@
 """Classes providing simplified wrap around Rule objects."""
 import abc
 
-from typing import Dict
+from typing import Dict, Optional
 from qrexec.policy.parser import Rule, Allow, Ask, Source, Target, Action
 
 
@@ -40,7 +40,6 @@ class AbstractRuleWrapper(abc.ABC):
         """Policy call source, represented as string."""
 
     @source.setter
-    @abc.abstractmethod
     def source(self, new_value: str):
         """Policy call source setter, takes strings."""
 
@@ -54,7 +53,6 @@ class AbstractRuleWrapper(abc.ABC):
         """
 
     @target.setter
-    @abc.abstractmethod
     def target(self, new_value: str):
         """Policy call target setter, takes strings."""
 
@@ -64,7 +62,6 @@ class AbstractRuleWrapper(abc.ABC):
         """Policy action (ask, allow, deny). Represented as string."""
 
     @action.setter
-    @abc.abstractmethod
     def action(self, new_value: str):
         """Policy action (ask, allow, deny) setter. Takes strings."""
 
@@ -75,6 +72,26 @@ class AbstractRuleWrapper(abc.ABC):
         Rule object.
         """
 
+    def is_rule_fundamental(self) -> bool:
+        """
+        Return True if the rule should be placed in the main list, False if it's
+        an exception.
+        """
+        return self.source == '@anyvm' and self.target == '@anyvm'
+
+    def is_rule_conflicting(self, other_source: str, other_target: str) -> bool:
+        """
+        Return True if rule with other_source and other_target would conflict
+         with self.
+        """
+        return self.source == other_source and \
+               self.target == other_target
+
+    @staticmethod
+    def is_rule_valid(source: str, target: str, action: str) -> \
+            Optional[str]:
+        """Return None if rule is valid and str describing error if not."""
+        return None
 
 class RuleSimple(AbstractRuleWrapper):
     """
@@ -144,9 +161,21 @@ class RuleTargeted(AbstractRuleWrapper):
     """
     ACTION_CHOICES = {
         "ask": "ask",
-        "allow": "always",
+        "allow": "automatically",
         "deny": "never"
     }
+
+    # combinations: allow for a fundamental rule, deny for a fundamental rule,
+# conflict?
+# problem is ask for multiple targets
+# but verb descriptions for main rule must be different
+
+# All qubes will ALWAYS open URLs in [konkretna VMka lub @dispvm]
+# will ASK where to open URLs, and select by default X or none
+# will NEVER be allowed to open in [konkretna VMka lub kategoria]
+#
+    # allow, target= coś nie patrzy na deny -> więc to musi krzyczeć
+# maybe add more text: add that you can add a deny to dispvm rule
 
     def __init__(self, rule: Rule):
         super().__init__(rule)
@@ -203,3 +232,62 @@ class RuleTargeted(AbstractRuleWrapper):
     @property
     def raw_rule(self):
         return self._rule
+
+    def is_rule_fundamental(self) -> bool:
+        if super().is_rule_fundamental():
+            return True
+        return self.source == '@anyvm' and self.raw_rule.target == '@dispvm'
+
+    @staticmethod
+    def is_rule_valid(source: str, target: str, action: str) -> Optional[str]:
+        if not source.startswith('@'):
+            if target.startswith('@') and target != '@dispvm':
+                if action == 'ask' or action == 'allow':
+                    return 'This type of action supports only single-qube ' \
+                           'destination qubes for single-qube source qubes.'
+        return None
+
+
+class AbstractVerbDescription(abc.ABC):
+    """Class used to represent human-readable verb descriptions:
+        Qube1 (will) ACTION (verb_description) Qube2"""
+    @abc.abstractmethod
+    def get_verb_for_action_and_target(self, action: str, target: str) -> str:
+        """
+        Get correct verb for a given action and target.
+        """
+
+
+class SimpleVerbDescription(AbstractVerbDescription):
+    """Simplest verb description, where a given Action has one corresponding
+    description"""
+    def __init__(self, descr: Dict[str, str]):
+        """
+        :param descr: Dict of action: description, where action is one of
+        ask, allow, deny
+        """
+        self.descr = descr
+
+    def get_verb_for_action_and_target(self, action: str, target: str) -> str:
+        return self.descr.get(action, "")
+
+
+class TargetedVerbDescription(AbstractVerbDescription):
+    """Verb description for more complex cases using target= and
+    default_target."""
+    def __init__(self, single_target_descr: Dict[str, str],
+                multi_target_descr: Dict[str, str]):
+        """
+        Both parameters are dicts of action: description, where action is one of
+        ask, allow, deny
+        :param single_target_descr: applies to actions where relevant target
+        is a single VM or @dispvm
+        :param multi_target_descr:  applies to other actions
+        """
+        self.single_target_descr = single_target_descr
+        self.multi_target_descr = multi_target_descr
+
+    def get_verb_for_action_and_target(self, action: str, target: str) -> str:
+        if target.startswith('@') and target != '@dispvm':
+            return self.multi_target_descr.get(action, "")
+        return self.single_target_descr.get(action, "")
