@@ -148,6 +148,11 @@ class RuleSimpleAskIsAllow(RuleSimple):
         "deny": "never"
     }
 
+class RuleSimpleNoAllow(RuleSimple):
+    ACTION_CHOICES = {
+        "ask": "can",
+        "deny": "can not"
+    }
 
 class RuleTargeted(AbstractRuleWrapper):
     """
@@ -164,18 +169,6 @@ class RuleTargeted(AbstractRuleWrapper):
         "allow": "automatically",
         "deny": "never"
     }
-
-    # combinations: allow for a fundamental rule, deny for a fundamental rule,
-# conflict?
-# problem is ask for multiple targets
-# but verb descriptions for main rule must be different
-
-# All qubes will ALWAYS open URLs in [konkretna VMka lub @dispvm]
-# will ASK where to open URLs, and select by default X or none
-# will NEVER be allowed to open in [konkretna VMka lub kategoria]
-#
-    # allow, target= coś nie patrzy na deny -> więc to musi krzyczeć
-# maybe add more text: add that you can add a deny to dispvm rule
 
     def __init__(self, rule: Rule):
         super().__init__(rule)
@@ -246,6 +239,17 @@ class RuleTargeted(AbstractRuleWrapper):
                     return 'This type of action supports only single-qube ' \
                            'destination qubes for single-qube source qubes.'
         return None
+
+    # SplitGPG
+    # Main thingy:
+    # ALL QUBES can access GPG keys from
+    # ALL QUBES can not access GPG keys from
+
+    # SIDE THINGY
+    # qube X will ALWAYS access GPG keys from Y
+    # qube X will ASK to access GPG keys from Y
+    # qube X will NEVER be allowed to access GPG keys from Y
+# class ExceptionRule(AbstractRuleWrapper):
 
 
 class AbstractVerbDescription(abc.ABC):

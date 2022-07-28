@@ -35,11 +35,10 @@ import qubesadmin.vm
 from ..widgets.qubes_widgets_library import VMListModeler, \
     TextModeler, TraitSelector, NONE_CATEGORY
 from .page_handler import PageHandler
-from .policy_handler import PolicyManager, PolicyHandler, \
-    VMSubsetPolicyHandler, AbstractPolicyHandler
+from .policy_handler import PolicyManager, PolicyHandler, VMSubsetPolicyHandler
 from .policy_rules import RuleSimple, \
     RuleSimpleAskIsAllow, RuleTargeted, SimpleVerbDescription, \
-    TargetedVerbDescription
+    TargetedVerbDescription, RuleSimpleNoAllow
 
 import gi
 
@@ -477,22 +476,25 @@ class GlobalConfig(Gtk.Application):
             1: None,  # TODO
             2: None,  # TODO
             3: None,  # TODO
-            4: None, # TODO
-        #     4: VMSubsetPolicyHandler(
-        #         qapp=self.qapp,
-        #         gtk_builder=self.builder,
-        #         policy_manager=policy_manager,
-        #         prefix="splitgpg",
-        #         service_name='qubes.SplitGPG',
-        #         policy_file_name='50-config-splitgpg',
-        #         default_policy="""qubes.SplitGPG * @adminvm @anyvm deny\n
-        # qubes.SplitGPG * @anyvm @anyvm ask\n""",
-        #         verb_description=SimpleVerbDescription({
-        #             "ask": "to allow GPG sharing from",
-        #             "allow": "allow GPG sharing from",
-        #             "deny": "allow GPG sharing from"
-        #         }),
-        #         rule_class=RuleSimple),
+            4: VMSubsetPolicyHandler(
+                qapp=self.qapp,
+                gtk_builder=self.builder,
+                policy_manager=policy_manager,
+                prefix="splitgpg",
+                service_name='qubes.SplitGPG',
+                policy_file_name='50-config-splitgpg',
+                default_policy="",
+                main_rule_class=RuleSimpleNoAllow, # TODO
+                main_verb_description=SimpleVerbDescription({
+                    "ask": "access GPG keys from",
+                    "deny": "access GPG keys from"
+                }),
+                exception_rule_class=RuleSimple, # TODO
+                exception_verb_description=SimpleVerbDescription({
+                    "allow": 'access GPG keys from',
+                    "ask": 'to access GPG keys from',
+                    "deny": 'access GPG keys from'
+                })),
             5: PolicyHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
@@ -511,7 +513,7 @@ qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
                 qapp=self.qapp,
                 gtk_builder=self.builder,
                 policy_manager=policy_manager
-            ),  # TODO
+            ),
             7: PolicyHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,

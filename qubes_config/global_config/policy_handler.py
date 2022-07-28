@@ -275,6 +275,7 @@ class ActionWidget(Gtk.Box):
         self.set_editable(False)
 
     def _format_new_value(self, new_value):
+        # TODO: FIXXXXX when rule is weird
         self.name_widget.set_markup(f'<b>{self.choices[new_value]}</b>')
         self.additional_text_widget.set_text(
             self.verb_description.get_verb_for_action_and_target(
@@ -878,165 +879,157 @@ class PolicyHandler(PageHandler):
         return True
 
 
-# class VMSubsetPolicyHandler(PolicyHandler):
-#     """
-#     Handler for a list of policy rules where targets are limited to a subset
-#     of VMs.
-#     """
-#     def __init__(self,
-#                  qapp: qubesadmin.Qubes,
-#                  gtk_builder: Gtk.Builder,
-#                  prefix: str,
-#                  policy_manager: PolicyManager,
-#                  default_policy: str,
-#                  service_name: str,
-#                  policy_file_name: str,
-#                  verb_description: AbstractVerbDescription,
-#                  rule_class: Type[AbstractRuleWrapper]):
-#         """
-#         :param qapp: Qubes object
-#         :param gtk_builder: gtk_builder; to avoid inelegant design, this should
-#         not be stored in this function
-#         :param prefix: prefix for widgets used by this class
-#         :param policy_manager: PolicyManager object
-#         :param default_policy: string representing default policy file
-#         :param service_name: name of the service being handled by this page
-#         :param policy_file_name: name of the config's policy file for this
-#         service
-#         :param verb_description: AbstractVerbDescription object
-#         :param rule_class: class to be used for Rules, must inherit from
-#          AbstractRuleWrapper
-#         """
-#
-#         super().__init__(
-#             qapp, gtk_builder, prefix, policy_manager, default_policy,
-#             service_name, policy_file_name, verb_description, rule_class)
-#
-#         self.qapp = qapp
-#         self.policy_manager = policy_manager
-#         self.default_policy = default_policy
-#         self.service_name = service_name
-#         self.policy_file_name = policy_file_name
-#         self.verb_description = verb_description
-#         self.rule_class = rule_class
-#
-#         # main widgets
-#         self.exception_list_box: Gtk.ListBox = \
-#             gtk_builder.get_object(f'{prefix}_exception_list')
-#         self.flowbox: Gtk.FlowBox = gtk_builder.get_object(
-#             f"{prefix}_main_flowbox")
-#         self.custom_box: Gtk.Box = gtk_builder.get_object(
-#             f'{prefix}_custom_box')
-#
-#         self.add_select_box: Gtk.Box = gtk_builder.get_object(
-#             f'{prefix}_add_select_box')
-#         self.edit_select_qubes_button: Gtk.Button = gtk_builder.get_object(
-#             f'{prefix}_edit_select_qubes')
-#         self.cancel_add_select_button: Gtk.Button = gtk_builder.get_object(
-#             f'{prefix}_cancel_add_select_qube')
-#         self.add_select_button: Gtk.Button = gtk_builder.get_object(
-#             f'{prefix}_add_select_qube')
-#         self.select_qube_combo: Gtk.ComboBox = gtk_builder.get_object(
-#             f'{prefix}_select_qube_combo')
-#
-#         # populate combo
-#         self.select_qube_model = VMListModeler(
-#             combobox=self.select_qube_combo,
-#             qapp=self.qapp)
-#
-#         # connect events
-#         self.exception_list_box.connect('row-activated', self._rule_clicked)
-#         self.exception_list_box.connect('rules-changed', self.fill_raw_rules)
-#         self.edit_select_qubes_button.connect('clicked', self.edit_select_qubes)
-#         self.cancel_add_select_button.connect('clicked', self.edit_select_qubes)
-#         self.add_select_button.connect('clicked', self._add_select_qube)
-#
-#         self.exception_list_box.set_sort_func(self.rule_sorting_function)
-#
-#         self.select_qubes: Set[str] = set()
-#         # fill data
-#         rules = deepcopy(self.initial_rules)
-#         self.set_select_qubes_from_rules(rules)
-#         self.populate_rule_lists(rules)
-#         self.fill_raw_rules()
-#         self.check_custom_rules(rules)
-#
-#     @property
-#     def current_rules(self) -> List[Rule]:
-#         return [row.rule.raw_rule for row in self.current_rows]
-#
-#     @property
-#     def current_rows(self) -> List[RuleListBoxRow]:
-#         return self.exception_list_box.get_children()
-#
-#     def populate_rule_lists(self, rules: List[Rule]):
-#         for rule in rules:
-#             # fundamental if source is anyvm
-#             fundamental = rule.source == '@anyvm'
-#             # TODO: LIMITED SELECTION IN TARGET
-#             self.exception_list_box.add(RuleListBoxRow(
-#                 parent_handler=self, rule=self.rule_class(rule), qapp=self.qapp,
-#                 verb_description=self.verb_description,
-#                 is_fundamental_rule=fundamental
-#             ))
-#
-#     def set_custom_editable(self, state: bool):
-#         self.custom_box.set_sensitive(state)
-#
-#     def edit_select_qubes(self, *_args):
-#         new_state = not self.add_select_box.get_visible()
-#         self._populate_flowbox(new_state)
-#         self.add_select_box.set_visible(new_state)
-#         # TODO: this must be noticed by senpai of changes checking/close all edits
-#
-#     def _add_select_qube(self, *_args):
-#         # TODO: validate if selected
-#         new_qube = str(self.select_qube_model.get_selected())
-#         self.select_qubes.add(new_qube)
-#         self.edit_select_qubes()
-#
-#     def add_new_rule(self, *_args):
-#         # TODO
-#         pass
-#
-#     def set_select_qubes_from_rules(self, rules: List[Rule]):
-#         for rule in rules:
-#             if rule.target.type == 'keyword':
-#                 continue
-#             self.select_qubes.add(str(rule.target))
-#         self._populate_flowbox(False)
-#
-#     def _populate_flowbox(self, editable: bool):
-#         for child in self.flowbox.get_children():
-#             self.flowbox.remove(child)
-#
-#         for qube in self.select_qubes:
-#             token_widget = TokenName(qube, self.qapp, {})
-#             if editable:
-#                 final_widget = Gtk.Button()
-#                 final_widget.get_style_context().add_class('flat')
-#
-#                 box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-#                 box.pack_start(token_widget, False, False, 0)
-#                 remove_icon = Gtk.Image()
-#                 remove_icon.set_from_pixbuf(
-#                     Gtk.IconTheme.get_default().load_icon(
-#                         'qubes-delete', 14, 0))
-#                 box.pack_start(remove_icon, False, False, 10)
-#
-#                 final_widget.add(box)
-#                 final_widget.connect('clicked', self._remove_select_qube)
-#             else:
-#                 final_widget = token_widget
-#             final_widget.show_all()
-#             self.flowbox.add(final_widget)
-#
-#     def _remove_select_qube(self, widget):
-#         qube_to_remove = widget.get_child().token_name
-#         self.select_qubes.remove(qube_to_remove)
-#         self._populate_flowbox(True)
-#         # TODO: re-do rules!!!!!
-#
+class VMSubsetPolicyHandler(PolicyHandler):
+    """
+    Handler for a list of policy rules where targets are limited to a subset
+    of VMs.
+    """
+    def __init__(self,
+                 qapp: qubesadmin.Qubes,
+                 gtk_builder: Gtk.Builder,
+                 prefix: str,
+                 policy_manager: PolicyManager,
+                 default_policy: str,
+                 service_name: str,
+                 policy_file_name: str,
+                 main_verb_description: AbstractVerbDescription,
+                 main_rule_class: Type[AbstractRuleWrapper],
+                 exception_verb_description: AbstractVerbDescription,
+                 exception_rule_class: Type[AbstractRuleWrapper]):
+        """
+        :param qapp: Qubes object
+        :param gtk_builder: gtk_builder; to avoid inelegant design, this should
+        not be stored in this function
+        :param prefix: prefix for widgets used by this class
+        :param policy_manager: PolicyManager object
+        :param default_policy: string representing default policy file
+        :param service_name: name of the service being handled by this page
+        :param policy_file_name: name of the config's policy file for this
+        service
+        :param main_verb_description: AbstractVerbDescription object for the
+        main rules
+        :param main_rule_class: class to be used for main Rules, must inherit
+        from AbstractRuleWrapper
+        :param exception_verb_description: AbstractVerbDescription object for
+        the exception rules
+        :param exception_rule_class: class to be used for exception Rules, must
+         inherit from AbstractRuleWrapper
+        """
+        self.select_qubes: Set[str] = set()
+        self.main_verb_description = main_verb_description
+        self.main_rule_class = main_rule_class
+        self.exception_verb_description = exception_verb_description
+        self.exception_rule_class = exception_rule_class
+
+        # main widgets
+        self.flowbox: Gtk.FlowBox = gtk_builder.get_object(
+            f"{prefix}_main_flowbox")
+        self.custom_box: Gtk.Box = gtk_builder.get_object(
+            f'{prefix}_custom_box')
+
+        self.add_select_box: Gtk.Box = gtk_builder.get_object(
+            f'{prefix}_add_select_box')
+        self.edit_select_qubes_button: Gtk.Button = gtk_builder.get_object(
+            f'{prefix}_edit_select_qubes')
+        self.cancel_add_select_button: Gtk.Button = gtk_builder.get_object(
+            f'{prefix}_cancel_add_select_qube')
+        self.add_select_button: Gtk.Button = gtk_builder.get_object(
+            f'{prefix}_add_select_qube')
+        self.select_qube_combo: Gtk.ComboBox = gtk_builder.get_object(
+            f'{prefix}_select_qube_combo')
+
+        super().__init__(
+            qapp, gtk_builder, prefix, policy_manager, default_policy,
+            service_name, policy_file_name, exception_verb_description,
+            exception_rule_class)
+
+        # populate combo
+        self.select_qube_model = VMListModeler(
+            combobox=self.select_qube_combo,
+            qapp=self.qapp)
+
+        # connect events
+        self.edit_select_qubes_button.connect('clicked', self.edit_select_qubes)
+        self.cancel_add_select_button.connect('clicked', self.edit_select_qubes)
+        self.add_select_button.connect('clicked', self._add_select_qube)
+
+# TODO: save rules multiplies them horribly
+
+    def populate_rule_lists(self, rules: List[Rule]):
+        # rules with source = '@anyvm' go to main list and their qubes are key qubes
+        for rule in rules:
+            if rule.source == '@anyvm':
+                if rule.target.type == 'keyword':
+                    # we do not support this
+                    continue
+                self.select_qubes.add(str(rule.target))
+                self.main_list_box.add(RuleListBoxRow(
+                    parent_handler=self,
+                    rule=self.main_rule_class(rule),
+                    qapp=self.qapp,
+                    verb_description=self.main_verb_description,
+                    is_fundamental_rule=True))
+            else:
+                # TODO: LIMITED SELECTION IN TARGET
+                # TODO: WHAT TO DO WITH DOUBLE RULES (prolly only in get rules something)
+                self.exception_list_box.add(RuleListBoxRow(
+                    parent_handler=self,
+                    rule=self.exception_rule_class(rule),
+                    qapp=self.qapp,
+                    verb_description=self.exception_verb_description))
+        self._populate_flowbox(False)
+
+    def set_custom_editable(self, state: bool):
+        self.custom_box.set_sensitive(state)
+
+    def edit_select_qubes(self, *_args):
+        new_state = not self.add_select_box.get_visible()
+        self._populate_flowbox(new_state)
+        self.add_select_box.set_visible(new_state)
+        # TODO: this must be noticed by senpai of changes checking/close all edits
+
+    def _add_select_qube(self, *_args):
+        # TODO: validate if selected
+        new_qube = str(self.select_qube_model.get_selected())
+        self.select_qubes.add(new_qube)
+        self.edit_select_qubes()
+
+    def add_new_rule(self, *_args):
+        # TODO
+        pass
+
+    def _populate_flowbox(self, editable: bool):
+        for child in self.flowbox.get_children():
+            self.flowbox.remove(child)
+
+        for qube in self.select_qubes:
+            token_widget = TokenName(qube, self.qapp, {})
+            if editable:
+                final_widget = Gtk.Button()
+                final_widget.get_style_context().add_class('flat')
+
+                box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+                box.pack_start(token_widget, False, False, 0)
+                remove_icon = Gtk.Image()
+                remove_icon.set_from_pixbuf(
+                    Gtk.IconTheme.get_default().load_icon(
+                        'qubes-delete', 14, 0))
+                box.pack_start(remove_icon, False, False, 10)
+
+                final_widget.add(box)
+                final_widget.connect('clicked', self._remove_select_qube)
+            else:
+                final_widget = token_widget
+            final_widget.set_name(qube)
+            final_widget.show_all()
+            self.flowbox.add(final_widget)
+
+    def _remove_select_qube(self, widget: Gtk.Widget):
+        qube_to_remove = widget.get_name()
+        self.select_qubes.remove(qube_to_remove)
+        self._populate_flowbox(True)
+        # TODO: re-do rules!!!!!
+
 # # adding new keyqube should add a default rule?
 # # add default_target?
 # # can't save if no key qube selected
