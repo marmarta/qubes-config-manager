@@ -123,6 +123,7 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 /usr/share/icons/hicolor/scalable/apps/qubes-expander-hidden.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-this-device.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-info.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-key.svg
 
 %changelog
 @CHANGELOG@

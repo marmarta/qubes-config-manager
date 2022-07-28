@@ -21,9 +21,11 @@
 """
 RPC Policy-related functionality.
 """
+import abc
 import subprocess
+from abc import ABC
 from copy import deepcopy
-from typing import Optional, List, Tuple, Type, Dict
+from typing import Optional, List, Tuple, Type, Dict, Set
 
 from qrexec.policy.admin_client import PolicyClient
 from qrexec.policy.parser import StringPolicy, Rule
@@ -307,7 +309,7 @@ class ActionWidget(Gtk.Box):
 class RuleListBoxRow(Gtk.ListBoxRow):
     """Row in a listbox representing a policy rule"""
     def __init__(self,
-                 parent_handler: 'PolicyHandler',
+                 parent_handler: 'AbstractPolicyHandler',
                  rule: AbstractRuleWrapper,
                  qapp: qubesadmin.Qubes,
                  verb_description: AbstractVerbDescription,
@@ -398,6 +400,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         """Remove self from parent. Used to delete the rule."""
         parent_widget = self.get_parent()
         parent_widget.remove(self)
+        parent_widget.emit('rules-changed', None)
 
     def set_edit_mode(self, editing: bool = True):
         """
@@ -478,347 +481,6 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         self.get_parent().emit('rules-changed', None)
         return True
 
-
-class PolicyHandler(PageHandler):
-    """
-    Handler for generic simple list of policy rules.
-    """
-    def __init__(self,
-                 qapp: qubesadmin.Qubes,
-                 gtk_builder: Gtk.Builder,
-                 prefix: str,
-                 policy_manager: PolicyManager,
-                 default_policy: str,
-                 service_name: str,
-                 policy_file_name: str,
-                 verb_description: AbstractVerbDescription,
-                 rule_class: Type[AbstractRuleWrapper]):
-        """
-        :param qapp: Qubes object
-        :param gtk_builder: gtk_builder; to avoid inelegant design, this should
-        not be stored in this function
-        :param prefix: prefix for widgets used by this class
-        :param policy_manager: PolicyManager object
-        :param default_policy: string representing default policy file
-        :param service_name: name of the service being handled by this page
-        :param policy_file_name: name of the config's policy file for this
-        service
-        :param verb_description: AbstractVerbDescription object
-        :param rule_class: class to be used for Rules, must inherit from
-         AbstractRuleWrapper
-        """
-
-        self.qapp = qapp
-        self.policy_manager = policy_manager
-        self.default_policy = default_policy
-        self.service_name = service_name
-        self.policy_file_name = policy_file_name
-        self.verb_description = verb_description
-        self.rule_class = rule_class
-
-        # load rules
-        rules, self.current_token = \
-            self.policy_manager.get_rules_from_filename(
-                self.policy_file_name, self.default_policy)
-        self.initial_rules = deepcopy(rules)
-
-        # main widgets
-        self.main_list_box: Gtk.ListBox = \
-            gtk_builder.get_object(f'{prefix}_main_list')
-        self.exception_list_box: Gtk.ListBox = \
-            gtk_builder.get_object(f'{prefix}_exception_list')
-        self.add_button: Gtk.Button = \
-            gtk_builder.get_object(f'{prefix}_add_rule_button')
-
-        # raw policy text widgets
-        self.raw_event_box: Gtk.EventBox = \
-            gtk_builder.get_object(f'{prefix}_raw_event')
-        self.raw_box: Gtk.Box = \
-            gtk_builder.get_object(f'{prefix}_raw_box')
-        self.raw_expander_icon: Gtk.Image = \
-            gtk_builder.get_object(f'{prefix}_raw_expander')
-        self.raw_text: Gtk.TextView = gtk_builder.get_object(
-            f'{prefix}_raw_text')
-        self.raw_save: Gtk.Button = gtk_builder.get_object(
-            f'{prefix}_raw_save')
-        self.raw_cancel: Gtk.Button = gtk_builder.get_object(
-            f'{prefix}_raw_cancel')
-        self.raw_defaults: Gtk.Button = gtk_builder.get_object(
-            f'{prefix}_raw_defaults')
-        self.text_buffer: Gtk.TextBuffer = self.raw_text.get_buffer()
-
-        # enable/disable custom policy
-        self.enable_radio: Gtk.RadioButton = gtk_builder.get_object(
-            f'{prefix}_enable_radio')
-        self.disable_radio: Gtk.RadioButton = gtk_builder.get_object(
-            f'{prefix}_disable_radio')
-
-        # fill data
-        self._load_rules(rules)
-        self._fill_raw_rules()
-
-        # connect events
-        self.exception_list_box.connect('row-activated', self._rule_clicked)
-        self.main_list_box.connect('row-activated', self._rule_clicked)
-
-        self.add_button.connect("clicked", self._add_new_rule)
-        self.exception_list_box.set_sort_func(self._sorting_function)
-
-        self.enable_radio.connect("toggled", self._custom_toggled)
-        self.disable_radio.connect("toggled", self._custom_toggled)
-
-        self.raw_event_box.connect(
-            'button-release-event', self._show_hide_raw)
-        self.main_list_box.connect('rules-changed', self._fill_raw_rules)
-        self.exception_list_box.connect('rules-changed', self._fill_raw_rules)
-        self.raw_save.connect("clicked", self._save_raw)
-        self.raw_cancel.connect("clicked", self._cancel_raw)
-
-        self.check_custom_rules(rules)
-
-        self.conflict_handler = ConflictFileHandler(
-            gtk_builder, "clipboard", self.service_name,
-            self.policy_file_name, self.policy_manager)
-
-    def check_custom_rules(self, rules: List[Rule]):
-        """
-        Check if the provided set of rules is the same as the default set,
-        set radio buttons accordingly.
-        """
-        if self.policy_manager.compare_rules_to_text(rules,
-                                                     self.default_policy):
-            self.disable_radio.set_active(True)
-        else:
-            self.enable_radio.set_active(True)
-        self._custom_toggled()
-
-    def _custom_toggled(self, _widget=None):
-        if not self.close_all_edits():
-            return
-        self._set_custom_editable(self.enable_radio.get_active())
-        self.main_list_box.emit('rules-changed', None)
-
-    def _save_raw(self, _widget):
-        try:
-            rules = self.policy_manager.text_to_rules(
-                self.text_buffer.get_text(
-                    self.text_buffer.get_start_iter(),
-                    self.text_buffer.get_end_iter(), False))
-            self._load_rules(rules)
-            self.check_custom_rules(rules)
-            self._show_hide_raw()
-        except PolicySyntaxError as ex:
-            show_error("Policy error",
-                       f"Cannot save policy.\n"
-                       f"Encountered the following error(s):\n{ex}")
-            return
-
-    def _cancel_raw(self, _widget):
-        self._fill_raw_rules()
-
-    def _set_custom_editable(self, state):
-        self.add_button.set_sensitive(state)
-        self.main_list_box.set_sensitive(state)
-        self.exception_list_box.set_sensitive(state)
-
-    def _load_rules(self, rules: List[Rule]):
-        for child in self.main_list_box.get_children():
-            self.main_list_box.remove(child)
-        for child in self.exception_list_box.get_children():
-            self.exception_list_box.remove(child)
-
-        for rule in rules:
-            wrapped_rule = self.rule_class(rule)
-            if wrapped_rule.is_rule_fundamental():
-                self.main_list_box.add(RuleListBoxRow
-                                       (self, wrapped_rule,
-                                        self.qapp, self.verb_description,
-                                        is_fundamental_rule=True))
-                continue
-            fundamental = rule.source == '@adminvm' and rule.target == '@anyvm'
-            self.exception_list_box.add(RuleListBoxRow(self,
-                rule=wrapped_rule, qapp=self.qapp,
-                verb_description=self.verb_description,
-                is_fundamental_rule=fundamental))
-
-        if not self.main_list_box.get_children():
-            deny_all_rule = self.policy_manager.new_rule(
-                self.service_name, '@anyvm', '@anyvm', 'deny')
-            self.main_list_box.add(
-                RuleListBoxRow(self,
-                    self.rule_class(deny_all_rule), self.qapp,
-                    self.verb_description,
-                    is_fundamental_rule=True))
-
-    def _show_hide_raw(self, *_args):
-        # if showing raws, make sure editing is done
-        if not self.raw_box.get_visible():
-            if not self.close_all_edits():
-                return
-        self.raw_box.set_visible(
-            not self.raw_box.get_visible())
-        if self.raw_box.get_visible():
-            self.raw_expander_icon.set_from_pixbuf(
-                Gtk.IconTheme.get_default().load_icon(
-                    'qubes-expander-shown', 20, 0))
-        else:
-            self.raw_expander_icon.set_from_pixbuf(
-                Gtk.IconTheme.get_default().load_icon(
-                    'qubes-expander-hidden', 18, 0))
-
-    def _fill_raw_rules(self, *_args):
-        self.text_buffer.set_text(self.policy_manager.rules_to_text(
-            self.get_current_rules()))
-
-    @staticmethod
-    def _cmp_token(token_1, token_2):
-        # @anyvm goes at the end, then other generic tokens,
-        # otherwise compare lexically
-        if token_1 == token_2:
-            return 0
-        if token_1 == '@anyvm':
-            return 1
-        if token_2 == '@anyvm':
-            return -1
-        is_token_1_keyword = token_1.startswith('@')
-        is_token_2_keyword = token_2.startswith('@')
-        if is_token_1_keyword == is_token_2_keyword:
-            if token_1 < token_2:
-                return -1
-            return 1
-        if is_token_1_keyword:
-            return 1
-        return -1
-
-    def _sorting_function(self, row_1: RuleListBoxRow, row_2: RuleListBoxRow):
-        source_cmp = self._cmp_token(row_1.rule.source, row_2.rule.source)
-        if source_cmp != 0:
-            return source_cmp
-        return self._cmp_token(row_1.rule.target, row_2.rule.target)
-
-    def _add_new_rule(self, *_args):
-        if not self.close_all_edits():
-            return
-        deny_all_rule = self.policy_manager.new_rule(
-            self.service_name, '@anyvm', '@anyvm', 'deny')
-        new_row = RuleListBoxRow(self,
-            self.rule_class(deny_all_rule), self.qapp, self.verb_description)
-        self.exception_list_box.add(new_row)
-        new_row.activate()
-
-    def get_current_rules(self) -> List[Rule]:
-        """Get the current set of rules, taking into account default and
-        custom."""
-        if self.disable_radio.get_active():
-            rules = self.policy_manager.text_to_rules(self.default_policy)
-        else:
-            rules = [child.rule.raw_rule for child in
-                     self.exception_list_box.get_children()]\
-                    + [child.rule.raw_rule for child in
-                       self.main_list_box.get_children()]
-        return rules
-
-    def _rule_clicked(self, _list_box, row: RuleListBoxRow, *_args):
-        if row.editing:
-            # if the current row was clicked, nothing should happen
-            return
-        if not self.close_all_edits():
-            return
-        row.set_edit_mode(True)
-
-    def close_all_edits(self) -> bool:
-        """Attempt to close all edited rows; if failed, return False, else
-        return True"""
-        for list_box in [self.main_list_box, self.exception_list_box]:
-            for child in list_box.get_children():
-                if child.editing:
-                    if not child.is_changed():
-                        child.set_edit_mode(False)
-                        continue
-                    dialog = Gtk.MessageDialog(
-                        None,
-                        Gtk.DialogFlags.MODAL,
-                        Gtk.MessageType.QUESTION, Gtk.ButtonsType.YES_NO)
-                    dialog.set_title("A rule is currently being edited")
-                    dialog.set_markup(
-                        "Do you want to save changes to the following "
-                        f"rule?\n{str(child)}")
-                    response = dialog.run()
-                    if response == Gtk.ResponseType.YES:
-                        if not child.validate_and_save():
-                            return False
-                    else:
-                        child.revert()
-                    dialog.destroy()
-        return True
-
-    def check_for_unsaved(self) -> bool:
-        """Check if there are any unsaved changes and ask user for an action.
-        Return True if changes have been handled, False if not."""
-        if not self.close_all_edits():
-            return False
-        unsaved_found = False
-        current_rules = self.get_current_rules()
-        if len(self.initial_rules) != len(current_rules):
-            unsaved_found = True
-        for rule1, rule2 in zip(self.initial_rules, current_rules):
-            if str(rule1) != str(rule2):
-                unsaved_found = True
-
-        if unsaved_found:
-            dialog = Gtk.MessageDialog(
-                None,
-                Gtk.DialogFlags.MODAL,
-                Gtk.MessageType.QUESTION, Gtk.ButtonsType.YES_NO)
-            dialog.set_title("")
-            dialog.set_markup(
-                "Do you want to save changes to current "
-                "policy rules?")
-            # TODO: nicer name? improve when improving message dialogs
-            response = dialog.run()
-            if response == Gtk.ResponseType.YES:
-                dialog.destroy()
-                return self.save()
-            dialog.destroy()
-            self.reset()
-        return True
-
-    def save(self):
-        """Save current rules, whatever they are - custom or default.
-        Return True if successful, False otherwise"""
-        rules = self.get_current_rules()
-        try:
-            self.policy_manager.save_rules(self.policy_file_name,
-                                           rules, self.current_token)
-        except Exception as ex:
-            show_error("Failed to save rules", f"Error {str(ex)}")
-            return False
-        self.initial_rules = deepcopy(rules)
-        return True
-
-    def reset(self):
-        rules = deepcopy(self.initial_rules)
-        self._load_rules(rules)
-        self._fill_raw_rules()
-        self.check_custom_rules(rules)
-
-    def verify_new_rule(self, row: RuleListBoxRow,
-                        new_source: str, new_target: str,
-                        _new_action: str) -> Optional[str]:
-        """
-        Verify correctness of a rule with new_source, new_target and new_action
-        if it was to be associated with provided row. Return None if rule would
-        be correct, and string description of error otherwise.
-        """
-        for child in self.main_list_box.get_children() + \
-                     self.exception_list_box.get_children():
-            if child == row:
-                continue
-            if child.rule.is_rule_conflicting(new_source, new_target):
-                return str(child)
-        return None
-
-
 class ConflictFileListRow(Gtk.ListBoxRow):
     """A ListBox row representing a policy file with conflicting info."""
     def __init__(self, file_name: str):
@@ -859,6 +521,7 @@ class ConflictFileHandler:
 
         conflicting_files = self.policy_manager.get_conflicting_policy_files(
             self.service_name, self.own_file_name)
+        print(f"Found problem files: {conflicting_files}")
 
         if conflicting_files:
             self.problem_box.set_visible(True)
@@ -866,3 +529,514 @@ class ConflictFileHandler:
                 row = ConflictFileListRow(file)
                 self.problem_list.add(row)
             self.problem_box.show_all()
+
+
+class PolicyHandler(PageHandler):
+    def __init__(self,
+                 qapp: qubesadmin.Qubes,
+                 gtk_builder: Gtk.Builder,
+                 prefix: str,
+                 policy_manager: PolicyManager,
+                 default_policy: str,
+                 service_name: str,
+                 policy_file_name: str,
+                 verb_description: AbstractVerbDescription,
+                 rule_class: Type[AbstractRuleWrapper]):
+        """
+        :param qapp: Qubes object
+        :param gtk_builder: gtk_builder; to avoid inelegant design, this should
+        not be stored in this function
+        :param prefix: prefix for widgets used by this class
+        :param policy_manager: PolicyManager object
+        :param default_policy: string representing default policy file
+        :param service_name: name of the service being handled by this page
+        :param policy_file_name: name of the config's policy file for this
+        service
+        :param verb_description: AbstractVerbDescription object
+        :param rule_class: class to be used for Rules, must inherit from
+         AbstractRuleWrapper
+        """
+
+        self.qapp = qapp
+        self.policy_manager = policy_manager
+        self.default_policy = default_policy
+        self.service_name = service_name
+        self.policy_file_name = policy_file_name
+        self.verb_description = verb_description
+        self.rule_class = rule_class
+
+        # main widgets
+        self.main_list_box: Gtk.ListBox = \
+            gtk_builder.get_object(f'{prefix}_main_list')
+        self.exception_list_box: Gtk.ListBox = \
+            gtk_builder.get_object(f'{prefix}_exception_list')
+
+        # add new rule button
+        self.add_button: Gtk.Button = \
+            gtk_builder.get_object(f'{prefix}_add_rule_button')
+
+        # enable/disable custom policy
+        self.enable_radio: Gtk.RadioButton = gtk_builder.get_object(
+            f'{prefix}_enable_radio')
+        self.disable_radio: Gtk.RadioButton = gtk_builder.get_object(
+            f'{prefix}_disable_radio')
+
+        # raw policy text widgets
+        self.raw_event_box: Gtk.EventBox = \
+            gtk_builder.get_object(f'{prefix}_raw_event')
+        self.raw_box: Gtk.Box = \
+            gtk_builder.get_object(f'{prefix}_raw_box')
+        self.raw_expander_icon: Gtk.Image = \
+            gtk_builder.get_object(f'{prefix}_raw_expander')
+        self.raw_text: Gtk.TextView = gtk_builder.get_object(
+            f'{prefix}_raw_text')
+        self.raw_save: Gtk.Button = gtk_builder.get_object(
+            f'{prefix}_raw_save')
+        self.raw_cancel: Gtk.Button = gtk_builder.get_object(
+            f'{prefix}_raw_cancel')
+        self.text_buffer: Gtk.TextBuffer = self.raw_text.get_buffer()
+
+        # connect events
+        self.add_button.connect("clicked", self.add_new_rule)
+
+        self.exception_list_box.connect('row-activated', self._rule_clicked)
+        self.main_list_box.connect('row-activated', self._rule_clicked)
+        self.exception_list_box.connect('rules-changed', self.fill_raw_rules)
+        self.main_list_box.connect('rules-changed', self.fill_raw_rules)
+
+        self.raw_event_box.connect(
+            'button-release-event', self._show_hide_raw)
+        self.raw_save.connect("clicked", self._save_raw)
+        self.raw_cancel.connect("clicked", self._cancel_raw)
+
+        self.enable_radio.connect("toggled", self._custom_toggled)
+        self.disable_radio.connect("toggled", self._custom_toggled)
+
+        self.exception_list_box.set_sort_func(self.rule_sorting_function)
+
+        self.conflict_handler = ConflictFileHandler(
+            gtk_builder, prefix, self.service_name,
+            self.policy_file_name, self.policy_manager)
+
+        self.initial_rules, self.current_token = \
+            self.policy_manager.get_rules_from_filename(
+                self.policy_file_name, self.default_policy)
+
+        # fill data
+        rules = deepcopy(self.initial_rules)
+        self.populate_rule_lists(rules)
+        self.fill_raw_rules()
+        self.check_custom_rules(rules)
+
+    def add_new_rule(self, *_args):
+        """Add a new rule."""
+        if not self.close_all_edits():
+            return
+        deny_all_rule = self.policy_manager.new_rule(
+            self.service_name, '@anyvm', '@anyvm', 'deny')
+        new_row = RuleListBoxRow(self,
+            self.rule_class(deny_all_rule), self.qapp, self.verb_description)
+        self.exception_list_box.add(new_row)
+        new_row.activate()
+
+    @property
+    def current_rules(self) -> List[Rule]:
+        """
+        Get the currently selected set of AbstractRuleWrapper rules.
+        """
+        if self.disable_radio.get_active():
+            return self.policy_manager.text_to_rules(self.default_policy)
+        return [row.rule.raw_rule for row in self.current_rows]
+
+    @property
+    def current_rows(self) -> List[RuleListBoxRow]:
+        """
+        Get the current list of all RuleListBoxRows
+        """
+        return self.exception_list_box.get_children() + \
+               self.main_list_box.get_children()
+
+    def populate_rule_lists(self, rules: List[Rule]):
+        """Populate rule lists with the provided set of Rule objects."""
+        for child in self.main_list_box.get_children():
+            self.main_list_box.remove(child)
+        for child in self.exception_list_box.get_children():
+            self.exception_list_box.remove(child)
+
+        for rule in rules:
+            wrapped_rule = self.rule_class(rule)
+            if wrapped_rule.is_rule_fundamental():
+                self.main_list_box.add(RuleListBoxRow
+                                       (self, wrapped_rule,
+                                        self.qapp, self.verb_description,
+                                        is_fundamental_rule=True))
+                continue
+            fundamental = rule.source == '@adminvm' and rule.target == '@anyvm'
+            self.exception_list_box.add(RuleListBoxRow(self,
+                rule=wrapped_rule, qapp=self.qapp,
+                verb_description=self.verb_description,
+                is_fundamental_rule=fundamental))
+
+        if not self.main_list_box.get_children():
+            deny_all_rule = self.policy_manager.new_rule(
+                self.service_name, '@anyvm', '@anyvm', 'deny')
+            self.main_list_box.add(
+                RuleListBoxRow(self,
+                    self.rule_class(deny_all_rule), self.qapp,
+                    self.verb_description,
+                    is_fundamental_rule=True))
+
+    def set_custom_editable(self, state: bool):
+        """If true, set widgets to accept editing custom rules."""
+        self.add_button.set_sensitive(state)
+        self.main_list_box.set_sensitive(state)
+        self.exception_list_box.set_sensitive(state)
+
+    def _save_raw(self, _widget):
+        try:
+            rules: List[Rule] = self.policy_manager.text_to_rules(
+                self.text_buffer.get_text(
+                    self.text_buffer.get_start_iter(),
+                    self.text_buffer.get_end_iter(), False))
+            self.populate_rule_lists(rules)
+            self.check_custom_rules(rules)
+            self._show_hide_raw()
+        except PolicySyntaxError as ex:
+            show_error("Policy error",
+                       f"Cannot save policy.\n"
+                       f"Encountered the following error(s):\n{ex}")
+            return
+
+    def _cancel_raw(self, _widget):
+        self.fill_raw_rules()
+
+    def _show_hide_raw(self, *_args):
+        # if showing raws, make sure editing is done
+        if not self.raw_box.get_visible():
+            if not self.close_all_edits():
+                return
+        self.raw_box.set_visible(
+            not self.raw_box.get_visible())
+        if self.raw_box.get_visible():
+            self.raw_expander_icon.set_from_pixbuf(
+                Gtk.IconTheme.get_default().load_icon(
+                    'qubes-expander-shown', 20, 0))
+        else:
+            self.raw_expander_icon.set_from_pixbuf(
+                Gtk.IconTheme.get_default().load_icon(
+                    'qubes-expander-hidden', 18, 0))
+
+    def fill_raw_rules(self, *_args):
+        """Fill raw text window with appropriate data, based on whatever's
+        currently selected"""
+        self.text_buffer.set_text(self.policy_manager.rules_to_text(
+            self.current_rules))
+
+    @staticmethod
+    def cmp_token(token_1, token_2):
+        """Helper method to compare VMTokens in a format Gtk likes."""
+        # @anyvm goes at the end, then other generic tokens,
+        # otherwise compare lexically
+        if token_1 == token_2:
+            return 0
+        if token_1 == '@anyvm':
+            return 1
+        if token_2 == '@anyvm':
+            return -1
+        is_token_1_keyword = token_1.startswith('@')
+        is_token_2_keyword = token_2.startswith('@')
+        if is_token_1_keyword == is_token_2_keyword:
+            if token_1 < token_2:
+                return -1
+            return 1
+        if is_token_1_keyword:
+            return 1
+        return -1
+
+    def rule_sorting_function(self,
+                              row_1: RuleListBoxRow, row_2: RuleListBoxRow):
+        """Sorting function for exceptions."""
+        source_cmp = self.cmp_token(row_1.rule.source, row_2.rule.source)
+        if source_cmp != 0:
+            return source_cmp
+        return self.cmp_token(row_1.rule.target, row_2.rule.target)
+
+    def check_custom_rules(self, rules: List[Rule]):
+        """
+        Check if the provided set of rules is the same as the default set,
+        set radio buttons accordingly.
+        """
+        if self.policy_manager.compare_rules_to_text(rules,
+                                                     self.default_policy):
+            self.disable_radio.set_active(True)
+        else:
+            self.enable_radio.set_active(True)
+        self._custom_toggled()
+
+    def _custom_toggled(self, _widget=None):
+        if not self.close_all_edits():
+            return
+        self.set_custom_editable(self.enable_radio.get_active())
+        self.fill_raw_rules()
+
+    def _rule_clicked(self, _list_box, row: RuleListBoxRow, *_args):
+        if row.editing:
+            # if the current row was clicked, nothing should happen
+            return
+        if not self.close_all_edits():
+            return
+        row.set_edit_mode(True)
+
+    def verify_new_rule(self, row: RuleListBoxRow,
+                        new_source: str, new_target: str,
+                        _new_action: str) -> Optional[str]:
+        """
+        Verify correctness of a rule with new_source, new_target and new_action
+        if it was to be associated with provided row. Return None if rule would
+        be correct, and string description of error otherwise.
+        """
+        for other_row in self.current_rows:
+            if other_row == row:
+                continue
+            if other_row.rule.is_rule_conflicting(new_source, new_target):
+                return str(other_row)
+        return None
+
+    def close_all_edits(self) -> bool:
+        """Attempt to close all edited rows; if failed, return False, else
+        return True"""
+        for row in self.current_rows:
+            if row.editing:
+                if not row.is_changed():
+                    row.set_edit_mode(False)
+                    continue
+                dialog = Gtk.MessageDialog(
+                    None,
+                    Gtk.DialogFlags.MODAL,
+                    Gtk.MessageType.QUESTION, Gtk.ButtonsType.YES_NO)
+                dialog.set_title("A rule is currently being edited")
+                dialog.set_markup(
+                    "Do you want to save changes to the following "
+                    f"rule?\n{str(row)}")
+                response = dialog.run()
+                if response == Gtk.ResponseType.YES:
+                    if not row.validate_and_save():
+                        return False
+                else:
+                    row.revert()
+                dialog.destroy()
+        return True
+
+    def check_for_unsaved(self) -> bool:
+        """Check if there are any unsaved changes and ask user for an action.
+        Return True if changes have been handled, False if not."""
+        if not self.close_all_edits():
+            return False
+        unsaved_found = False
+        if len(self.initial_rules) != len(self.current_rules):
+            unsaved_found = True
+        for rule1, rule2 in zip(self.initial_rules, self.current_rules):
+            if str(rule1) != str(rule2):
+                unsaved_found = True
+
+        if unsaved_found:
+            dialog = Gtk.MessageDialog(
+                None,
+                Gtk.DialogFlags.MODAL,
+                Gtk.MessageType.QUESTION, Gtk.ButtonsType.YES_NO)
+            dialog.set_title("")
+            dialog.set_markup(
+                "Do you want to save changes to current "
+                "policy rules?")
+            # TODO: nicer name? improve when improving message dialogs
+            response = dialog.run()
+            if response == Gtk.ResponseType.YES:
+                dialog.destroy()
+                return self.save()
+            dialog.destroy()
+            self.reset()
+        return True
+
+    def reset(self):
+        """Reset state to initial or last saved state, whichever is newer."""
+        rules = deepcopy(self.initial_rules)
+        self.populate_rule_lists(rules)
+        self.fill_raw_rules()
+        self.check_custom_rules(rules)
+
+    def save(self):
+        """Save current rules, whatever they are - custom or default.
+        Return True if successful, False otherwise"""
+        rules = self.current_rules
+        try:
+            self.policy_manager.save_rules(self.policy_file_name,
+                                           rules, self.current_token)
+        except Exception as ex:
+            show_error("Failed to save rules", f"Error {str(ex)}")
+            return False
+        self.initial_rules = deepcopy(rules)
+        return True
+
+
+# class VMSubsetPolicyHandler(PolicyHandler):
+#     """
+#     Handler for a list of policy rules where targets are limited to a subset
+#     of VMs.
+#     """
+#     def __init__(self,
+#                  qapp: qubesadmin.Qubes,
+#                  gtk_builder: Gtk.Builder,
+#                  prefix: str,
+#                  policy_manager: PolicyManager,
+#                  default_policy: str,
+#                  service_name: str,
+#                  policy_file_name: str,
+#                  verb_description: AbstractVerbDescription,
+#                  rule_class: Type[AbstractRuleWrapper]):
+#         """
+#         :param qapp: Qubes object
+#         :param gtk_builder: gtk_builder; to avoid inelegant design, this should
+#         not be stored in this function
+#         :param prefix: prefix for widgets used by this class
+#         :param policy_manager: PolicyManager object
+#         :param default_policy: string representing default policy file
+#         :param service_name: name of the service being handled by this page
+#         :param policy_file_name: name of the config's policy file for this
+#         service
+#         :param verb_description: AbstractVerbDescription object
+#         :param rule_class: class to be used for Rules, must inherit from
+#          AbstractRuleWrapper
+#         """
+#
+#         super().__init__(
+#             qapp, gtk_builder, prefix, policy_manager, default_policy,
+#             service_name, policy_file_name, verb_description, rule_class)
+#
+#         self.qapp = qapp
+#         self.policy_manager = policy_manager
+#         self.default_policy = default_policy
+#         self.service_name = service_name
+#         self.policy_file_name = policy_file_name
+#         self.verb_description = verb_description
+#         self.rule_class = rule_class
+#
+#         # main widgets
+#         self.exception_list_box: Gtk.ListBox = \
+#             gtk_builder.get_object(f'{prefix}_exception_list')
+#         self.flowbox: Gtk.FlowBox = gtk_builder.get_object(
+#             f"{prefix}_main_flowbox")
+#         self.custom_box: Gtk.Box = gtk_builder.get_object(
+#             f'{prefix}_custom_box')
+#
+#         self.add_select_box: Gtk.Box = gtk_builder.get_object(
+#             f'{prefix}_add_select_box')
+#         self.edit_select_qubes_button: Gtk.Button = gtk_builder.get_object(
+#             f'{prefix}_edit_select_qubes')
+#         self.cancel_add_select_button: Gtk.Button = gtk_builder.get_object(
+#             f'{prefix}_cancel_add_select_qube')
+#         self.add_select_button: Gtk.Button = gtk_builder.get_object(
+#             f'{prefix}_add_select_qube')
+#         self.select_qube_combo: Gtk.ComboBox = gtk_builder.get_object(
+#             f'{prefix}_select_qube_combo')
+#
+#         # populate combo
+#         self.select_qube_model = VMListModeler(
+#             combobox=self.select_qube_combo,
+#             qapp=self.qapp)
+#
+#         # connect events
+#         self.exception_list_box.connect('row-activated', self._rule_clicked)
+#         self.exception_list_box.connect('rules-changed', self.fill_raw_rules)
+#         self.edit_select_qubes_button.connect('clicked', self.edit_select_qubes)
+#         self.cancel_add_select_button.connect('clicked', self.edit_select_qubes)
+#         self.add_select_button.connect('clicked', self._add_select_qube)
+#
+#         self.exception_list_box.set_sort_func(self.rule_sorting_function)
+#
+#         self.select_qubes: Set[str] = set()
+#         # fill data
+#         rules = deepcopy(self.initial_rules)
+#         self.set_select_qubes_from_rules(rules)
+#         self.populate_rule_lists(rules)
+#         self.fill_raw_rules()
+#         self.check_custom_rules(rules)
+#
+#     @property
+#     def current_rules(self) -> List[Rule]:
+#         return [row.rule.raw_rule for row in self.current_rows]
+#
+#     @property
+#     def current_rows(self) -> List[RuleListBoxRow]:
+#         return self.exception_list_box.get_children()
+#
+#     def populate_rule_lists(self, rules: List[Rule]):
+#         for rule in rules:
+#             # fundamental if source is anyvm
+#             fundamental = rule.source == '@anyvm'
+#             # TODO: LIMITED SELECTION IN TARGET
+#             self.exception_list_box.add(RuleListBoxRow(
+#                 parent_handler=self, rule=self.rule_class(rule), qapp=self.qapp,
+#                 verb_description=self.verb_description,
+#                 is_fundamental_rule=fundamental
+#             ))
+#
+#     def set_custom_editable(self, state: bool):
+#         self.custom_box.set_sensitive(state)
+#
+#     def edit_select_qubes(self, *_args):
+#         new_state = not self.add_select_box.get_visible()
+#         self._populate_flowbox(new_state)
+#         self.add_select_box.set_visible(new_state)
+#         # TODO: this must be noticed by senpai of changes checking/close all edits
+#
+#     def _add_select_qube(self, *_args):
+#         # TODO: validate if selected
+#         new_qube = str(self.select_qube_model.get_selected())
+#         self.select_qubes.add(new_qube)
+#         self.edit_select_qubes()
+#
+#     def add_new_rule(self, *_args):
+#         # TODO
+#         pass
+#
+#     def set_select_qubes_from_rules(self, rules: List[Rule]):
+#         for rule in rules:
+#             if rule.target.type == 'keyword':
+#                 continue
+#             self.select_qubes.add(str(rule.target))
+#         self._populate_flowbox(False)
+#
+#     def _populate_flowbox(self, editable: bool):
+#         for child in self.flowbox.get_children():
+#             self.flowbox.remove(child)
+#
+#         for qube in self.select_qubes:
+#             token_widget = TokenName(qube, self.qapp, {})
+#             if editable:
+#                 final_widget = Gtk.Button()
+#                 final_widget.get_style_context().add_class('flat')
+#
+#                 box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+#                 box.pack_start(token_widget, False, False, 0)
+#                 remove_icon = Gtk.Image()
+#                 remove_icon.set_from_pixbuf(
+#                     Gtk.IconTheme.get_default().load_icon(
+#                         'qubes-delete', 14, 0))
+#                 box.pack_start(remove_icon, False, False, 10)
+#
+#                 final_widget.add(box)
+#                 final_widget.connect('clicked', self._remove_select_qube)
+#             else:
+#                 final_widget = token_widget
+#             final_widget.show_all()
+#             self.flowbox.add(final_widget)
+#
+#     def _remove_select_qube(self, widget):
+#         qube_to_remove = widget.get_child().token_name
+#         self.select_qubes.remove(qube_to_remove)
+#         self._populate_flowbox(True)
+#         # TODO: re-do rules!!!!!
+#
+# # adding new keyqube should add a default rule?
+# # add default_target?
+# # can't save if no key qube selected

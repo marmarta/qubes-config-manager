@@ -44,13 +44,6 @@ def show_error(title, text):
     dialog.show()
 
 
-VM_CATEGORIES = {
-    "@anyvm": "ALL QUBES",
-    "@type:AppVM": "TYPE: APP",
-    "@type:TemplateVM": "TYPE: TEMPLATES",
-    "@dispvm": "TYPE: DISPOSABLE",
-    "@adminvm": "TYPE: ADMINVM"}
-
 NONE_CATEGORY = {
     "None": "(none)"
 }
@@ -94,6 +87,7 @@ class TokenName(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.qapp = qapp
         self.categories = categories
+        self.token_name = token_name
         self.set_spacing(5)
         self.set_token(token_name)
 
@@ -103,18 +97,8 @@ class TokenName(Gtk.Box):
             self.remove(child)
         try:
             vm = self.qapp.domains[token_name]
-            image = Gtk.Image()
-            image.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
-                    vm.icon, 20, 0))
-            label = Gtk.Label()
-            label.set_label(vm.name)
-            image.set_halign(Gtk.Align.CENTER)
-            label.get_style_context().add_class('qube-box-base')
-            label.get_style_context().add_class(f'qube-box-{vm.label}')
-            label.show_all()
-            image.show_all()
-            self.pack_start(image, False, False, 0)
-            self.pack_start(label, False, False, 0)
+            qube_name = QubeName(vm)
+            self.add(qube_name)
         except KeyError:
             nice_name = self.categories.get(token_name, token_name)
             label = Gtk.Label()
@@ -122,23 +106,6 @@ class TokenName(Gtk.Box):
             label.get_style_context().add_class('qube-type')
             label.show_all()
             self.pack_start(label, False, False, 0)
-
-
-class TypeName(Gtk.Box):
-    """
-    A Gtk.Box containing type label plus name, nicely formatted.
-    """
-    def __init__(self, vm_type: str):
-        """
-        Type should be one of the VM_CATEGORIES keys.
-        """
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
-        self.vm_type = vm_type
-        nice_name = VM_CATEGORIES.get(self.vm_type, self.vm_type)
-        self.label = Gtk.Label()
-        self.label.set_text(nice_name)
-        self.label.get_style_context().add_class('qube-type')
-        self.pack_start(self.label, False, False, 0)
 
 
 class QubeName(Gtk.Box):
@@ -162,8 +129,8 @@ class QubeName(Gtk.Box):
         self.set_spacing(5)
         self.image.set_halign(Gtk.Align.CENTER)
 
-        self.add(self.image)
-        self.add(self.label)
+        self.pack_start(self.image, False, False, 0)
+        self.pack_start(self.label, False, False, 0)
 
         self.get_style_context().add_class('qube-box-base')
         if vm:

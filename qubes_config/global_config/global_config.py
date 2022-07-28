@@ -35,7 +35,8 @@ import qubesadmin.vm
 from ..widgets.qubes_widgets_library import VMListModeler, \
     TextModeler, TraitSelector, NONE_CATEGORY
 from .page_handler import PageHandler
-from .policy_handler import PolicyManager, PolicyHandler
+from .policy_handler import PolicyManager, PolicyHandler, \
+    VMSubsetPolicyHandler, AbstractPolicyHandler
 from .policy_rules import RuleSimple, \
     RuleSimpleAskIsAllow, RuleTargeted, SimpleVerbDescription, \
     TargetedVerbDescription
@@ -323,11 +324,18 @@ qubes.OpenInVM * @anyvm @dispvm allow\n
 qubes.OpenInVM * @anyvm @anyvm ask""",
             service_name="qubes.OpenInVM",
             policy_file_name="50-config-openinvm",
-            verb_description=SimpleVerbDescription({
-                "allow": "allow files to be opened in",
-                "ask": "to allow files to be opened in",
-                "deny": "allow files to be opened in"
-            }),
+            verb_description=TargetedVerbDescription(
+                    single_target_descr={
+                        "allow": 'open files in',
+                        "ask": 'where to open files,\nand select by default',
+                        "deny": 'be allowed to open files in'
+                    },
+                    multi_target_descr={
+                        "allow": 'open files in',
+                        "ask": 'where to open files in',
+                        "deny": 'be allowed to open files in'
+                    }
+                ),
             rule_class=RuleTargeted)
 
     def reset(self):
@@ -469,7 +477,22 @@ class GlobalConfig(Gtk.Application):
             1: None,  # TODO
             2: None,  # TODO
             3: None,  # TODO
-            4: None,  # TODO
+            4: None, # TODO
+        #     4: VMSubsetPolicyHandler(
+        #         qapp=self.qapp,
+        #         gtk_builder=self.builder,
+        #         policy_manager=policy_manager,
+        #         prefix="splitgpg",
+        #         service_name='qubes.SplitGPG',
+        #         policy_file_name='50-config-splitgpg',
+        #         default_policy="""qubes.SplitGPG * @adminvm @anyvm deny\n
+        # qubes.SplitGPG * @anyvm @anyvm ask\n""",
+        #         verb_description=SimpleVerbDescription({
+        #             "ask": "to allow GPG sharing from",
+        #             "allow": "allow GPG sharing from",
+        #             "deny": "allow GPG sharing from"
+        #         }),
+        #         rule_class=RuleSimple),
             5: PolicyHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
@@ -520,7 +543,7 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
         self._handle_urls()
 
     def _handle_urls(self):
-        url_label_ids = ["url_info"]
+        url_label_ids = ["url_info", "openinvm_info", "splitgpg_info"]
         for url_label_id in url_label_ids:
             label: Gtk.Label = self.builder.get_object(url_label_id)
             label.connect("activate-link", self._activate_link)
