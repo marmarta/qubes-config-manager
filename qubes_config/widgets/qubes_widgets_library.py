@@ -44,6 +44,23 @@ def show_error(title, text):
     dialog.show()
 
 
+def ask_question(parent, title: str, text: str,
+                 options: Gtk.ButtonsType = Gtk.ButtonsType.YES_NO):
+    """
+    Helper function to show question dialogs.
+    """
+    dialog = Gtk.MessageDialog(
+        parent,
+        Gtk.DialogFlags.MODAL,
+        Gtk.MessageType.QUESTION, options)
+    dialog.get_style_context().add_class('question_dialog')
+    dialog.set_title(title)
+    dialog.set_markup(text)
+    response = dialog.run()
+    dialog.destroy()
+    return response
+
+
 NONE_CATEGORY = {
     "None": "(none)"
 }

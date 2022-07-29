@@ -130,7 +130,7 @@ class RuleSimple(AbstractRuleWrapper):
 
     @property
     def action(self):
-        return str(self._rule.action)
+        return type(self._rule.action).__name__.lower()
 
     @action.setter
     def action(self, new_value):

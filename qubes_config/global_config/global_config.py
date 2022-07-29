@@ -35,10 +35,11 @@ import qubesadmin.vm
 from ..widgets.qubes_widgets_library import VMListModeler, \
     TextModeler, TraitSelector, NONE_CATEGORY
 from .page_handler import PageHandler
-from .policy_handler import PolicyManager, PolicyHandler, VMSubsetPolicyHandler
+from .policy_handler import PolicyHandler, VMSubsetPolicyHandler
 from .policy_rules import RuleSimple, \
     RuleSimpleAskIsAllow, RuleTargeted, SimpleVerbDescription, \
     TargetedVerbDescription, RuleSimpleNoAllow
+from .policy_manager import PolicyManager
 
 import gi
 
@@ -481,7 +482,7 @@ class GlobalConfig(Gtk.Application):
                 gtk_builder=self.builder,
                 policy_manager=policy_manager,
                 prefix="splitgpg",
-                service_name='qubes.SplitGPG',
+                service_name='qubes.Gpg',
                 policy_file_name='50-config-splitgpg',
                 default_policy="",
                 main_rule_class=RuleSimpleNoAllow, # TODO
@@ -489,7 +490,7 @@ class GlobalConfig(Gtk.Application):
                     "ask": "access GPG keys from",
                     "deny": "access GPG keys from"
                 }),
-                exception_rule_class=RuleSimple, # TODO
+                exception_rule_class=RuleTargeted,
                 exception_verb_description=SimpleVerbDescription({
                     "allow": 'access GPG keys from',
                     "ask": 'to access GPG keys from',

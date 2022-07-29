@@ -83,3 +83,8 @@ radiobutton radio {
     border-style: solid;
     border-radius: 5px;
 }
+
+.question_dialog {
+    padding: 20px;
+    background: @light-gray;
+}

@@ -220,3 +220,8 @@ separator {
     border-style: solid;
     border-color: white;
 }
+
+.action_text {
+    color: black;
+    font-weight: 700;
+}
