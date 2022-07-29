@@ -20,6 +20,7 @@
 
 # pylint: disable=import-error
 """Global Qubes Config tool."""
+import re
 import sys
 import threading
 from typing import Optional, Dict, Union, Any
@@ -362,33 +363,37 @@ class ThisDeviceHandler(PageHandler):
         self.data_label: Gtk.Label = gtk_builder.get_object(
             'thisdevice_data_label')
 
-        computer_model = ""
-        cpu_model = ""
-        chipset = ""
-        graphics_card = ""
-        storage = ""
-        ram = ""
-        qubes_version = ""
-        bios_version = ""
-        kernel = ""
-        xen = ""
+        hcl_check = subprocess.check_output(['qubes-hcl-report']).decode()
 
-        label_text = f"""<b>Model:</b> {computer_model}
+        pattern = re.compile(
+            r"Qubes release\s*(?P<qubes>.+)[\n.]*Brand:\s*(?P<brand>.+)[\n.]*"
+            r"Model:\s*(?P<model>.+)[\n.]*BIOS:\s*(?P<bios>.*)[\n.]+"
+            r"Xen:\s*(?P<xen>.+)[\n.]*Kernel:\s+(?P<kernel>.+)[\n.]*"
+            r"RAM:\s+(?P<ram>.+)[\n.]+CPU:\s*(?P<cpu>.*)[\n.]+"
+            r"Chipset:\s*(?P<chipset>.*)[\n.]+VGA:\s*(?P<vga>.*)")
+        match = pattern.search(hcl_check)
+        if not match:
+            label_text = hcl_check
+            self.data_label.get_style_context().add_class('red_code')
+        else:
+            storage = ""
+            qubes_version = ""
+
+            label_text = f"""<b>Brand:</b> {match.group('brand')}
+<b>Model:</b> {match.group('model')}
         
-<b>CPU:</b> {cpu_model}
-<b>Chipset:</b> {chipset}
-<b>Graphics:</b> {graphics_card}
+<b>CPU:</b> {match.group('cpu')}
+<b>Chipset:</b> {match.group('chipset')}
+<b>Graphics:</b> {match.group('vga')}
 
-<b>Storage:</b> {storage}
-<b>RAM:</b> {ram}
+<b>RAM:</b> {match.group('ram')}
 
-<b>QubesOS version:</b> {qubes_version}
-<b>BIOS:</b> {bios_version}
-<b>Kernel:</b> {kernel}
-<b>Xen:</b> {xen}
+<b>QubesOS version:</b> {match.group('qubes')}
+<b>BIOS:</b> {match.group('bios')}
+<b>Kernel:</b> {match.group('kernel')}
+<b>Xen:</b> {match.group('xen')}
 """
         self.data_label.set_markup(label_text)
-        self.model_label.set_text("Lenovo Thinkpad")
 
     def reset(self):
         # does not apply
