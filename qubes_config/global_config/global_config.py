@@ -487,14 +487,14 @@ class GlobalConfig(Gtk.Application):
                 default_policy="",
                 main_rule_class=RuleSimpleNoAllow, # TODO
                 main_verb_description=SimpleVerbDescription({
-                    "ask": "access GPG keys from",
-                    "deny": "access GPG keys from"
+                    "ask": "access GPG\nkeys from",
+                    "deny": "access GPG\nkeys from"
                 }),
                 exception_rule_class=RuleTargeted,
                 exception_verb_description=SimpleVerbDescription({
-                    "allow": 'access GPG keys from',
-                    "ask": 'to access GPG keys from',
-                    "deny": 'access GPG keys from'
+                    "allow": 'access GPG\nkeys from',
+                    "ask": 'to access GPG\nkeys from',
+                    "deny": 'access GPG\nkeys from'
                 })),
             5: PolicyHandler(
                 qapp=self.qapp,

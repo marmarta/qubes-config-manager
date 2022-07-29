@@ -79,7 +79,8 @@ class AbstractRuleWrapper(abc.ABC):
         """
         return self.source == '@anyvm' and self.target == '@anyvm'
 
-    def is_rule_conflicting(self, other_source: str, other_target: str) -> bool:
+    def is_rule_conflicting(self, other_source: str, other_target: str,
+                            other_action: str) -> bool:
         """
         Return True if rule with other_source and other_target would conflict
          with self.
@@ -240,16 +241,18 @@ class RuleTargeted(AbstractRuleWrapper):
                            'destination qubes for single-qube source qubes.'
         return None
 
-    # SplitGPG
-    # Main thingy:
-    # ALL QUBES can access GPG keys from
-    # ALL QUBES can not access GPG keys from
-
-    # SIDE THINGY
-    # qube X will ALWAYS access GPG keys from Y
-    # qube X will ASK to access GPG keys from Y
-    # qube X will NEVER be allowed to access GPG keys from Y
-# class ExceptionRule(AbstractRuleWrapper):
+    def is_rule_conflicting(self, other_source: str, other_target: str,
+                            other_action: str) -> bool:
+        """
+        Return True if rule with other_source and other_target would conflict
+         with self.
+        """
+        if super().is_rule_conflicting(other_source, other_target,
+                                       other_action):
+            return True
+        if self.action == 'allow' and other_source == self.source:
+            return True
+        return False
 
 
 class AbstractVerbDescription(abc.ABC):

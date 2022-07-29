@@ -355,7 +355,7 @@ class PolicyHandler(PageHandler):
 
     def verify_new_rule(self, row: RuleListBoxRow,
                         new_source: str, new_target: str,
-                        _new_action: str) -> Optional[str]:
+                        new_action: str) -> Optional[str]:
         """
         Verify correctness of a rule with new_source, new_target and new_action
         if it was to be associated with provided row. Return None if rule would
@@ -364,7 +364,8 @@ class PolicyHandler(PageHandler):
         for other_row in self.current_rows:
             if other_row == row:
                 continue
-            if other_row.rule.is_rule_conflicting(new_source, new_target):
+            if other_row.rule.is_rule_conflicting(new_source, new_target,
+                                                  new_action):
                 return str(other_row)
         return None
 

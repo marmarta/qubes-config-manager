@@ -1195,6 +1195,7 @@ Documentation will open in a disposable qube.</property>
                           <object class="GtkBox">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
+                            <property name="margin-start">50</property>
                             <property name="margin-top">15</property>
                             <property name="orientation">vertical</property>
                             <child>
