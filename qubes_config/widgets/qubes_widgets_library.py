@@ -38,6 +38,8 @@ def show_error(title, text):
     """
     dialog = Gtk.MessageDialog(
         None, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.OK)
+    content_area = dialog.get_content_area()
+    content_area.get_style_context().add_class('question_dialog')
     dialog.set_title(title)
     dialog.set_markup(text)
     dialog.connect("response", lambda *x: dialog.destroy())
@@ -53,8 +55,9 @@ def ask_question(parent, title: str, text: str,
         parent,
         Gtk.DialogFlags.MODAL,
         Gtk.MessageType.QUESTION, options)
-    dialog.get_style_context().add_class('question_dialog')
     dialog.set_title(title)
+    content_area = dialog.get_content_area()
+    content_area.get_style_context().add_class('question_dialog')
     dialog.set_markup(text)
     response = dialog.run()
     dialog.destroy()

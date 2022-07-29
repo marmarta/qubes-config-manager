@@ -407,14 +407,6 @@ class ThisDeviceHandler(PageHandler):
         # does not apply
         return True
 
-# TODO: qvm-open is used in both safe-url and file access
-# qvm-open-in-vm can be default browser?
-
-# target: @default
-# by default open in: ask z default target
-# bez pytania open in: allow target=
-# deny for a certain combinantion
-
 
 class GlobalConfig(Gtk.Application):
     """
@@ -490,7 +482,7 @@ class GlobalConfig(Gtk.Application):
                 service_name='qubes.Gpg',
                 policy_file_name='50-config-splitgpg',
                 default_policy="",
-                main_rule_class=RuleSimpleNoAllow, # TODO
+                main_rule_class=RuleSimpleNoAllow,
                 main_verb_description=SimpleVerbDescription({
                     "ask": "access GPG\nkeys from",
                     "deny": "access GPG\nkeys from"
@@ -543,7 +535,7 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
                     }
                 ),
                 rule_class=RuleTargeted),
-            8: ThisDeviceHandler(self.qapp, self.builder),  # TODO
+            8: ThisDeviceHandler(self.qapp, self.builder),
         }
 
         self.main_notebook.connect("switch-page", self._page_switched)

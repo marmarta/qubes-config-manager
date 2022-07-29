@@ -85,6 +85,6 @@ radiobutton radio {
 }
 
 .question_dialog {
-    padding: 20px;
-    background: @light-gray;
+    padding: 30px;
+    background: white;
 }

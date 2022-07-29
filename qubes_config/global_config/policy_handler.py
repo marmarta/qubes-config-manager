@@ -433,7 +433,7 @@ class PolicyHandler(PageHandler):
 class VMSubsetPolicyHandler(PolicyHandler):
     """
     Handler for a list of policy rules where targets are limited to a subset
-    of VMs.
+    of VMs, e.g. SplitGPG
     """
     def __init__(self,
                  qapp: qubesadmin.Qubes,
@@ -514,7 +514,11 @@ class VMSubsetPolicyHandler(PolicyHandler):
             qapp=self.qapp,
             verb_description=self.main_verb_description,
             enable_delete=True,
-            enable_vm_edit=False, initial_verb=""))
+            enable_vm_edit=False, initial_verb="",
+            custom_deletion_warning="Are you sure you want to delete this "
+                                    "rule? All releted exceptions will also "
+                                    "be deleted."
+        ))
 
     def _add_exception_rule(self, rule):
         row = LimitedRuleListBoxRow(
@@ -557,6 +561,8 @@ class VMSubsetPolicyHandler(PolicyHandler):
                     continue
                 self._add_main_rule(rule)
             else:
+                if rule.target not in self.select_qubes:
+                    continue
                 self._add_exception_rule(rule)
         self.add_button.set_sensitive(bool(self.main_list_box.get_children()))
 

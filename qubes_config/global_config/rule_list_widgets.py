@@ -231,7 +231,9 @@ class RuleListBoxRow(Gtk.ListBoxRow):
                  verb_description: AbstractVerbDescription,
                  enable_delete: bool = True,
                  enable_vm_edit: bool = True,
-                 initial_verb: str = "will"):
+                 initial_verb: str = "will",
+                 custom_deletion_warning: str = "Are you sure you want to "
+                                                "delete this rule?"):
         """
         :param parent_handler: PolicyHandler object this rule belongs to.
         :param rule: Rule object, wrapped in a helper object
@@ -250,6 +252,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         self.verb_description = verb_description
         self.initial_verb = initial_verb
         self.parent_handler = parent_handler
+        self.custom_deletion_warning = custom_deletion_warning
 
         self.get_style_context().add_class("permission_row")
 
@@ -325,7 +328,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
     def _delete_self(self, *_args):
         """Remove self from parent. Used to delete the rule."""
         response = ask_question(self.get_toplevel(), "Delete rule",
-                                "Are you sure you want to delete this rule?")
+                                self.custom_deletion_warning)
         if response == Gtk.ResponseType.NO:
             return
         parent_widget = self.get_parent()
