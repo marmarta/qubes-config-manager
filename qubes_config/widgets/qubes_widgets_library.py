@@ -58,7 +58,8 @@ def ask_question(parent, title: str, text: str,
     dialog.set_title(title)
     content_area = dialog.get_content_area()
     content_area.get_style_context().add_class('question_dialog')
-    dialog.set_markup(text)
+    dialog.set_markup(f'<b>{title}</b>')
+    dialog.format_secondary_markup(text)
     response = dialog.run()
     dialog.destroy()
     return response
