@@ -32,6 +32,7 @@ from .page_handler import PageHandler
 from .policy_rules import RuleTargeted, SimpleVerbDescription
 from .policy_manager import PolicyManager
 from .rule_list_widgets import NoActionListBoxRow
+from .policy_handler import ConflictFileHandler
 
 import gi
 
@@ -84,6 +85,9 @@ class RepoHandler:
         self.template_community_testing: Gtk.CheckButton = \
             gtk_builder.get_object('updates_template_community_testing')
 
+        self.problems_repo_box: Gtk.Box = \
+            gtk_builder.get_object('updates_problem_repo')
+
         # the code below relies on dicts in Python 3.6+ keeping the
         # order of items
         self.repo_to_widget_mapping = [{
@@ -102,11 +106,9 @@ class RepoHandler:
 
         self.repos: Dict[str, Dict] = dict()
         self._load_data()
+
         self._load_state()
-
         self._community_toggled()
-
-        # get the repo list
 
     def _community_toggled(self, _widget=None):
         if not self.template_community.get_active():
@@ -123,7 +125,9 @@ class RepoHandler:
                 self.repos[repo_name] = dict()
                 self.repos[repo_name]['prettyname'] = lst[1]
                 self.repos[repo_name]['enabled'] = (lst[2] == 'enabled')
-        except qubesadmin.exc.QubesException:
+        except qubesadmin.exc.QubesException as ex:
+            show_error("Error loading repository data",
+                       f"An error has occurred: {ex}")
             # disable all repo-related stuff
             self.dom0_stable_radio.set_sensitive(False)
             self.dom0_testing_sec_radio.set_sensitive(False)
@@ -131,6 +135,8 @@ class RepoHandler:
             self.template_official_testing.set_sensitive(False)
             self.template_community.set_sensitive(False)
             self.template_community_testing.set_sensitive(False)
+            self.repos = {}
+            self.problems_repo_box.set_visible(True)
 
     def _load_state(self):
         for repo_dict in self.repo_to_widget_mapping:
@@ -179,7 +185,6 @@ class RepoHandler:
     def is_changed(self) -> bool:
         """Check if there are any unsaved changes and ask user for an action.
         Return True if changes have been handled, False if not."""
-        # TODO:ask questions
         if not self.repos:
             return False
 
@@ -193,17 +198,20 @@ class RepoHandler:
 
         return False
 
-    # TODO: if fails, do??
     def save_changes(self):
         """Save all changes."""
         for repo_dict in self.repo_to_widget_mapping:
             found = False
             for repo, widget in repo_dict.items():
-                if widget.get_active() or found:
-                    found = True
-                    self._set_repository(repo, True)
-                else:
-                    self._set_repository(repo, False)
+                try:
+                    if widget.get_active() or found:
+                        found = True
+                        self._set_repository(repo, True)
+                    else:
+                        self._set_repository(repo, False)
+                except RuntimeError as ex:
+                    show_error('Failed to set repository data',
+                               f"An error has occurred: {ex}")
         self._load_data()
         self._load_state()
 
@@ -280,17 +288,23 @@ class UpdateCheckerHandler:
         self.add_exception_button: Gtk.Button = \
             gtk_builder.get_object('updates_add_exception_button')
 
+        self.exception_label: Gtk.Label = \
+            gtk_builder.get_object('updates_check_exception_label')
+
         self.initial_dom0 = get_boolean_feature(self.qapp.domains['dom0'],
                                  self.FEATURE_NAME, True)
         self.dom0_update_check.set_active(self.initial_dom0)
 
-        self.initial_default = get_boolean_feature(self.qapp.domains['dom0'],
-                                 'config.default.qubes-update-check',
-                                 True)
+        self.initial_default = get_boolean_feature(
+            self.qapp.domains['dom0'],
+            'config.default.qubes-update-check', True)
         if self.initial_default:
             self.enable_radio.set_active(True)
         else:
             self.disable_radio.set_active(True)
+        self._set_label()
+        self.enable_radio.connect('toggled', self._set_label)
+        self.disable_radio.connect('toggled', self._set_label)
 
         self.initial_exceptions: List[qubesadmin.vm.QubesVM] = []
         self._initialize_flowbox()
@@ -308,6 +322,16 @@ class UpdateCheckerHandler:
                                           self._add_exception_cancel_clicked)
         self.add_exception_confirm.connect('clicked',
                                           self._add_exception_confirm_clicked)
+
+    def _set_label(self, *_args):
+        if self.enable_radio.get_active():
+            self.exception_label.set_markup(
+                'Except the following qubes, for which checking for updates'
+                ' will be <b>disabled</b>')
+        else:
+            self.exception_label.set_markup(
+                'Except the following qubes, for which checking for updates'
+                ' will be <b>enabled</b>')
 
     def _add_exception_button_clicked(self, _widget):
         self.add_exception_box.set_visible(True)
@@ -436,6 +460,9 @@ class UpdateProxy:
         self.add_updatevm_rule_button: Gtk.Button = \
             gtk_builder.get_object('updates_add_updatevm_rule_button')
 
+        self.problem_box: Gtk.Box = \
+            gtk_builder.get_object('updates_problem_policy')
+
         self.rules, self.current_token = \
             self.policy_manager.get_rules_from_filename(
                 self.policy_file_name, "")
@@ -463,42 +490,39 @@ class UpdateProxy:
 
     @staticmethod
     def _needs_updatevm_filter(vm):
-        if vm.klass == 'AdminVM' or vm.template:
+        if vm.klass == 'AdminVM' or vm.klass == 'AppVM':
+            # TODO: what about standalone disposables????????
             return False
         return not vm.is_networked()
 
     def load_rules(self):
         """Load rules into widgets."""
-        if not self.rules:
-            def_updatevm = self.default_updatevm
-            if self.has_whonix:
-                def_whonix_updatevm = self.default_whonix_updatevm
-        else:
-            last_rule = self.rules[-1]
+        def_updatevm = self.default_updatevm
+        def_whonix_updatevm = None
+        if self.has_whonix:
+            def_whonix_updatevm = self.default_whonix_updatevm
 
-            assert last_rule.source == '@type:TemplateVM'
-            def_updatevm = last_rule.action.target
+        remaining_rules = []
 
-            if self.has_whonix:
-                whonix_rule = self.rules[-2]
-                # TODO: what if this rule is weird, because we had no whonix
-                #  and then whonix?
-                assert whonix_rule.source == '@tag:whonix-updatevm'
-                def_whonix_updatevm = whonix_rule.action.target
+        for rule in reversed(self.rules):
+            if rule.source == '@type:TemplateVM':
+                def_updatevm = rule.action.target
+            elif rule.source == '@tag:whonix-updatevm':
+                def_whonix_updatevm = rule.action.target
+            else:
+                remaining_rules.append(rule)
 
         self.updatevm_model.select_entry(str(def_updatevm))
         self.updatevm_model.update_initial()
 
         if self.has_whonix:
-            self.whonix_updatevm_model.select_entry(def_whonix_updatevm)
+            self.whonix_updatevm_model.select_entry(str(def_whonix_updatevm))
             self.whonix_updatevm_model.update_initial()
 
         for child in self.updatevm_exception_list.get_children():
             self.updatevm_exception_list.remove(child)
 
-        remaining_rules = self.rules[:-2] if self.has_whonix \
-            else self.rules[:-1]
-        for rule in remaining_rules:
+        for rule in reversed(remaining_rules):
             self.updatevm_exception_list.add(self._get_row(rule))
 
     def _get_row(self, rule: Rule):
@@ -590,7 +614,7 @@ class UpdateProxy:
         """Reset to initial state."""
         self.load_rules()
 
-    def save(self):
+    def save_changes(self):
         """Save currently chosen settings."""
         rules = self.current_exception_rules
 
@@ -652,6 +676,10 @@ class UpdatesHandler(PageHandler):
                                         policy_file_name=self.policy_file_name,
                                         service_name=self.service_name)
 
+        self.conflict_handler = ConflictFileHandler(
+            gtk_builder, "updates", self.service_name,
+            self.policy_file_name, self.policy_manager)
+
 
     def close_all_edits(self) -> bool:
         """Attempt to close all edited rows; if failed, return False, else
@@ -704,14 +732,20 @@ class UpdatesHandler(PageHandler):
     def save(self):
         """Save current rules, whatever they are - custom or default.
         Return True if successful, False otherwise"""
-        self.repo_handler.save_changes()
+
+        for handler in [self.repo_handler, self.update_checker, self.update_proxy]:
+            try:
+                handler.save_changes()
+            except Exception as ex:
+                show_error("Failed to save changes",
+                           f"Failed to save some changes: {ex}")
 
         if self.dom0_updatevm_model.is_changed():
-            self.qapp.updatevm = self.dom0_updatevm_model.get_selected()
-
-        self.update_checker.save_changes()
-
-        self.update_proxy.save()
+            try:
+                self.qapp.updatevm = self.dom0_updatevm_model.get_selected()
+            except Exception as ex:
+                show_error("Failed to save changes",
+                           f"Failed to save dom0 update proxy: {ex}")
 
 # Filtering for dropdowns:
 # qubes-update-proxy service? or set it up when adding as proxy??

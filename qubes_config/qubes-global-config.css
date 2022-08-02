@@ -8,6 +8,10 @@ separator {
     background: @dark-gray;
 }
 
+.combo {
+    padding: 5px;
+}
+
 .qubes_version_label {
     margin: 10px 0 10px 0;
     color: @dark-gray-2;

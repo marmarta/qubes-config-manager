@@ -899,11 +899,12 @@
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="orientation">vertical</property>
+                        <property name="spacing">5</property>
                         <child>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label" translatable="yes">dom0</property>
+                            <property name="label" translatable="yes">dom0 updates</property>
                             <property name="xalign">0</property>
                             <style>
                               <class name="group_title"/>
@@ -957,6 +958,10 @@
                                 <child internal-child="entry">
                                   <object class="GtkEntry">
                                     <property name="can-focus">False</property>
+                                    <property name="width-chars">24</property>
+                                    <style>
+                                      <class name="combo"/>
+                                    </style>
                                   </object>
                                 </child>
                               </object>
@@ -974,6 +979,32 @@
                             <property name="expand">False</property>
                             <property name="fill">True</property>
                             <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkBox" id="updates_problem_repo">
+                            <property name="can-focus">False</property>
+                            <property name="orientation">vertical</property>
+                            <child>
+                              <object class="GtkLabel" id="updates_problem_label1">
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">Error accessing repository data has occured. Cannot change update settings.</property>
+                                <property name="wrap">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <style>
+                              <class name="problem_box"/>
+                            </style>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">2</property>
                           </packing>
                         </child>
                         <child>
@@ -1026,7 +1057,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">2</property>
+                            <property name="position">3</property>
                           </packing>
                         </child>
                         <child>
@@ -1080,7 +1111,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">3</property>
+                            <property name="position">4</property>
                           </packing>
                         </child>
                         <child>
@@ -1134,7 +1165,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">4</property>
+                            <property name="position">5</property>
                           </packing>
                         </child>
                         <child>
@@ -1151,7 +1182,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">5</property>
+                            <property name="position">6</property>
                           </packing>
                         </child>
                         <child>
@@ -1168,7 +1199,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">6</property>
+                            <property name="position">7</property>
                           </packing>
                         </child>
                         <child>
@@ -1176,6 +1207,8 @@
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="receives-default">False</property>
+                            <property name="margin-top">10</property>
+                            <property name="margin-bottom">10</property>
                             <property name="draw-indicator">True</property>
                             <child>
                               <object class="GtkBox">
@@ -1212,14 +1245,70 @@
                                 </child>
                               </object>
                             </child>
-                            <style>
-                              <class name="enable_opts"/>
-                            </style>
                           </object>
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">7</property>
+                            <property name="position">8</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSeparator">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="valign">center</property>
+                            <property name="hexpand">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">9</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">center</property>
+                            <property name="spacing">20</property>
+                            <child>
+                              <object class="GtkImage">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="halign">start</property>
+                                <property name="valign">center</property>
+                                <property name="pixel-size">48</property>
+                                <property name="icon-name">qubes-info</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="splitgpg_info1">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="halign">start</property>
+                                <property name="label" translatable="yes">The setting below will be applied only to &lt;b&gt;existing&lt;/b&gt; qubes. New qubes have checking for updates &lt;b&gt;enabled&lt;/b&gt; by default.</property>
+                                <property name="use-markup">True</property>
+                                <property name="wrap">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                            <style>
+                              <class name="info_box"/>
+                            </style>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">10</property>
                           </packing>
                         </child>
                         <child>
@@ -1270,7 +1359,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">8</property>
+                            <property name="position">11</property>
                           </packing>
                         </child>
                         <child>
@@ -1322,7 +1411,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">9</property>
+                            <property name="position">12</property>
                           </packing>
                         </child>
                         <child>
@@ -1330,16 +1419,17 @@
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="receives-default">False</property>
+                            <property name="margin-start">20</property>
                             <property name="draw-indicator">True</property>
                             <child>
                               <object class="GtkBox">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <child>
-                                  <object class="GtkLabel">
+                                  <object class="GtkLabel" id="updates_check_exception_label">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
-                                    <property name="label" translatable="yes">With the below exceptions: </property>
+                                    <property name="label" translatable="yes">With the following exceptions: </property>
                                   </object>
                                   <packing>
                                     <property name="expand">False</property>
@@ -1369,13 +1459,15 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">10</property>
+                            <property name="position">13</property>
                           </packing>
                         </child>
                         <child>
                           <object class="GtkFlowBox" id="updates_exceptions_flowbox">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
+                            <property name="margin-start">20</property>
+                            <property name="margin-end">20</property>
                             <style>
                               <class name="flowbox_container"/>
                             </style>
@@ -1383,7 +1475,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">11</property>
+                            <property name="position">14</property>
                           </packing>
                         </child>
                         <child>
@@ -1469,7 +1561,20 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">12</property>
+                            <property name="position">15</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSeparator">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="valign">center</property>
+                            <property name="hexpand">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">16</property>
                           </packing>
                         </child>
                         <child>
@@ -1525,7 +1630,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">13</property>
+                            <property name="position">17</property>
                           </packing>
                         </child>
                         <child>
@@ -1542,7 +1647,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">14</property>
+                            <property name="position">18</property>
                           </packing>
                         </child>
                         <child>
@@ -1559,7 +1664,48 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">15</property>
+                            <property name="position">19</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkBox" id="updates_problem_box">
+                            <property name="can-focus">False</property>
+                            <property name="orientation">vertical</property>
+                            <child>
+                              <object class="GtkLabel" id="updates_problem_label_2">
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">Custom policy changes found. The changes below might be overwritten by existing custom policy changes. You can view the files below to adjust existing policy, or move their contents to raw policy file below to enable graphical edit.</property>
+                                <property name="wrap">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkListBox" id="updates_problem_files_list">
+                                <property name="can-focus">False</property>
+                                <property name="selection-mode">none</property>
+                                <property name="activate-on-single-click">False</property>
+                                <style>
+                                  <class name="problem_list"/>
+                                </style>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                            <style>
+                              <class name="problem_box"/>
+                            </style>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">20</property>
                           </packing>
                         </child>
                         <child>
@@ -1567,7 +1713,8 @@
                           <object class="GtkGrid">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="row-spacing">10</property>
+                            <property name="row-spacing">20</property>
+                            <property name="column-spacing">20</property>
                             <child>
                               <object class="GtkComboBox" id="updates_def_updatevm_combo">
                                 <property name="visible">True</property>
@@ -1576,6 +1723,10 @@
                                 <child internal-child="entry">
                                   <object class="GtkEntry">
                                     <property name="can-focus">False</property>
+                                    <property name="width-chars">24</property>
+                                    <style>
+                                      <class name="combo"/>
+                                    </style>
                                   </object>
                                 </child>
                               </object>
@@ -1592,6 +1743,10 @@
                                 <child internal-child="entry">
                                   <object class="GtkEntry">
                                     <property name="can-focus">False</property>
+                                    <property name="width-chars">24</property>
+                                    <style>
+                                      <class name="combo"/>
+                                    </style>
                                   </object>
                                 </child>
                               </object>
@@ -1609,7 +1764,8 @@
                                   <object class="GtkLabel">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
-                                    <property name="label" translatable="yes">Whonix Update Proxy</property>
+                                    <property name="label" translatable="yes">&lt;b&gt;Whonix&lt;/b&gt; Update Proxy</property>
+                                    <property name="use-markup">True</property>
                                   </object>
                                   <packing>
                                     <property name="expand">False</property>
@@ -1645,7 +1801,8 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <property name="halign">start</property>
-                                <property name="label" translatable="yes">Default Update Proxy</property>
+                                <property name="label" translatable="yes">&lt;b&gt;Default&lt;/b&gt; Update Proxy</property>
+                                <property name="use-markup">True</property>
                               </object>
                               <packing>
                                 <property name="left-attach">0</property>
@@ -1656,7 +1813,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">16</property>
+                            <property name="position">21</property>
                           </packing>
                         </child>
                         <child>
@@ -1664,14 +1821,14 @@
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <property name="margin-start">10</property>
-                            <property name="margin-top">10</property>
+                            <property name="margin-top">20</property>
                             <property name="margin-bottom">10</property>
                             <child>
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <property name="halign">start</property>
-                                <property name="label" translatable="yes">&lt;b&gt;With the below exceptions:&lt;/b&gt;</property>
+                                <property name="label" translatable="yes">&lt;b&gt;With the following exceptions:&lt;/b&gt;</property>
                                 <property name="use-markup">True</property>
                               </object>
                               <packing>
@@ -1697,14 +1854,15 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">17</property>
+                            <property name="position">22</property>
                           </packing>
                         </child>
                         <child>
                           <object class="GtkBox">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="margin-start">10</property>
+                            <property name="margin-start">30</property>
+                            <property name="margin-top">10</property>
                             <property name="homogeneous">True</property>
                             <child>
                               <object class="GtkLabel">
@@ -1738,14 +1896,14 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">19</property>
+                            <property name="position">23</property>
                           </packing>
                         </child>
                         <child>
                           <object class="GtkListBox" id="updates_updatevm_exception_list">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="margin-start">10</property>
+                            <property name="margin-start">30</property>
                             <child type="placeholder">
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
@@ -1764,7 +1922,20 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">20</property>
+                            <property name="position">24</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSeparator">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="valign">center</property>
+                            <property name="hexpand">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">25</property>
                           </packing>
                         </child>
                         <child>
@@ -1773,6 +1944,7 @@
                             <property name="can-focus">True</property>
                             <property name="receives-default">True</property>
                             <property name="halign">start</property>
+                            <property name="margin-start">30</property>
                             <property name="relief">none</property>
                             <child>
                               <object class="GtkBox">
@@ -1798,7 +1970,7 @@
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
                                     <property name="xpad">5</property>
-                                    <property name="label" translatable="yes">new</property>
+                                    <property name="label" translatable="yes">exception</property>
                                     <style>
                                       <class name="explanation_text"/>
                                     </style>
@@ -1818,7 +1990,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">21</property>
+                            <property name="position">27</property>
                           </packing>
                         </child>
                         <child>
@@ -1835,7 +2007,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">22</property>
+                            <property name="position">28</property>
                           </packing>
                         </child>
                         <child>
@@ -1852,7 +2024,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">23</property>
+                            <property name="position">29</property>
                           </packing>
                         </child>
                         <child>
@@ -1860,6 +2032,9 @@
                           <object class="GtkGrid">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
+                            <property name="margin-bottom">100</property>
+                            <property name="row-spacing">10</property>
+                            <property name="column-spacing">10</property>
                             <child>
                               <object class="GtkCheckButton" id="updates_template_official">
                                 <property name="label" translatable="yes">Official Qubes OS templates</property>
@@ -2022,7 +2197,7 @@
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">24</property>
+                            <property name="position">30</property>
                           </packing>
                         </child>
                         <style>
@@ -2567,7 +2742,7 @@ Documentation will open in a disposable qube.</property>
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
                                     <property name="halign">start</property>
-                                    <property name="label" translatable="yes">&lt;b&gt;With the below exceptions:&lt;/b&gt;</property>
+                                    <property name="label" translatable="yes">&lt;b&gt;With the following exceptions:&lt;/b&gt;</property>
                                     <property name="use-markup">True</property>
                                   </object>
                                   <packing>
@@ -3153,7 +3328,7 @@ Documentation will open in a disposable qube.</property>
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
                                     <property name="halign">start</property>
-                                    <property name="label" translatable="yes">&lt;b&gt;With the below exceptions:&lt;/b&gt;</property>
+                                    <property name="label" translatable="yes">&lt;b&gt;With the following exceptions:&lt;/b&gt;</property>
                                     <property name="use-markup">True</property>
                                   </object>
                                   <packing>
@@ -3739,7 +3914,7 @@ Files cannot be copied to dom0.</property>
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
                                     <property name="halign">start</property>
-                                    <property name="label" translatable="yes">&lt;b&gt;With the below exceptions:&lt;/b&gt;</property>
+                                    <property name="label" translatable="yes">&lt;b&gt;With the following exceptions:&lt;/b&gt;</property>
                                     <property name="use-markup">True</property>
                                   </object>
                                   <packing>
@@ -4342,7 +4517,7 @@ Documentation will open in a disposable qube.</property>
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
                                     <property name="halign">start</property>
-                                    <property name="label" translatable="yes">&lt;b&gt;With the below exceptions:&lt;/b&gt;</property>
+                                    <property name="label" translatable="yes">&lt;b&gt;With the following exceptions:&lt;/b&gt;</property>
                                     <property name="use-markup">True</property>
                                   </object>
                                   <packing>
@@ -4976,7 +5151,7 @@ from one qube in another non-disposable qube.</property>
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
                                     <property name="halign">start</property>
-                                    <property name="label" translatable="yes">&lt;b&gt;With the below exceptions:&lt;/b&gt;</property>
+                                    <property name="label" translatable="yes">&lt;b&gt;With the following exceptions:&lt;/b&gt;</property>
                                     <property name="use-markup">True</property>
                                   </object>
                                   <packing>
