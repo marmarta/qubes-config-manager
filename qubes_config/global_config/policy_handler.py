@@ -33,6 +33,7 @@ from .page_handler import PageHandler
 from .policy_rules import AbstractRuleWrapper, AbstractVerbDescription
 from .policy_manager import PolicyManager
 from .rule_list_widgets import RuleListBoxRow, LimitedRuleListBoxRow
+from .conflict_handler import ConflictFileHandler
 
 import gi
 
@@ -44,55 +45,6 @@ from gi.repository import Gtk
 
 import gbulb
 gbulb.install()
-
-
-class ConflictFileListRow(Gtk.ListBoxRow):
-    """A ListBox row representing a policy file with conflicting info."""
-    def __init__(self, file_name: str):
-        super().__init__()
-        self.box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.add(self.box)
-
-        self.get_style_context().add_class('problem_row')
-
-        self.label = Gtk.Label()
-        self.label.set_text(file_name)
-        self.label.get_style_context().add_class('red_code')
-        self.box.pack_start(self.label, False, False, 0)
-
-        if file_name.startswith('/etc/qubes-rpc'):
-            self.icon = Gtk.Image()
-            self.icon.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
-                'qubes-question', 14, 0))
-            tooltip = 'This is a legacy file from previous Qubes versions. ' \
-                      'Custom policy contained there will no longer ' \
-                      'be supported in Qubes 4.2.'
-            self.set_tooltip_text(tooltip)
-            self.box.pack_start(self.icon, False, False, 0)
-
-
-class ConflictFileHandler:
-    """Handler for conflicting policy files."""
-    def __init__(self, gtk_builder: Gtk.Builder, prefix: str, service_name: str,
-                 own_file_name: str, policy_manager: PolicyManager):
-        self.service_name = service_name
-        self.own_file_name = own_file_name
-        self.policy_manager = policy_manager
-
-        self.problem_box: Gtk.Box = gtk_builder.get_object(
-            f'{prefix}_problem_box')
-        self.problem_list: Gtk.ListBox = gtk_builder.get_object(
-            f'{prefix}_problem_files_list')
-
-        conflicting_files = self.policy_manager.get_conflicting_policy_files(
-            self.service_name, self.own_file_name)
-
-        if conflicting_files:
-            self.problem_box.set_visible(True)
-            for file in conflicting_files:
-                row = ConflictFileListRow(file)
-                self.problem_list.add(row)
-            self.problem_box.show_all()
 
 
 class PolicyHandler(PageHandler):

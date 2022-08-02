@@ -32,7 +32,7 @@ from .page_handler import PageHandler
 from .policy_rules import RuleTargeted, SimpleVerbDescription
 from .policy_manager import PolicyManager
 from .rule_list_widgets import NoActionListBoxRow
-from .policy_handler import ConflictFileHandler
+from .conflict_handler import ConflictFileHandler
 
 import gi
 
@@ -733,9 +733,10 @@ class UpdatesHandler(PageHandler):
         """Save current rules, whatever they are - custom or default.
         Return True if successful, False otherwise"""
 
-        for handler in [self.repo_handler, self.update_checker, self.update_proxy]:
+        for handler in [self.repo_handler, self.update_checker,
+                        self.update_proxy]:
             try:
-                handler.save_changes()
+                handler.save_changes() # type: ignore
             except Exception as ex:
                 show_error("Failed to save changes",
                            f"Failed to save some changes: {ex}")
