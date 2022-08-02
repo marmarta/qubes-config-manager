@@ -99,7 +99,7 @@ class TokenName(Gtk.Box):
     A Gtk.Box containing a (optionally changing) nicely formatted token/vm name.
     """
     def __init__(self, token_name: str, qapp: qubesadmin.Qubes,
-                 categories: Dict[str, str]):
+                 categories: Optional[Dict[str, str]]):
         """
         :param token_name: string for of the token
         :param qapp: Qubes object
@@ -107,7 +107,7 @@ class TokenName(Gtk.Box):
         """
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.qapp = qapp
-        self.categories = categories
+        self.categories = categories if categories else {}
         self.token_name = token_name
         self.set_spacing(5)
         self.set_token(token_name)
@@ -311,6 +311,9 @@ class VMListModeler(TraitSelector):
         return self._initial_id != self.combo.get_active_id()
 
     def update_initial(self):
+        """Inform the widget that information on 'initial' value should
+         be updated to whatever the current value is. Useful if saving changes
+         happened."""
         self._initial_id = self.combo.get_active_id()
 
     def _get_icon(self, name):

@@ -81,6 +81,7 @@ class AbstractRuleWrapper(abc.ABC):
 
     def is_rule_conflicting(self, other_source: str, other_target: str,
                             other_action: str) -> bool:
+        # pylint: disable=unused-argument
         """
         Return True if rule with other_source and other_target would conflict
          with self.
@@ -90,7 +91,7 @@ class AbstractRuleWrapper(abc.ABC):
 
     @staticmethod
     def is_rule_valid(source: str, target: str, action: str) -> \
-            Optional[str]:
+            Optional[str]: # pylint: disable=unused-argument
         """Return None if rule is valid and str describing error if not."""
         return None
 
@@ -107,10 +108,6 @@ class RuleSimple(AbstractRuleWrapper):
         "allow": "always",
         "deny": "never"
     }
-
-    def __init__(self, rule: Rule):
-        super().__init__(rule)
-
     @property
     def target(self):
         return str(self._rule.target)
@@ -144,12 +141,15 @@ class RuleSimple(AbstractRuleWrapper):
 
 
 class RuleSimpleAskIsAllow(RuleSimple):
+    """Simple rule where there is no Allow and Ask is pretending to be Allow.
+    Used chiefly by Clipboard rules."""
     ACTION_CHOICES = {
         "ask": "always",
         "deny": "never"
     }
 
 class RuleSimpleNoAllow(RuleSimple):
+    """Simple rule that has no Allow option"""
     ACTION_CHOICES = {
         "ask": "can",
         "deny": "can not"
@@ -170,10 +170,6 @@ class RuleTargeted(AbstractRuleWrapper):
         "allow": "automatically",
         "deny": "never"
     }
-
-    def __init__(self, rule: Rule):
-        super().__init__(rule)
-
     @property
     def target(self):
         if isinstance(self._rule.action, Ask):
@@ -236,7 +232,7 @@ class RuleTargeted(AbstractRuleWrapper):
     def is_rule_valid(source: str, target: str, action: str) -> Optional[str]:
         if not source.startswith('@'):
             if target.startswith('@') and target != '@dispvm':
-                if action == 'ask' or action == 'allow':
+                if action in ('ask', 'allow'):
                     return 'This type of action supports only single-qube ' \
                            'destination qubes for single-qube source qubes.'
         return None

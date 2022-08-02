@@ -96,6 +96,7 @@ class ConflictFileHandler:
 
 
 class PolicyHandler(PageHandler):
+    """Handler for a single page with Policy settings."""
     def __init__(self,
                  qapp: qubesadmin.Qubes,
                  gtk_builder: Gtk.Builder,
@@ -236,7 +237,8 @@ class PolicyHandler(PageHandler):
                                         enable_delete=False,
                                         enable_vm_edit=False))
                 continue
-            fundamental = not (rule.source == '@adminvm' and rule.target == '@anyvm')
+            fundamental = not (rule.source == '@adminvm' and
+                               rule.target == '@anyvm')
             self.exception_list_box.add(RuleListBoxRow(self,
                 rule=wrapped_rule, qapp=self.qapp,
                 verb_description=self.verb_description,
@@ -575,6 +577,11 @@ class VMSubsetPolicyHandler(PolicyHandler):
 
     def _add_select_confirm(self, *_args):
         new_qube = self.select_qube_model.get_selected()
+        if not new_qube or not isinstance(new_qube, qubesadmin.vm.QubesVM):
+            show_error('Invalid selection',
+                       f'Invalid object was selected. {new_qube} is not a'
+                       'valid Qubes qube.')
+            return
         if new_qube.is_networked():
             response = ask_question(
                 self.main_list_box.get_toplevel(),
@@ -620,7 +627,7 @@ class VMSubsetPolicyHandler(PolicyHandler):
         Due to possible existing manual rules, every rule with @default
         is saved as two rules: a normal one and a one with target/default_target
         put in the default space"""
-        rules = []
+        rules: List[Rule] = []
         for row in self.exception_list_box.get_children():
             new_rule: Rule = row.rule.raw_rule
             if str(new_rule) in [str(rule) for rule in rules]:

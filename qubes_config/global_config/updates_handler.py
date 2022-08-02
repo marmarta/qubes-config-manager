@@ -22,14 +22,12 @@ RPC Policy-related functionality.
 """
 import os
 import subprocess
-from copy import deepcopy
-from typing import Optional, List, Type, Set
+from typing import Optional, List, Dict
 
 from qrexec.policy.parser import Rule
-from qrexec.exc import PolicySyntaxError
 
 from ..widgets.qubes_widgets_library import VMListModeler, show_error, \
-    ask_question, NONE_CATEGORY, QubeName, ImageTextButton
+    ask_question, NONE_CATEGORY, QubeName
 from .page_handler import PageHandler
 from .policy_rules import RuleTargeted, SimpleVerbDescription
 from .policy_manager import PolicyManager
@@ -49,6 +47,7 @@ gbulb.install()
 
 
 def get_feature(vm, feature_name, default_value):
+    """Get feature, with a working default_value."""
     try:
         return vm.features.get(feature_name, default_value)
     except qubesadmin.exc.QubesDaemonAccessError:
@@ -67,6 +66,7 @@ def get_boolean_feature(vm, feature_name, default):
 
 
 class RepoHandler:
+    """Handler for repository settings."""
     def __init__(self, gtk_builder: Gtk.Builder):
         self.dom0_stable_radio: Gtk.RadioButton = \
             gtk_builder.get_object('updates_dom0_stable_radio')
@@ -100,7 +100,7 @@ class RepoHandler:
 
         self.template_community.connect('toggled', self._community_toggled)
 
-        self.repos = dict()
+        self.repos: Dict[str, Dict] = dict()
         self._load_data()
         self._load_state()
 
@@ -174,7 +174,7 @@ class RepoHandler:
                 ['{key}: {val}'.format(key=i[0], val=i[1]) for i in
                  ex.args[1].items()]
             ))
-            raise RuntimeError(msg)
+            raise RuntimeError(msg) from ex
 
     def is_changed(self) -> bool:
         """Check if there are any unsaved changes and ask user for an action.
@@ -195,6 +195,7 @@ class RepoHandler:
 
     # TODO: if fails, do??
     def save_changes(self):
+        """Save all changes."""
         for repo_dict in self.repo_to_widget_mapping:
             found = False
             for repo, widget in repo_dict.items():
@@ -207,10 +208,12 @@ class RepoHandler:
         self._load_state()
 
     def reset_changes(self):
+        """Reset any user changes."""
         self._load_state()
 
 
 class VMFlowBoxButton(Gtk.FlowBoxChild):
+    """Simple button  representing a VM that can be deleted."""
     def __init__(self, vm: qubesadmin.vm.QubesVM):
         super().__init__()
         self.vm = vm
@@ -243,6 +246,7 @@ class VMFlowBoxButton(Gtk.FlowBoxChild):
 
 
 class UpdateCheckerHandler:
+    """Handler for checking for updates settings."""
     FEATURE_NAME = 'service.qubes-update-check'
 
     def __init__(self, gtk_builder: Gtk.Builder, qapp: qubesadmin.Qubes):
@@ -288,7 +292,7 @@ class UpdateCheckerHandler:
         else:
             self.disable_radio.set_active(True)
 
-        self.initial_exceptions = []
+        self.initial_exceptions: List[qubesadmin.vm.QubesVM] = []
         self._initialize_flowbox()
         self._enable_exceptions_clicked()
         self.add_exception_model = VMListModeler(
@@ -342,8 +346,9 @@ class UpdateCheckerHandler:
         self.add_exception_button.set_visible(
             self.exceptions_check.get_active())
 
-    def get_current_exceptions(self):
-        exceptions = []
+    def get_current_exceptions(self) -> List[qubesadmin.vm.QubesVM]:
+        """Get current list of exception vms"""
+        exceptions: List[qubesadmin.vm.QubesVM] = []
         if not self.exceptions_check.get_active():
             return exceptions
         for child in self.exceptions_flowbox.get_children():
@@ -351,6 +356,7 @@ class UpdateCheckerHandler:
         return exceptions
 
     def is_changed(self) -> bool:
+        """Did the user change anything from the initial settings?"""
         if self.initial_dom0 != self.dom0_update_check.get_active():
             return True
         if self.initial_default != self.enable_radio.get_active():
@@ -362,6 +368,7 @@ class UpdateCheckerHandler:
         return False
 
     def save_changes(self):
+        """Save any changes."""
         # FUTURE: this is fairly slow
         if self.initial_dom0 != self.dom0_update_check.get_active():
             self.qapp.domains['dom0'].features[self.FEATURE_NAME] = \
@@ -389,12 +396,14 @@ class UpdateCheckerHandler:
         self.initial_exceptions = exceptions
 
     def reset_changes(self):
+        """Reset changes and go back to initial state."""
         self.dom0_update_check.set_active(self.initial_dom0)
         self.enable_radio.set_active(self.initial_default)
         self._initialize_flowbox()
 
 
 class UpdateProxy:
+    """Handler for the rules connected to UpdateProxy policy."""
     def __init__(self, gtk_builder: Gtk.Builder, qapp: qubesadmin.Qubes,
                  policy_manager: PolicyManager, policy_file_name: str,
                  service_name: str):
@@ -459,6 +468,7 @@ class UpdateProxy:
         return not vm.is_networked()
 
     def load_rules(self):
+        """Load rules into widgets."""
         if not self.rules:
             def_updatevm = self.default_updatevm
             if self.has_whonix:
@@ -559,12 +569,14 @@ class UpdateProxy:
 
     @property
     def current_exception_rules(self):
+        """Current rules from the Exception list."""
         rules = []
         for row in self.updatevm_exception_list.get_children():
             rules.append(row.rule.raw_rule)
         return rules
 
     def is_changed(self) -> bool:
+        """Check if state has changed."""
         if self.updatevm_model.is_changed():
             return True
         if self.whonix_updatevm_model.is_changed():
@@ -575,9 +587,11 @@ class UpdateProxy:
         return False
 
     def reset(self):
+        """Reset to initial state."""
         self.load_rules()
 
     def save(self):
+        """Save currently chosen settings."""
         rules = self.current_exception_rules
 
         if rules or self.whonix_updatevm_model.is_changed():
@@ -598,6 +612,7 @@ class UpdateProxy:
 
 
 class UpdatesHandler(PageHandler):
+    """Handler for all the disparate Updates functions."""
     def __init__(self,
                  qapp: qubesadmin.Qubes,
                  policy_manager: PolicyManager,

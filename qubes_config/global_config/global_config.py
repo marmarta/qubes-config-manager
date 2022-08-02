@@ -377,9 +377,6 @@ class ThisDeviceHandler(PageHandler):
             label_text = hcl_check
             self.data_label.get_style_context().add_class('red_code')
         else:
-            storage = ""
-            qubes_version = ""
-
             label_text = f"""<b>Brand:</b> {match.group('brand')}
 <b>Model:</b> {match.group('model')}
         
@@ -419,9 +416,6 @@ class GlobalConfig(Gtk.Application):
         """
         super().__init__(application_id='org.qubesos.globalconfig')
         self.qapp: qubesadmin.Qubes = qapp
-
-        self.builder: Optional[Gtk.Builder] = None
-        self.main_window: Optional[Gtk.Window] = None
 
     def do_activate(self, *args, **kwargs):
         """
@@ -562,7 +556,7 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
         default_dvm = self.qapp.default_dispvm
         subprocess.run(
             ['qvm-run', '-p', '--service', f'--dispvm={default_dvm}',
-             'qubes.OpenURL'], input=url.encode())
+             'qubes.OpenURL'], input=url.encode(), check=False)
 
     def _page_switched(self, *_args):
         old_page_num = self.main_notebook.get_current_page()

@@ -17,6 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
+"""Class used to manage PolicyClient and do some convenience processing."""
 import subprocess
 from typing import Optional, List, Tuple
 

@@ -17,6 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
+"""Widgets used by various list of policy rules."""
 from typing import Optional, Dict, Callable
 
 from ..widgets.qubes_widgets_library import VMListModeler, TextModeler,\
@@ -67,7 +68,8 @@ class VMWidget(Gtk.Box):
                  initial_value: str,
                  additional_text: Optional[str] = None,
                  additional_widget: Optional[Gtk.Widget] = None,
-                 filter_function: Optional[Callable] = None):
+                 filter_function: Callable[[qubesadmin.vm.QubesVM],
+                                                    bool] = None):
         """
         :param qapp: Qubes object
         :param categories: list of additional categories available for this
@@ -225,7 +227,7 @@ class ActionWidget(Gtk.Box):
 class RuleListBoxRow(Gtk.ListBoxRow):
     """Row in a listbox representing a policy rule"""
     def __init__(self,
-                 parent_handler: 'PolicyHandler',
+                 parent_handler,
                  rule: AbstractRuleWrapper,
                  qapp: qubesadmin.Qubes,
                  verb_description: AbstractVerbDescription,
@@ -235,7 +237,8 @@ class RuleListBoxRow(Gtk.ListBoxRow):
                  custom_deletion_warning: str = "Are you sure you want to "
                                                 "delete this rule?"):
         """
-        :param parent_handler: PolicyHandler object this rule belongs to.
+        :param parent_handler: PolicyHandler object this rule belongs to, or
+        other owner object that implements verify_new_rule method.
         :param rule: Rule object, wrapped in a helper object
         :param qapp: Qubes object
         :param verb_description: AbstractVerbDescription object
@@ -419,6 +422,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         return True
 
 class LimitedRuleListBoxRow(RuleListBoxRow):
+    """Row for a rule with limited set of target VMs."""
     def __init__(self,
                  parent_handler,
                  rule: AbstractRuleWrapper,
@@ -446,6 +450,7 @@ class LimitedRuleListBoxRow(RuleListBoxRow):
             filter_function=self.filter_function)
 
 class NoActionListBoxRow(RuleListBoxRow):
+    """Row for a rule where we do not want to set or see Action."""
     def __init__(self,
                  parent_handler,
                  rule: AbstractRuleWrapper,
