@@ -310,6 +310,9 @@ class VMListModeler(TraitSelector):
             return False
         return self._initial_id != self.combo.get_active_id()
 
+    def update_initial(self):
+        self._initial_id = self.combo.get_active_id()
+
     def _get_icon(self, name):
         if name not in self._icons:
             try:
@@ -466,6 +469,9 @@ class VMListModeler(TraitSelector):
         selected = self._get_valid_qube_name()
 
         if selected in self._entries:
+            # special treatment for None:
+            if self._entries[selected]['api_name'] == "None":
+                return None
             return self._entries[selected]["vm"] or \
                    self._entries[selected]["api_name"]
         return None

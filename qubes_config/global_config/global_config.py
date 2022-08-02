@@ -41,6 +41,7 @@ from .policy_rules import RuleSimple, \
     RuleSimpleAskIsAllow, RuleTargeted, SimpleVerbDescription, \
     TargetedVerbDescription, RuleSimpleNoAllow
 from .policy_manager import PolicyManager
+from .updates_handler import UpdatesHandler
 
 import gi
 
@@ -472,9 +473,12 @@ class GlobalConfig(Gtk.Application):
         self.handlers: Dict[int, PageHandler] = {
             0: BasicSettingsHandler(self.builder, self.qapp),  # TODO
             1: None,  # TODO
-            2: None,  # TODO
-            3: None,  # TODO
-            4: VMSubsetPolicyHandler(
+            2: UpdatesHandler(
+                qapp=self.qapp,
+                policy_manager=policy_manager,
+                gtk_builder=self.builder
+            ),
+            3: VMSubsetPolicyHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
                 policy_manager=policy_manager,
@@ -493,7 +497,7 @@ class GlobalConfig(Gtk.Application):
                     "ask": 'to access GPG\nkeys from',
                     "deny": 'access GPG\nkeys from'
                 })),
-            5: PolicyHandler(
+            4: PolicyHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
                 policy_manager=policy_manager,
@@ -507,12 +511,12 @@ qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
                     "deny": 'be allowed to paste\n into clipboard of'
                 }),
                 rule_class=RuleSimpleAskIsAllow),
-            6: FileAccessHandler(
+            5: FileAccessHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
                 policy_manager=policy_manager
             ),
-            7: PolicyHandler(
+            6: PolicyHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
                 policy_manager=policy_manager,
@@ -535,7 +539,7 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
                     }
                 ),
                 rule_class=RuleTargeted),
-            8: ThisDeviceHandler(self.qapp, self.builder),
+            7: ThisDeviceHandler(self.qapp, self.builder),
         }
 
         self.main_notebook.connect("switch-page", self._page_switched)

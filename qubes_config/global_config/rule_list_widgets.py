@@ -270,9 +270,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
 
         self.source_widget = self.get_source_widget()
         self.target_widget = self.get_target_widget()
-        self.action_widget = ActionWidget(self.rule.ACTION_CHOICES,
-            self.rule.action,
-            self.verb_description, self.rule)
+        self.action_widget = self.get_action_widget()
 
         self.main_widget_box.pack_start(self.source_widget, False, True, 0)
         self.main_widget_box.pack_start(self.action_widget, False, True, 0)
@@ -310,6 +308,12 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         return VMWidget(
             self.qapp, TARGET_CATEGORIES, self.rule.target,
             additional_widget=self._get_delete_button())
+
+    def get_action_widget(self) -> ActionWidget:
+        """Widget to be used for Action"""
+        return ActionWidget(self.rule.ACTION_CHOICES,
+                     self.rule.action,
+                     self.verb_description, self.rule)
 
     def _get_delete_button(self) -> Gtk.Button:
         """Get a delete button appropriate for the class."""
@@ -441,4 +445,39 @@ class LimitedRuleListBoxRow(RuleListBoxRow):
             additional_widget=self._get_delete_button(),
             filter_function=self.filter_function)
 
+class NoActionListBoxRow(RuleListBoxRow):
+    def __init__(self,
+                 parent_handler,
+                 rule: AbstractRuleWrapper,
+                 qapp: qubesadmin.Qubes,
+                 verb_description: AbstractVerbDescription,
+                 enable_delete: bool = True,
+                 enable_vm_edit: bool = True,
+                 initial_verb: str = "uses",
+                 filter_target: Optional[Callable] = None,
+                 filter_source: Optional[Callable] = None):
+        self.filter_target = filter_target
+        self.filter_source = filter_source
+        super().__init__(parent_handler, rule, qapp, verb_description,
+                         enable_delete, enable_vm_edit, initial_verb)
 
+    def get_source_widget(self) -> VMWidget:
+        """Widget to be used for source VM"""
+        return VMWidget(
+            self.qapp, None, self.rule.source,
+            additional_text=self.initial_verb,
+            filter_function=self.filter_source
+        )
+
+    def get_target_widget(self) -> VMWidget:
+        """Widget to be used for target VM"""
+        return VMWidget(
+            self.qapp, None, self.rule.target,
+            additional_widget=self._get_delete_button(),
+            filter_function=self.filter_target)
+
+    def get_action_widget(self) -> ActionWidget:
+        action_widget = super().get_action_widget()
+        action_widget.set_no_show_all(True)
+        action_widget.set_visible(False)
+        return action_widget
