@@ -332,6 +332,7 @@ class UpdateCheckerHandler:
             self.exception_label.set_markup(
                 'Except the following qubes, for which checking for updates'
                 ' will be <b>enabled</b>')
+        self.exceptions_check.set_active(False)
 
     def _add_exception_button_clicked(self, _widget):
         self.add_exception_box.set_visible(True)
