@@ -34,7 +34,7 @@ import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.vm
 from ..widgets.qubes_widgets_library import VMListModeler, \
-    TextModeler, TraitSelector, NONE_CATEGORY
+    TextModeler, TraitSelector, NONE_CATEGORY, ask_question
 from .page_handler import PageHandler
 from .policy_handler import PolicyHandler, VMSubsetPolicyHandler
 from .policy_rules import RuleSimple, \
@@ -95,6 +95,21 @@ def get_boolean_feature(vm, feature_name):
     if result is not None:
         result = bool(result)
     return result
+
+def apply_feature_change(widget: TextModeler, vm: qubesadmin.vm.QubesVM,
+                         feature_name:str):
+    """Change a feature value, taking into account weirdness with None."""
+    if widget.is_changed():
+        value = widget.get_selected()
+        try:
+            if value is None:
+                del vm.features[feature_name]
+            else:
+                vm.features[feature_name] = value
+        except qubesadmin.exc.QubesDaemonAccessError:
+            raise qubesadmin.exc.QubesException(
+                "Failed to set {} due to insufficient "
+                "permissions".format(feature_name))
 
 
 class VMFeatureHolder(TraitHolder):
@@ -263,20 +278,6 @@ class BasicSettingsHandler(PageHandler):
             style_changes=True)
 
         # complex features
-        self.official_templates_combo: Gtk.ComboBoxText = \
-            gtk_builder.get_object('basics_official_templates_combo')
-        self.official_templates_handler = TextModeler(
-            self.official_templates_combo,
-            {'default (thin border)': None,
-             'full background': 'bg',
-             'thin border': 'border1',
-             'thick border': 'border2',
-             'tinted icon': 'tint',
-             'tinted icon with modified white': 'tint+whitehack',
-             'tinted icon with 50% saturation': 'tint+saturation50'},
-            selected_value=get_boolean_feature(self.vm,
-                                               'gui-default-trayicon-mode'),
-            style_changes=True)
         # TODO: maybe add some funkier methods to those dropdowns, so that
         #  we can just iterate over all of them and apply?
 
@@ -290,6 +291,76 @@ class BasicSettingsHandler(PageHandler):
     def check_for_unsaved(self) -> bool:
         return True
     # TODO: implement
+
+class ClipboardHandler(PageHandler):
+    """Handler for Clipboard policy. Adds a couple of comboboxes to a
+    normal policy handler."""
+    COPY_FEATURE = 'gui-default-secure-copy-sequence'
+    PASTE_FEATURE = 'gui-default-secure-paste-sequence'
+    def __init__(self, qapp: qubesadmin.Qubes,
+                 gtk_builder: Gtk.Builder,
+                 policy_manager: PolicyManager):
+        self.qapp = qapp
+        self.policy_manager = policy_manager
+        self.vm = self.qapp.domains[self.qapp.local_name]
+
+        self.clipboard_handler = PolicyHandler(
+                qapp=self.qapp,
+                gtk_builder=gtk_builder,
+                policy_manager=policy_manager,
+                prefix="clipboard",
+                service_name='qubes.ClipboardPaste',
+                policy_file_name='50-config-clipboard',
+                default_policy="""qubes.ClipboardPaste * @adminvm @anyvm deny\n
+qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
+                verb_description=SimpleVerbDescription({
+                    "ask": 'be allowed to paste\n into clipboard of',
+                    "deny": 'be allowed to paste\n into clipboard of'
+                }),
+                rule_class=RuleSimpleAskIsAllow)
+
+        self.copy_combo: Gtk.ComboBoxText = \
+            gtk_builder.get_object('clipboard_copy_combo')
+        self.copy_handler = TextModeler(
+            self.copy_combo,
+            {'default (Ctrl+Shift+C)': None,
+             'Ctrl+Shift+C': 'Ctrl-Shift-c',
+             'Ctrl+Win+C': 'Ctrl-Mod4-c'},
+            selected_value=get_feature(self.vm, self.COPY_FEATURE),
+            style_changes=True)
+
+        self.paste_combo: Gtk.ComboBoxText = \
+            gtk_builder.get_object('clipboard_paste_combo')
+        self.paste_handler = TextModeler(
+            self.paste_combo,
+            {'default (Ctrl+Shift+V)': None,
+             'Ctrl+Shift+V': 'Ctrl-Shift-V',
+             'Ctrl+Win+V': 'Ctrl-Mod4-v',
+             'Ctrl+Insert': 'Ctrl-Ins'},
+            selected_value=get_feature(self.vm, self.PASTE_FEATURE),
+            style_changes=True)
+
+    def reset(self):
+        self.copy_handler.reset_value()
+        self.paste_handler.reset_value()
+        self.clipboard_handler.reset()
+
+    def save(self):
+        apply_feature_change(self.copy_handler, self.vm, self.COPY_FEATURE)
+        apply_feature_change(self.paste_handler, self.vm, self.PASTE_FEATURE)
+        return self.clipboard_handler.save()
+
+    def check_for_unsaved(self) -> bool:
+        if self.copy_handler.is_changed() or self.paste_handler.is_changed():
+            response = ask_question(self.copy_combo.get_toplevel(),
+                                    "Unsaved changes found",
+                                    "Do you want to save changes?")
+            if response == Gtk.ResponseType.YES:
+                self.save()
+            else:
+                self.reset()
+                return True
+        return self.clipboard_handler.check_for_unsaved()
 
 
 class FileAccessHandler(PageHandler):
@@ -491,20 +562,11 @@ class GlobalConfig(Gtk.Application):
                     "ask": 'to access GPG\nkeys from',
                     "deny": 'access GPG\nkeys from'
                 })),
-            4: PolicyHandler(
+            4: ClipboardHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
-                policy_manager=policy_manager,
-                prefix="clipboard",
-                service_name='qubes.ClipboardPaste',
-                policy_file_name='50-config-clipboard',
-                default_policy="""qubes.ClipboardPaste * @adminvm @anyvm deny\n
-qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
-                verb_description=SimpleVerbDescription({
-                    "ask": 'be allowed to paste\n into clipboard of',
-                    "deny": 'be allowed to paste\n into clipboard of'
-                }),
-                rule_class=RuleSimpleAskIsAllow),
+                policy_manager=policy_manager
+            ),
             5: FileAccessHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,

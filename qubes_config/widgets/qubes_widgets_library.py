@@ -229,6 +229,12 @@ class TextModeler(TraitSelector):
             if value == selected_value:
                 self._combo.set_active_id(key)
 
+    def reset_value(self):
+        """Select initial value."""
+        for key, value in self._values.items():
+            if value == self._initial_value:
+                self._combo.set_active_id(key)
+
     def _on_changed(self, _widget):
         self._combo.get_style_context().remove_class('combo-changed')
         if self.is_changed():
