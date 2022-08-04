@@ -28,7 +28,7 @@ from qrexec.policy.parser import Rule
 
 from ..widgets.qubes_widgets_library import VMListModeler, show_error, \
     ask_question, NONE_CATEGORY, QubeName, ImageTextButton
-from ..widgets.utils import get_feature, apply_feature_change
+from ..widgets.utils import get_feature, apply_feature_change_from_widget
 from .page_handler import PageHandler
 from .policy_rules import RuleSimple, SimpleVerbDescription
 from .policy_manager import PolicyManager
@@ -124,7 +124,7 @@ class USBVMHandler:
         return self.qapp.domains.get(usb_vm_name)
 
     def save_changes(self):
-        apply_feature_change(self.select_widget, self.vm, self.FEATURE_NAME)
+        apply_feature_change_from_widget(self.select_widget, self.vm, self.FEATURE_NAME)
         # # TODO: do some sort of general close all edits?
 
     def get_selected_usbvm(self):

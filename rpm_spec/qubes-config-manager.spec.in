@@ -103,6 +103,7 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 %{python3_sitelib}/qubes_config/global_config/rule_list_widgets.py
 %{python3_sitelib}/qubes_config/global_config/conflict_handler.py
 %{python3_sitelib}/qubes_config/global_config/usb_devices.py
+%{python3_sitelib}/qubes_config/global_config/vm_flowbox.py
 %{python3_sitelib}/qubes_config/global_config/__init__.py
 %{python3_sitelib}/qubes_config/widgets/__pycache__/*
 %{python3_sitelib}/qubes_config/widgets/qubes_widgets_library.py

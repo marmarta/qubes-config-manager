@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 """
-RPC Policy-related functionality.
+Updates page handler
 """
 import os
 import subprocess
@@ -28,12 +28,13 @@ from qrexec.policy.parser import Rule
 
 from ..widgets.qubes_widgets_library import VMListModeler, show_error, \
     ask_question, NONE_CATEGORY, QubeName
-from ..widgets.utils import get_boolean_feature, get_feature
+from ..widgets.utils import get_boolean_feature, get_feature, apply_feature_change
 from .page_handler import PageHandler
 from .policy_rules import RuleTargeted, SimpleVerbDescription
 from .policy_manager import PolicyManager
 from .rule_list_widgets import NoActionListBoxRow
 from .conflict_handler import ConflictFileHandler
+from .vm_flowbox import VMFlowboxHandler
 
 import gi
 
@@ -202,39 +203,6 @@ class RepoHandler:
         self._load_state()
 
 
-class VMFlowBoxButton(Gtk.FlowBoxChild):
-    """Simple button  representing a VM that can be deleted."""
-    def __init__(self, vm: qubesadmin.vm.QubesVM):
-        super().__init__()
-        self.vm = vm
-
-        token_widget = QubeName(vm)
-        button = Gtk.Button()
-        button.get_style_context().add_class('flat')
-
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        box.pack_start(token_widget, False, False, 0)
-        remove_icon = Gtk.Image()
-        remove_icon.set_from_pixbuf(
-            Gtk.IconTheme.get_default().load_icon(
-                'qubes-delete', 14, 0))
-        box.pack_start(remove_icon, False, False, 10)
-
-        button.add(box)
-        button.connect('clicked', self._remove_self)
-        self.add(button)
-        self.show_all()
-
-
-    def _remove_self(self, _widget):
-        response = ask_question(
-            self.get_toplevel(), "Delete",
-            "Are you sure you want to remove this exception?")
-        if response == Gtk.ResponseType.NO:
-            return
-        self.get_parent().remove(self)
-
-
 class UpdateCheckerHandler:
     """Handler for checking for updates settings."""
     FEATURE_NAME = 'service.qubes-update-check'
@@ -255,21 +223,6 @@ class UpdateCheckerHandler:
         self.exceptions_check: Gtk.CheckButton = \
             gtk_builder.get_object('updates_exceptions_check')
 
-        self.exceptions_flowbox: Gtk.FlowBox = \
-            gtk_builder.get_object('updates_exceptions_flowbox')
-        self.add_exception_box: Gtk.Box = \
-            gtk_builder.get_object('updates_add_exception_box')
-        # combo for add qube to exception
-        self.exception_qube_combo: Gtk.ComboBox = \
-            gtk_builder.get_object('updates_exception_qube_combo')
-
-        self.add_exception_cancel: Gtk.Button = \
-            gtk_builder.get_object('updates_add_exception_cancel')
-        self.add_exception_confirm: Gtk.Button = \
-            gtk_builder.get_object('updates_add_exception_confirm')
-        self.add_exception_button: Gtk.Button = \
-            gtk_builder.get_object('updates_add_exception_button')
-
         self.exception_label: Gtk.Label = \
             gtk_builder.get_object('updates_check_exception_label')
 
@@ -288,22 +241,26 @@ class UpdateCheckerHandler:
         self.enable_radio.connect('toggled', self._set_label)
         self.disable_radio.connect('toggled', self._set_label)
 
-        self.initial_exceptions: List[qubesadmin.vm.QubesVM] = []
-        self._initialize_flowbox()
-        self._enable_exceptions_clicked()
-        self.add_exception_model = VMListModeler(
-            combobox=self.exception_qube_combo,
-            qapp=self.qapp,
+        initial_exceptions: List[qubesadmin.vm.QubesVM] = []
+
+        for vm in self.qapp.domains:
+            if vm.klass == 'AdminVM':
+                continue
+            if get_boolean_feature(vm, self.FEATURE_NAME, True) != \
+                    self.initial_default:
+                initial_exceptions.append(vm)
+
+        self.exceptions_check.set_active(bool(initial_exceptions))
+
+        self.flowbox_handler = VMFlowboxHandler(
+            gtk_builder, qapp, "updates_exception",
+            initial_vms=initial_exceptions,
             filter_function=(lambda vm: vm.klass != 'AdminVM'))
+
+        self._enable_exceptions_clicked()
 
         self.exceptions_check.connect("toggled",
                                       self._enable_exceptions_clicked)
-        self.add_exception_button.connect('clicked',
-                                          self._add_exception_button_clicked)
-        self.add_exception_cancel.connect('clicked',
-                                          self._add_exception_cancel_clicked)
-        self.add_exception_confirm.connect('clicked',
-                                          self._add_exception_confirm_clicked)
 
     def _set_label(self, *_args):
         if self.enable_radio.get_active():
@@ -316,51 +273,8 @@ class UpdateCheckerHandler:
                 ' will be <b>enabled</b>')
         self.exceptions_check.set_active(False)
 
-    def _add_exception_button_clicked(self, _widget):
-        self.add_exception_box.set_visible(True)
-
-    def _add_exception_cancel_clicked(self, _widget):
-        self.add_exception_box.set_visible(False)
-
-    def _add_exception_confirm_clicked(self, _widget):
-        select_vm = self.add_exception_model.get_selected()
-        if select_vm in self.get_current_exceptions():
-            show_error("Cannot add exception", "This exception already exists.")
-            return
-        self.exceptions_flowbox.add(VMFlowBoxButton(select_vm))
-        self.add_exception_box.set_visible(False)
-
-    def _initialize_flowbox(self):
-        exceptions = []
-        for vm in self.qapp.domains:
-            if vm.klass == 'AdminVM':
-                continue
-            if get_boolean_feature(vm, self.FEATURE_NAME, True) != \
-                    self.initial_default:
-                exceptions.append(vm)
-
-        self.initial_exceptions = exceptions
-
-        self.exceptions_check.set_active(bool(exceptions))
-
-        for vm in exceptions:
-            self.exceptions_flowbox.add(VMFlowBoxButton(vm))
-
-        self.exceptions_flowbox.show_all()
-
     def _enable_exceptions_clicked(self, _widget=None):
-        self.exceptions_flowbox.set_visible(self.exceptions_check.get_active())
-        self.add_exception_button.set_visible(
-            self.exceptions_check.get_active())
-
-    def get_current_exceptions(self) -> List[qubesadmin.vm.QubesVM]:
-        """Get current list of exception vms"""
-        exceptions: List[qubesadmin.vm.QubesVM] = []
-        if not self.exceptions_check.get_active():
-            return exceptions
-        for child in self.exceptions_flowbox.get_children():
-            exceptions.append(child.vm)
-        return exceptions
+        self.flowbox_handler.set_visible(self.exceptions_check.get_active())
 
     def is_changed(self) -> bool:
         """Did the user change anything from the initial settings?"""
@@ -368,11 +282,7 @@ class UpdateCheckerHandler:
             return True
         if self.initial_default != self.enable_radio.get_active():
             return True
-        exceptions = sorted(self.get_current_exceptions())
-        if exceptions != sorted(self.initial_exceptions):
-            return True
-
-        return False
+        return self.flowbox_handler.is_changed()
 
     def save_changes(self):
         """Save any changes."""
@@ -390,23 +300,21 @@ class UpdateCheckerHandler:
                 'config.default.qubes-update-check'] = default_state
             changed_default = True
 
-        exceptions = self.get_current_exceptions()
-        if changed_default or sorted(exceptions) != \
-                sorted(self.initial_exceptions):
+        exceptions = self.flowbox_handler.selected_vms
+        if changed_default or self.flowbox_handler.is_changed():
             for vm in self.qapp.domains:
                 if vm.klass == 'dom0':
                     continue
                 vm_state = default_state if vm not in exceptions else \
                     not default_state
-                vm.features[self.FEATURE_NAME] = vm_state
-
-        self.initial_exceptions = exceptions
+                apply_feature_change(vm, self.FEATURE_NAME, vm_state)
+        self.flowbox_handler.save_changes()
 
     def reset_changes(self):
         """Reset changes and go back to initial state."""
         self.dom0_update_check.set_active(self.initial_dom0)
         self.enable_radio.set_active(self.initial_default)
-        self._initialize_flowbox()
+        self.flowbox_handler.reset()
 
 
 class UpdateProxy:

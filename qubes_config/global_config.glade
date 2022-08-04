@@ -2121,35 +2121,18 @@ Documentation will open in a disposable qube.</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkFlowBox" id="updates_exceptions_flowbox">
+                          <object class="GtkBox" id="updates_exception_box">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="margin-start">20</property>
-                            <property name="margin-end">20</property>
-                            <style>
-                              <class name="flowbox_container"/>
-                            </style>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">14</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkBox" id="updates_add_exception_box">
-                            <property name="can-focus">False</property>
                             <property name="margin-start">30</property>
-                            <property name="margin-end">30</property>
-                            <property name="spacing">10</property>
+                            <property name="orientation">vertical</property>
                             <child>
-                              <object class="GtkLabel">
+                              <object class="GtkFlowBox" id="updates_exception_flowbox">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Add exception:</property>
-                                <attributes>
-                                  <attribute name="weight" value="bold"/>
-                                </attributes>
+                                <style>
+                                  <class name="flowbox_container"/>
+                                </style>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2158,15 +2141,82 @@ Documentation will open in a disposable qube.</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkComboBox" id="updates_exception_qube_combo">
-                                <property name="visible">True</property>
+                              <object class="GtkBox" id="updates_exception_add_box">
                                 <property name="can-focus">False</property>
-                                <property name="has-entry">True</property>
-                                <child internal-child="entry">
-                                  <object class="GtkEntry">
+                                <property name="spacing">10</property>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="visible">True</property>
                                     <property name="can-focus">False</property>
+                                    <property name="label" translatable="yes">Add exception:</property>
+                                    <attributes>
+                                      <attribute name="weight" value="bold"/>
+                                    </attributes>
                                   </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">0</property>
+                                  </packing>
                                 </child>
+                                <child>
+                                  <object class="GtkComboBox" id="updates_exception_qube_combo">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="has-entry">True</property>
+                                    <child internal-child="entry">
+                                      <object class="GtkEntry">
+                                        <property name="can-focus">False</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="updates_exception_add_cancel">
+                                    <property name="label" translatable="yes">CANCEL</property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="relief">none</property>
+                                    <style>
+                                      <class name="button_cancel"/>
+                                      <class name="flat_button"/>
+                                      <class name="flat"/>
+                                    </style>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">2</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="updates_exception_add_confirm">
+                                    <property name="label" translatable="yes">  ADD  </property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="relief">none</property>
+                                    <style>
+                                      <class name="button_save"/>
+                                      <class name="flat_button"/>
+                                      <class name="flat"/>
+                                    </style>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">3</property>
+                                  </packing>
+                                </child>
+                                <style>
+                                  <class name="edited_row"/>
+                                </style>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2175,17 +2225,11 @@ Documentation will open in a disposable qube.</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkButton" id="updates_add_exception_cancel">
-                                <property name="label" translatable="yes">CANCEL</property>
+                              <object class="GtkSeparator">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">True</property>
-                                <property name="relief">none</property>
-                                <style>
-                                  <class name="button_cancel"/>
-                                  <class name="flat_button"/>
-                                  <class name="flat"/>
-                                </style>
+                                <property name="can-focus">False</property>
+                                <property name="valign">center</property>
+                                <property name="hexpand">True</property>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2194,15 +2238,51 @@ Documentation will open in a disposable qube.</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkButton" id="updates_add_exception_confirm">
-                                <property name="label" translatable="yes">  ADD  </property>
+                              <object class="GtkButton" id="updates_exception_add_button">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
+                                <property name="halign">start</property>
                                 <property name="relief">none</property>
+                                <child>
+                                  <object class="GtkBox">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="tooltip-text" translatable="yes">Key qubes store your GPG keys for use with other qubes.</property>
+                                    <child>
+                                      <object class="GtkLabel">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="label" translatable="yes">+ADD</property>
+                                        <style>
+                                          <class name="add_label"/>
+                                        </style>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <object class="GtkLabel">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="xpad">5</property>
+                                        <property name="label" translatable="yes">exception</property>
+                                        <style>
+                                          <class name="explanation_text"/>
+                                        </style>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </object>
+                                </child>
                                 <style>
-                                  <class name="button_save"/>
-                                  <class name="flat_button"/>
                                   <class name="flat"/>
                                 </style>
                               </object>
@@ -2212,84 +2292,21 @@ Documentation will open in a disposable qube.</property>
                                 <property name="position">3</property>
                               </packing>
                             </child>
-                            <style>
-                              <class name="edited_row"/>
-                            </style>
                           </object>
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="position">15</property>
+                            <property name="position">14</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkSeparator">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                            <property name="valign">center</property>
-                            <property name="hexpand">True</property>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">16</property>
-                          </packing>
+                          <placeholder/>
                         </child>
                         <child>
-                          <object class="GtkButton" id="updates_add_exception_button">
-                            <property name="visible">True</property>
-                            <property name="can-focus">True</property>
-                            <property name="receives-default">True</property>
-                            <property name="halign">start</property>
-                            <property name="margin-start">30</property>
-                            <property name="relief">none</property>
-                            <child>
-                              <object class="GtkBox">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="tooltip-text" translatable="yes">Key qubes store your GPG keys for use with other qubes.</property>
-                                <child>
-                                  <object class="GtkLabel">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="label" translatable="yes">+ADD</property>
-                                    <style>
-                                      <class name="add_label"/>
-                                    </style>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <object class="GtkLabel">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="xpad">5</property>
-                                    <property name="label" translatable="yes">exception</property>
-                                    <style>
-                                      <class name="explanation_text"/>
-                                    </style>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">1</property>
-                                  </packing>
-                                </child>
-                              </object>
-                            </child>
-                            <style>
-                              <class name="flat"/>
-                            </style>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">17</property>
-                          </packing>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
                         </child>
                         <child>
                           <object class="GtkLabel">

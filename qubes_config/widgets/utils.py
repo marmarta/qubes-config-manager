@@ -21,6 +21,8 @@ import qubesadmin
 import qubesadmin.exc
 import qubesadmin.vm
 
+from typing import Optional, Any
+
 
 def get_feature(vm, feature_name, default_value=None):
     """Get feature, with a working default_value."""
@@ -40,19 +42,24 @@ def get_boolean_feature(vm, feature_name, default=False):
         result = default
     return result
 
-def apply_feature_change(widget, vm: qubesadmin.vm.QubesVM,
-                         feature_name:str):
+def apply_feature_change_from_widget(widget, vm: qubesadmin.vm.QubesVM,
+                                     feature_name:str):
     """Change a feature value, taking into account weirdness with None.
     Widget must support is_changed and get_selected methods."""
     if widget.is_changed():
         value = widget.get_selected()
-        try:
-            if value is None:
-                del vm.features[feature_name]
-            else:
-                vm.features[feature_name] = value
-        except qubesadmin.exc.QubesDaemonAccessError:
-            raise qubesadmin.exc.QubesException(
-                "Failed to set {} due to insufficient "
-                "permissions".format(feature_name))
+        apply_feature_change(vm, feature_name, value)
+
+def apply_feature_change(vm: qubesadmin.vm.QubesVM,
+                         feature_name: str, new_value: Optional[Any]):
+    """Change a feature value, taking into account weirdness with None."""
+    try:
+        if new_value is None:
+            del vm.features[feature_name]
+        else:
+            vm.features[feature_name] = new_value
+    except qubesadmin.exc.QubesDaemonAccessError:
+        raise qubesadmin.exc.QubesException(
+            "Failed to set {} due to insufficient "
+            "permissions".format(feature_name))
 
