@@ -419,8 +419,7 @@ class UpdateProxy:
         self.policy_file_name = policy_file_name
         self.service_name = service_name
 
-        # TODO: how to check if has whonix?
-        self.has_whonix = True
+        self.has_whonix = self._check_for_whonix()
 
         self.default_updatevm = self.qapp.domains['sys-net']
         self.default_whonix_updatevm = self.qapp.domains.get('sys-whonix', None)
@@ -456,7 +455,7 @@ class UpdateProxy:
             current_value=None)
         self.whonix_updatevm_model = VMListModeler(
             combobox=self.whonix_updatevm_combo, qapp=self.qapp,
-            filter_function=self._updatevm_filter,
+            filter_function=self._whonixupdatevm_filter,
             current_value=None)
         self.load_rules()
 
@@ -467,9 +466,19 @@ class UpdateProxy:
 
         self.whonix_updatevm_box.set_visible(self.has_whonix)
 
+    def _check_for_whonix(self) -> bool:
+        for vm in self.qapp.domains:
+            if 'whonix-updatevm' in vm.tags or 'anon-gateway' in vm.tags:
+                return True
+        return False
+
     @staticmethod
     def _updatevm_filter(vm):
         return getattr(vm, 'provides_network', False)
+
+    @staticmethod
+    def _whonixupdatevm_filter(vm):
+        return 'anon-gateway' in vm.tags
 
     @staticmethod
     def _needs_updatevm_filter(vm):
@@ -572,6 +581,11 @@ class UpdateProxy:
                 return str(other_row)
         if new_source == new_target:
             return 'Target cannot be the same as source'
+        new_target = self.qapp.domains[new_target]
+        new_source = self.qapp.domains[new_source]
+        if 'whonix-updatevm' in new_source.tags and \
+                'anon-gateway' not in new_target.tags:
+            return "Whonix qubes can only use Whonix update proxies!"
         return None
 
     @property
