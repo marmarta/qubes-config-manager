@@ -1,7 +1,7 @@
 @import "qubes-widgets-styling.css";
 
 label {
-  font-family: SourceSansPro;
+  font-family: 'Source Sans Pro';
 }
 
 separator {
@@ -233,4 +233,8 @@ separator {
 .action_text {
     color: black;
     font-weight: 700;
+}
+
+.action_text_soft {
+    color: black;
 }

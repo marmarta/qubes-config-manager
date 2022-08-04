@@ -28,6 +28,7 @@ from qrexec.policy.parser import Rule
 
 from ..widgets.qubes_widgets_library import VMListModeler, show_error, \
     ask_question, NONE_CATEGORY, QubeName
+from ..widgets.utils import get_boolean_feature, get_feature
 from .page_handler import PageHandler
 from .policy_rules import RuleTargeted, SimpleVerbDescription
 from .policy_manager import PolicyManager
@@ -45,25 +46,6 @@ from gi.repository import Gtk
 
 import gbulb
 gbulb.install()
-
-
-def get_feature(vm, feature_name, default_value):
-    """Get feature, with a working default_value."""
-    try:
-        return vm.features.get(feature_name, default_value)
-    except qubesadmin.exc.QubesDaemonAccessError:
-        return default_value
-
-def get_boolean_feature(vm, feature_name, default):
-    """helper function to get a feature converted to a Bool if it does exist.
-    Necessary because of the true/false in features being coded as 1/empty
-    string."""
-    result = get_feature(vm, feature_name, None)
-    if result is not None:
-        result = bool(result)
-    else:
-        result = default
-    return result
 
 
 class RepoHandler:

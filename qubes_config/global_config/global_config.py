@@ -42,6 +42,9 @@ from .policy_rules import RuleSimple, \
     TargetedVerbDescription, RuleSimpleNoAllow
 from .policy_manager import PolicyManager
 from .updates_handler import UpdatesHandler
+from .usb_devices import DevicesHandler
+from ..widgets.utils import apply_feature_change, get_feature, \
+    get_boolean_feature
 
 import gi
 
@@ -75,42 +78,6 @@ class TraitHolder(abc.ABC):
         Return whatever is the current value of the trait,
         :return:
         """
-
-
-def get_feature(vm, feature_name, default_value=None):
-    """
-    get feature value
-    """
-    try:
-        return vm.features.get(feature_name, default_value)
-    except qubesadmin.exc.QubesDaemonAccessError:
-        return default_value
-
-
-def get_boolean_feature(vm, feature_name):
-    """helper function to get a feature converted to a Bool if it does exist.
-    Necessary because of the true/false in features being coded as 1/empty
-    string."""
-    result = get_feature(vm, feature_name, None)
-    if result is not None:
-        result = bool(result)
-    return result
-
-def apply_feature_change(widget: TextModeler, vm: qubesadmin.vm.QubesVM,
-                         feature_name:str):
-    """Change a feature value, taking into account weirdness with None."""
-    if widget.is_changed():
-        value = widget.get_selected()
-        try:
-            if value is None:
-                del vm.features[feature_name]
-            else:
-                vm.features[feature_name] = value
-        except qubesadmin.exc.QubesDaemonAccessError:
-            raise qubesadmin.exc.QubesException(
-                "Failed to set {} due to insufficient "
-                "permissions".format(feature_name))
-
 
 class VMFeatureHolder(TraitHolder):
     """VM Feature."""
@@ -536,8 +503,8 @@ class GlobalConfig(Gtk.Application):
         # match page by id to handler; this is not pretty, but Gtk likes
         # to ID pages by their number, there is no simple page_id
         self.handlers: Dict[int, PageHandler] = {
-            0: BasicSettingsHandler(self.builder, self.qapp),  # TODO
-            1: None,  # TODO
+            0: BasicSettingsHandler(self.builder, self.qapp),
+            1: DevicesHandler(self.qapp, policy_manager, self.builder),
             2: UpdatesHandler(
                 qapp=self.qapp,
                 policy_manager=policy_manager,
@@ -603,7 +570,8 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
         self._handle_urls()
 
     def _handle_urls(self):
-        url_label_ids = ["url_info", "openinvm_info", "splitgpg_info"]
+        url_label_ids = ["url_info", "openinvm_info", "splitgpg_info",
+                         "usb_info"]
         for url_label_id in url_label_ids:
             label: Gtk.Label = self.builder.get_object(url_label_id)
             label.connect("activate-link", self._activate_link)

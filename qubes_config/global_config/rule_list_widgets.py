@@ -124,6 +124,10 @@ class VMWidget(Gtk.Box):
         self.combobox.set_visible(editable)
         self.name_widget.set_visible(not editable)
 
+    def is_editable(self) -> bool:
+        """Is the widget currently being edited?"""
+        return self.combobox.get_visible()
+
     def is_changed(self) -> bool:
         """Return True if widget was changed from its initial state."""
         new_value = self.model.get_selected()
@@ -150,8 +154,9 @@ class ActionWidget(Gtk.Box):
     def __init__(self,
                  choices: Dict[str, str],
                  initial_value: str,
-                 verb_description: AbstractVerbDescription,
-                 rule: AbstractRuleWrapper):
+                 verb_description: Optional[AbstractVerbDescription],
+                 rule: AbstractRuleWrapper,
+                 action_style_class: str = 'action_text'):
         """
         :param choices: dictionary of policy value: readable name
         :param initial_value: initial policy value
@@ -174,29 +179,34 @@ class ActionWidget(Gtk.Box):
             self.choices.inverted,
             selected_value=self.selected_value)
         self.name_widget = Gtk.Label()
-        self.name_widget.get_style_context().add_class('action_text')
-        self.additional_text_widget = Gtk.Label()
-        self.additional_text_widget.get_style_context().add_class(
-            'didascalia')
+        self.name_widget.get_style_context().add_class(action_style_class)
+        if self.verb_description:
+            self.additional_text_widget = Gtk.Label()
+            self.additional_text_widget.get_style_context().add_class(
+                'didascalia')
+        else:
+            self.additional_text_widget = None
 
         self.combobox.set_no_show_all(True)
         self.name_widget.set_no_show_all(True)
 
         self.pack_start(self.combobox, True, True, 0)
         self.pack_start(self.name_widget, True, True, 0)
-        self.pack_end(self.additional_text_widget, False, False, 0)
+        if self.verb_description:
+            self.pack_end(self.additional_text_widget, False, False, 0)
+            self.additional_text_widget.set_halign(Gtk.Align.END)
         self.combobox.set_halign(Gtk.Align.START)
         self.name_widget.set_halign(Gtk.Align.START)
-        self.additional_text_widget.set_halign(Gtk.Align.END)
 
         self._format_new_value(initial_value)
         self.set_editable(False)
 
     def _format_new_value(self, new_value):
         self.name_widget.set_markup(f'{self.choices[new_value]}')
-        self.additional_text_widget.set_text(
-            self.verb_description.get_verb_for_action_and_target(
-                new_value, self.rule.target))
+        if self.verb_description:
+            self.additional_text_widget.set_text(
+                self.verb_description.get_verb_for_action_and_target(
+                    new_value, self.rule.target))
 
     def set_editable(self, editable: bool):
         """Change state between editable and non-editable."""
