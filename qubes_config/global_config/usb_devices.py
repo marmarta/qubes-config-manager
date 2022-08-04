@@ -22,18 +22,20 @@ USB Devices-related functionality.
 """
 import os
 import subprocess
+from functools import partial
 from typing import Optional, List, Dict, Union
 
-from qrexec.policy.parser import Rule
+from qrexec.policy.parser import Rule, Deny, Allow
 
 from ..widgets.qubes_widgets_library import VMListModeler, show_error, \
     ask_question, NONE_CATEGORY, QubeName, ImageTextButton
-from ..widgets.utils import get_feature, apply_feature_change_from_widget
+from ..widgets.utils import get_feature, apply_feature_change_from_widget, apply_feature_change
 from .page_handler import PageHandler
 from .policy_rules import RuleSimple, SimpleVerbDescription
 from .policy_manager import PolicyManager
 from .rule_list_widgets import NoActionListBoxRow, VMWidget, ActionWidget
 from .conflict_handler import ConflictFileHandler
+from .vm_flowbox import VMFlowboxHandler
 
 import gi
 
@@ -214,6 +216,209 @@ qubes.InputTablet * {self.sys_usb} @adminvm deny
         return False
 
 
+class U2FPolicyHandler:
+    SERVICE_FEATURE = 'service.qubes-u2f-proxy'
+    SUPPORTED_SERVICE_FEATURE = 'supported-service.qubes-u2f-proxy'
+    AUTH_POLICY = 'u2f.Authenticate'
+    REGISTER_POLICY = 'u2f.Register'
+    POLICY_REGISTER_POLICY = 'policy.RegisterArgument'
+
+    def __init__(self,
+                 qapp: qubesadmin.Qubes,
+                 policy_manager: PolicyManager,
+                 gtk_builder: Gtk.Builder,
+                 sys_usb: qubesadmin.vm.QubesVM
+                 ):
+        self.qapp = qapp
+        self.policy_manager = policy_manager
+        self.policy_filename = '50-config-u2f'
+        self.sys_usb = sys_usb
+
+        self.default_policy = f"u2f.Authenticate * @anyvm {sys_usb} deny"
+
+        self.problem_no_vms_box: Gtk.Box = \
+            gtk_builder.get_object('usb_u2f_no_qubes_problem')
+        self.problem_no_usbvm_box: Gtk.Box = \
+            gtk_builder.get_object('usb_u2f_no_usb_vm_problem')
+
+        self.enable_check: Gtk.CheckButton = \
+            gtk_builder.get_object('usb_u2f_enable_check') # general enable
+        self.box: Gtk.Box = gtk_builder.get_object('usb_u2f_enable_box')  # general box
+
+        self.register_check: Gtk.CheckButton = \
+            gtk_builder.get_object('usb_u2f_register_check')
+        self.register_box: Gtk.Box = \
+            gtk_builder.get_object('usb_u2f_register_box')
+        self.register_all_radio: Gtk.RadioButton = \
+            gtk_builder.get_object('usb_u2f_register_all_radio')
+        self.register_some_radio: Gtk.RadioButton = \
+            gtk_builder.get_object('usb_u2f_register_some_radio')
+
+        self.blanket_check: Gtk.CheckButton = \
+            gtk_builder.get_object('usb_u2f_blanket_check')
+        # TODO: make a prettier empty flowbox default...
+        # TODO: add default: not dom0 func
+
+        self.initially_enabled_vms : List[qubesadmin.vm.QubesVM] = []
+        self.available_vms: List[qubesadmin.vm.QubesVM] = []
+        self.initial_register_vms: List[qubesadmin.vm.QubesVM] = []
+        self.initial_blanket_vms: List[qubesadmin.vm.QubesVM] = []
+        self.allow_all_register: bool = False
+        self.current_token = None
+
+        self._initialize_data()
+
+        self.enable_some_handler = VMFlowboxHandler(
+            gtk_builder, self.qapp, "usb_u2f_enable_some",
+            self.initially_enabled_vms, lambda vm: vm in self.available_vms)
+
+        self.register_some_handler = VMFlowboxHandler(
+            gtk_builder, self.qapp, "usb_u2f_register_some",
+            self.initial_register_vms, lambda vm: vm in self.available_vms)
+
+        self.blanket_handler = VMFlowboxHandler(
+            gtk_builder, self.qapp, "usb_u2f_blanket",
+            self.initial_blanket_vms, lambda vm: vm in self.available_vms)
+
+        self.widget_to_box = {
+            self.enable_check: self.box,
+            self.register_check: self.register_box,
+            self.blanket_check: self.blanket_handler,
+            self.register_some_radio: self.register_some_handler}
+
+        for widget, box in self.widget_to_box.items():
+            widget.connect('toggled', partial(self._enable_clicked, box))
+            self._enable_clicked(box, widget)
+
+# TODO: warn about problem if usb vm has it not installed, check supported feature, CAN NOT be enabled
+
+    def _enable_clicked(self, related_box: Union[Gtk.Box, VMFlowboxHandler],
+                        widget: Gtk.CheckButton):
+        related_box.set_visible(widget.get_active())
+
+    def _warn(self):
+        # warn about weird data?
+        pass
+
+    def _initialize_data(self):
+        self.initially_enabled_vms.clear()
+        self.available_vms.clear()
+        self.initial_register_vms.clear()
+        self.initial_blanket_vms.clear()
+
+        for vm in self.qapp.domains:
+            if vm.features.check_with_template(self.SUPPORTED_SERVICE_FEATURE):
+                if vm == self.sys_usb:
+                    continue
+                self.available_vms.append(vm)
+            if vm.features.get(self.SERVICE_FEATURE):
+                self.initially_enabled_vms.append(vm)
+        available_in_sys_usb = self.sys_usb.features.check_with_template(
+                    self.SUPPORTED_SERVICE_FEATURE)
+        if not self.available_vms or not available_in_sys_usb:
+            self.problem_no_usbvm_box.show_all()
+            self.problem_no_vms_box.show_all()
+            self.problem_no_usbvm_box.set_visible(not available_in_sys_usb)
+            self.problem_no_vms_box.set_visible(not bool(self.available_vms))
+            self.enable_check.set_active(False)
+            self.enable_check.set_sensitive(False)
+            self.box.set_visible(False)
+            return
+
+        self.enable_check.set_active(bool(self.initially_enabled_vms))
+
+        all_rules, self.current_token = \
+            self.policy_manager.get_rules_from_filename(
+                self.policy_filename, self.default_policy)
+
+        for rule in all_rules:
+            if rule.service == self.REGISTER_POLICY:
+                if rule.source == '@anyvm' and isinstance(rule.action, Allow):
+                    self.allow_all_register = True
+                elif rule.source != '@anyvm' and isinstance(rule.action, Allow):
+                    try:
+                        vm = self.qapp.domains[rule.source]
+                        self.initial_register_vms.append(vm)
+                    except KeyError:
+                        continue
+            elif rule.service == self.AUTH_POLICY:
+                if rule.source != '@anyvm' and isinstance(rule.action, Allow):
+                    try:
+                        vm = self.qapp.domains[rule.source]
+                        self.initial_blanket_vms.append(vm)
+                    except KeyError:
+                        continue
+
+        if self.allow_all_register:
+            self.register_check.set_active(True)
+            self.register_all_radio.set_active(True)
+        else:
+            if self.initial_register_vms:
+                self.register_check.set_active(True)
+                self.register_some_radio.set_active(True)
+
+        self.blanket_check.set_active(bool(self.initial_blanket_vms))
+# WHEN TRYING TO ADD and not available scream and say: nope, do you want to add?
+# TODO: add some sort of info/validation - if no VM is selected, cannot save with enabled
+    def save_changes(self):
+        # TODO: now everything gets saved, is it bad?
+        if not self.enable_check.get_sensitive():
+            return
+
+        if not self.enable_check.get_active():
+            # disable all service:
+            for vm in self.initially_enabled_vms:
+                apply_feature_change(vm, self.SERVICE_FEATURE, None)
+
+            self.policy_manager.save_rules(
+                self.policy_filename,
+                self.policy_manager.text_to_rules(self.default_policy),
+                self.current_token)
+
+            self._initialize_data() # TODO:too slow?
+            return
+
+        enabled_vms = self.enable_some_handler.selected_vms
+        for vm in self.available_vms:
+            value = None if vm not in enabled_vms else True
+            apply_feature_change(vm, self.SERVICE_FEATURE, value)
+
+        rules = []
+
+        # register rules
+        if not self.register_check.get_active():
+            rules.extend(self.policy_manager.text_to_rules(
+                f"{self.REGISTER_POLICY} * @anyvm @anyvm deny\n"
+                f"{self.POLICY_REGISTER_POLICY} +{self.REGISTER_POLICY} @anyvm @anyvm deny"))
+        else:
+            if self.register_all_radio.get_active():
+                rules.extend(self.policy_manager.text_to_rules(
+                    f"{self.POLICY_REGISTER_POLICY} +{self.REGISTER_POLICY} {self.sys_usb} @anyvm allow target=dom0"))
+                rules.extend(self.policy_manager.text_to_rules(
+                    f"{self.REGISTER_POLICY} * @anyvm {self.sys_usb} allow"))
+            else:
+                # TODO: if none scream?
+                for vm in self.register_some_handler.selected_vms:
+                    rules.extend(self.policy_manager.text_to_rules(f"{self.REGISTER_POLICY} * {vm} {self.sys_usb} allow"))
+                rules.extend(self.policy_manager.text_to_rules("policy.RegisterArgument +u2f.Authenticate sys-usb @anyvm allow target=dom0"))
+
+        if self.blanket_check.get_active():
+            for vm in self.blanket_handler.selected_vms:
+                rules.extend(self.policy_manager.text_to_rules(f"{self.AUTH_POLICY} * {vm} {self.sys_usb} allow"))
+
+        self.policy_manager.save_rules(self.policy_filename, rules,
+                                       self.current_token)
+
+        self._initialize_data() # TODO: SLOW?
+
+    def reset(self):
+        self._initialize_data()
+
+    def is_changed(self) -> bool:
+        pass
+
+
+
 class DevicesHandler(PageHandler):
     """Handler for all the disparate Updates functions."""
     def __init__(self,
@@ -230,6 +435,9 @@ class DevicesHandler(PageHandler):
 
         self.input_handler = InputDeviceHandler(
             qapp, policy_manager, gtk_builder, usb_vm)
+
+        self.u2f_handler = U2FPolicyHandler(self.qapp, self.policy_manager,
+                                            gtk_builder, usb_vm)
         # TODO: conflict files for input?
         # self.conflict_handler = ConflictFileHandler(
         #     gtk_builder, "updates", self.service_name,
@@ -249,8 +457,8 @@ class DevicesHandler(PageHandler):
         Return True if successful, False otherwise"""
         self.usbvm_handler.save_changes()
         self.input_handler.save_changes()
+        self.u2f_handler.save_changes()
         return True
-
 
 # see docs for input? maybe add a link?
 

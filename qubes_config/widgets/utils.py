@@ -55,7 +55,8 @@ def apply_feature_change(vm: qubesadmin.vm.QubesVM,
     """Change a feature value, taking into account weirdness with None."""
     try:
         if new_value is None:
-            del vm.features[feature_name]
+            if feature_name in vm.features:
+                del vm.features[feature_name]
         else:
             vm.features[feature_name] = new_value
     except qubesadmin.exc.QubesDaemonAccessError:

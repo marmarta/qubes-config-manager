@@ -518,7 +518,7 @@
                             <property name="can-focus">False</property>
                             <property name="label" translatable="yes">Qubes OS U2F Proxy allows you to use U2F two-factor authentication devices without exposing the entire device and its contents to every qube.
 
-&lt;b&gt;Note:&lt;/b&gt; In order to use U2F proxy in a qube, its template must have the &lt;tt&gt;qubes-u2f&lt;/tt&gt; package installed.</property>
+&lt;b&gt;Note:&lt;/b&gt; In order to use U2F proxy in a qube, its template must have the &lt;tt&gt;qubes-u2f&lt;/tt&gt; package installed. By default, only keys registered by this qube can be used by U2F Proxy.</property>
                             <property name="use-markup">True</property>
                             <property name="wrap">True</property>
                             <property name="xalign">0</property>
@@ -579,19 +579,28 @@ Documentation will open in a disposable qube.</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkCheckButton" id="usb_u2f_enable_check">
-                            <property name="visible">True</property>
-                            <property name="can-focus">True</property>
-                            <property name="receives-default">False</property>
-                            <property name="draw-indicator">True</property>
+                          <object class="GtkBox" id="usb_u2f_no_usb_vm_problem">
+                            <property name="can-focus">False</property>
+                            <property name="halign">center</property>
+                            <property name="margin-top">20</property>
+                            <property name="orientation">vertical</property>
                             <child>
-                              <object class="GtkLabel">
-                                <property name="visible">True</property>
+                              <object class="GtkLabel" id="updates_problem_label3">
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">&lt;b&gt;Enable U2F Proxy&lt;/b&gt; service</property>
+                                <property name="halign">center</property>
+                                <property name="label" translatable="yes">U2F Proxy Service not installed in the USB qube. To use U2F Proxy Service, install &lt;tt&gt;qubes-u2f&lt;/tt&gt; package in the template of the USB qube.</property>
                                 <property name="use-markup">True</property>
+                                <property name="wrap">True</property>
                               </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
                             </child>
+                            <style>
+                              <class name="problem_box"/>
+                            </style>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -600,55 +609,18 @@ Documentation will open in a disposable qube.</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkBox" id="usb_u2f_enable_box">
-                            <property name="visible">True</property>
+                          <object class="GtkBox" id="usb_u2f_no_qubes_problem">
                             <property name="can-focus">False</property>
-                            <property name="margin-start">30</property>
+                            <property name="halign">center</property>
+                            <property name="margin-top">20</property>
                             <property name="orientation">vertical</property>
                             <child>
-                              <object class="GtkRadioButton" id="usb_u2f_enable_all_radio">
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">False</property>
-                                <property name="active">True</property>
-                                <property name="draw-indicator">True</property>
-                                <child>
-                                  <object class="GtkBox">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="label" translatable="yes">&lt;b&gt;All qubes&lt;/b&gt;</property>
-                                        <property name="use-markup">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">0</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="label" translatable="yes">can use U2F Proxy service (if their template has qubes-u2f package installed)</property>
-                                        <style>
-                                          <class name="explanation_text"/>
-                                        </style>
-                                      </object>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">1</property>
-                                      </packing>
-                                    </child>
-                                  </object>
-                                </child>
-                                <style>
-                                  <class name="enable_opts"/>
-                                </style>
+                              <object class="GtkLabel" id="updates_problem_label2">
+                                <property name="can-focus">False</property>
+                                <property name="halign">center</property>
+                                <property name="label" translatable="yes">No qubes with available U2F Proxy Service found. To use U2F Proxy Service in a qube, install &lt;tt&gt;qubes-u2f&lt;/tt&gt; package in its template.</property>
+                                <property name="use-markup">True</property>
+                                <property name="wrap">True</property>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -656,58 +628,47 @@ Documentation will open in a disposable qube.</property>
                                 <property name="position">0</property>
                               </packing>
                             </child>
+                            <style>
+                              <class name="problem_box"/>
+                            </style>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">10</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="usb_u2f_enable_check">
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">False</property>
+                            <property name="margin-top">10</property>
+                            <property name="margin-bottom">20</property>
+                            <property name="draw-indicator">True</property>
                             <child>
-                              <object class="GtkRadioButton" id="usb_u2f_enable_some_radio">
+                              <object class="GtkLabel">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">False</property>
-                                <property name="active">True</property>
-                                <property name="draw-indicator">True</property>
-                                <property name="group">usb_u2f_enable_all_radio</property>
-                                <child>
-                                  <object class="GtkBox">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="label" translatable="yes">&lt;b&gt;Only selected qubes&lt;/b&gt;</property>
-                                        <property name="use-markup">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">0</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="label" translatable="yes">can use U2F Proxy service (if their template has qubes-u2f package installed)</property>
-                                        <style>
-                                          <class name="explanation_text"/>
-                                        </style>
-                                      </object>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">1</property>
-                                      </packing>
-                                    </child>
-                                  </object>
-                                </child>
-                                <style>
-                                  <class name="enable_opts"/>
-                                </style>
+                                <property name="can-focus">False</property>
+                                <property name="halign">start</property>
+                                <property name="label" translatable="yes">&lt;b&gt;Enable U2F Proxy&lt;/b&gt; service</property>
+                                <property name="use-markup">True</property>
                               </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="position">1</property>
-                              </packing>
                             </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">11</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkBox" id="usb_u2f_enable_box">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="margin-start">30</property>
+                            <property name="margin-bottom">50</property>
+                            <property name="orientation">vertical</property>
                             <child>
                               <object class="GtkBox" id="usb_u2f_enable_some_box">
                                 <property name="visible">True</property>
@@ -715,7 +676,23 @@ Documentation will open in a disposable qube.</property>
                                 <property name="margin-start">30</property>
                                 <property name="orientation">vertical</property>
                                 <child>
+                                  <object class="GtkLabel">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="halign">start</property>
+                                    <property name="margin-start">30</property>
+                                    <property name="label" translatable="yes">&lt;b&gt;Qubes that can use U2F proxy:&lt;/b&gt;</property>
+                                    <property name="use-markup">True</property>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
                                   <object class="GtkFlowBox" id="usb_u2f_enable_some_flowbox">
+                                    <property name="visible">True</property>
                                     <property name="can-focus">False</property>
                                     <property name="margin-end">40</property>
                                     <style>
@@ -725,7 +702,7 @@ Documentation will open in a disposable qube.</property>
                                   <packing>
                                     <property name="expand">False</property>
                                     <property name="fill">True</property>
-                                    <property name="position">0</property>
+                                    <property name="position">1</property>
                                   </packing>
                                 </child>
                                 <child>
@@ -827,7 +804,7 @@ Documentation will open in a disposable qube.</property>
                                   <packing>
                                     <property name="expand">False</property>
                                     <property name="fill">True</property>
-                                    <property name="position">1</property>
+                                    <property name="position">2</property>
                                   </packing>
                                 </child>
                                 <child>
@@ -840,11 +817,12 @@ Documentation will open in a disposable qube.</property>
                                   <packing>
                                     <property name="expand">False</property>
                                     <property name="fill">True</property>
-                                    <property name="position">2</property>
+                                    <property name="position">3</property>
                                   </packing>
                                 </child>
                                 <child>
                                   <object class="GtkButton" id="usb_u2f_enable_some_add_button">
+                                    <property name="visible">True</property>
                                     <property name="can-focus">True</property>
                                     <property name="receives-default">True</property>
                                     <property name="halign">start</property>
@@ -894,94 +872,9 @@ Documentation will open in a disposable qube.</property>
                                   <packing>
                                     <property name="expand">False</property>
                                     <property name="fill">True</property>
-                                    <property name="position">3</property>
+                                    <property name="position">4</property>
                                   </packing>
                                 </child>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="position">2</property>
-                              </packing>
-                            </child>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">10</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkCheckButton" id="usb_u2f_register_check">
-                            <property name="visible">True</property>
-                            <property name="can-focus">True</property>
-                            <property name="receives-default">False</property>
-                            <property name="draw-indicator">True</property>
-                            <child>
-                              <object class="GtkLabel">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Enable &lt;b&gt;registering new keys&lt;/b&gt; with U2F Proxy service</property>
-                                <property name="use-markup">True</property>
-                              </object>
-                            </child>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">11</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkBox" id="usb_u2f_register_box">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                            <property name="margin-start">30</property>
-                            <property name="orientation">vertical</property>
-                            <child>
-                              <object class="GtkRadioButton" id="usb_u2f_register_all_radio">
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">False</property>
-                                <property name="active">True</property>
-                                <property name="draw-indicator">True</property>
-                                <child>
-                                  <object class="GtkBox">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="label" translatable="yes">&lt;b&gt;All qubes&lt;/b&gt;</property>
-                                        <property name="use-markup">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">0</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="label" translatable="yes">can register new keys with U2F Proxy service (if their template has qubes-u2f package installed)</property>
-                                        <style>
-                                          <class name="explanation_text"/>
-                                        </style>
-                                      </object>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">1</property>
-                                      </packing>
-                                    </child>
-                                  </object>
-                                </child>
-                                <style>
-                                  <class name="enable_opts"/>
-                                </style>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -990,49 +883,13 @@ Documentation will open in a disposable qube.</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkRadioButton" id="usb_u2f_register_some_radio">
+                              <object class="GtkSeparator">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">False</property>
-                                <property name="draw-indicator">True</property>
-                                <property name="group">usb_u2f_enable_all_radio</property>
-                                <child>
-                                  <object class="GtkBox">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="label" translatable="yes">&lt;b&gt;Only selected qubes&lt;/b&gt;</property>
-                                        <property name="use-markup">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">0</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="label" translatable="yes">can register new keys with U2F Proxy service (if their template has qubes-u2f package installed)</property>
-                                        <style>
-                                          <class name="explanation_text"/>
-                                        </style>
-                                      </object>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">1</property>
-                                      </packing>
-                                    </child>
-                                  </object>
-                                </child>
-                                <style>
-                                  <class name="enable_opts"/>
-                                </style>
+                                <property name="can-focus">False</property>
+                                <property name="valign">center</property>
+                                <property name="margin-top">10</property>
+                                <property name="margin-bottom">60</property>
+                                <property name="hexpand">True</property>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -1041,17 +898,77 @@ Documentation will open in a disposable qube.</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkBox" id="usb_u2f_register_some_box">
+                              <object class="GtkCheckButton" id="usb_u2f_register_check">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">False</property>
+                                <property name="draw-indicator">True</property>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="halign">start</property>
+                                    <property name="label" translatable="yes">Enable &lt;b&gt;registering new keys&lt;/b&gt; with U2F Proxy service</property>
+                                    <property name="use-markup">True</property>
+                                  </object>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkBox" id="usb_u2f_register_box">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <property name="margin-start">30</property>
                                 <property name="orientation">vertical</property>
                                 <child>
-                                  <object class="GtkFlowBox" id="usb_u2f_register_some_flowbox1">
-                                    <property name="can-focus">False</property>
-                                    <property name="margin-end">40</property>
+                                  <object class="GtkRadioButton" id="usb_u2f_register_all_radio">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">False</property>
+                                    <property name="active">True</property>
+                                    <property name="draw-indicator">True</property>
+                                    <child>
+                                      <object class="GtkBox">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="label" translatable="yes">&lt;b&gt;All qubes&lt;/b&gt;</property>
+                                            <property name="use-markup">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="fill">True</property>
+                                            <property name="position">0</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="label" translatable="yes">selected above can register new keys</property>
+                                            <property name="wrap">True</property>
+                                            <style>
+                                              <class name="explanation_text"/>
+                                            </style>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="fill">True</property>
+                                            <property name="position">1</property>
+                                          </packing>
+                                        </child>
+                                      </object>
+                                    </child>
                                     <style>
-                                      <class name="flowbox_container"/>
+                                      <class name="enable_opts"/>
                                     </style>
                                   </object>
                                   <packing>
@@ -1061,9 +978,379 @@ Documentation will open in a disposable qube.</property>
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkBox" id="usb_u2f_register_some_add_box">
+                                  <object class="GtkRadioButton" id="usb_u2f_register_some_radio">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">False</property>
+                                    <property name="draw-indicator">True</property>
+                                    <property name="group">usb_u2f_register_all_radio</property>
+                                    <child>
+                                      <object class="GtkBox">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="label" translatable="yes">&lt;b&gt;Only selected qubes&lt;/b&gt;</property>
+                                            <property name="use-markup">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="fill">True</property>
+                                            <property name="position">0</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="label" translatable="yes">can register new keys</property>
+                                            <property name="wrap">True</property>
+                                            <style>
+                                              <class name="explanation_text"/>
+                                            </style>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="fill">True</property>
+                                            <property name="position">1</property>
+                                          </packing>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <style>
+                                      <class name="enable_opts"/>
+                                    </style>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkBox" id="usb_u2f_register_some_box">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="margin-start">30</property>
+                                    <property name="orientation">vertical</property>
+                                    <child>
+                                      <object class="GtkFlowBox" id="usb_u2f_register_some_flowbox">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="margin-end">40</property>
+                                        <style>
+                                          <class name="flowbox_container"/>
+                                        </style>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <object class="GtkBox" id="usb_u2f_register_some_add_box">
+                                        <property name="can-focus">False</property>
+                                        <property name="margin-end">40</property>
+                                        <property name="spacing">10</property>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="label" translatable="yes">Add qube:</property>
+                                            <attributes>
+                                              <attribute name="weight" value="bold"/>
+                                            </attributes>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="fill">True</property>
+                                            <property name="position">0</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkImage">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="tooltip-text" translatable="yes">If you can't see the qube you want to use here, install the qubes-u2f package in its template (or in the qube itself, if it's a standalone qube).</property>
+                                            <property name="xalign">0.5</property>
+                                            <property name="yalign">0.6000000238418579</property>
+                                            <property name="pixel-size">20</property>
+                                            <property name="icon-name">qubes-question</property>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="fill">True</property>
+                                            <property name="padding">3</property>
+                                            <property name="position">1</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkComboBox" id="usb_u2f_register_some_qube_combo">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="has-entry">True</property>
+                                            <child internal-child="entry">
+                                              <object class="GtkEntry">
+                                                <property name="can-focus">False</property>
+                                              </object>
+                                            </child>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="fill">True</property>
+                                            <property name="position">2</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton" id="usb_u2f_register_some_add_cancel">
+                                            <property name="label" translatable="yes">CANCEL</property>
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">True</property>
+                                            <property name="receives-default">True</property>
+                                            <property name="relief">none</property>
+                                            <style>
+                                              <class name="button_cancel"/>
+                                              <class name="flat_button"/>
+                                              <class name="flat"/>
+                                            </style>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="fill">True</property>
+                                            <property name="position">3</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton" id="usb_u2f_register_some_add_confirm">
+                                            <property name="label" translatable="yes">  ADD  </property>
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">True</property>
+                                            <property name="receives-default">True</property>
+                                            <property name="relief">none</property>
+                                            <style>
+                                              <class name="button_save"/>
+                                              <class name="flat_button"/>
+                                              <class name="flat"/>
+                                            </style>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="fill">True</property>
+                                            <property name="position">4</property>
+                                          </packing>
+                                        </child>
+                                        <style>
+                                          <class name="edited_row"/>
+                                        </style>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <object class="GtkSeparator">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="valign">center</property>
+                                        <property name="hexpand">True</property>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">2</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <object class="GtkButton" id="usb_u2f_register_some_add_button">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">True</property>
+                                        <property name="receives-default">True</property>
+                                        <property name="halign">start</property>
+                                        <property name="relief">none</property>
+                                        <child>
+                                          <object class="GtkBox">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="tooltip-text" translatable="yes">Key qubes store your GPG keys for use with other qubes.</property>
+                                            <child>
+                                              <object class="GtkLabel">
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">False</property>
+                                                <property name="label" translatable="yes">+ADD</property>
+                                                <style>
+                                                  <class name="add_label"/>
+                                                </style>
+                                              </object>
+                                              <packing>
+                                                <property name="expand">False</property>
+                                                <property name="fill">True</property>
+                                                <property name="position">0</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <object class="GtkLabel">
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">False</property>
+                                                <property name="xpad">5</property>
+                                                <property name="label" translatable="yes">qube</property>
+                                                <style>
+                                                  <class name="explanation_text"/>
+                                                </style>
+                                              </object>
+                                              <packing>
+                                                <property name="expand">False</property>
+                                                <property name="fill">True</property>
+                                                <property name="position">1</property>
+                                              </packing>
+                                            </child>
+                                          </object>
+                                        </child>
+                                        <style>
+                                          <class name="flat"/>
+                                        </style>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">3</property>
+                                      </packing>
+                                    </child>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">2</property>
+                                  </packing>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">3</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkSeparator">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="valign">center</property>
+                                <property name="margin-top">10</property>
+                                <property name="margin-bottom">60</property>
+                                <property name="hexpand">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">4</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkCheckButton" id="usb_u2f_blanket_check">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">False</property>
+                                <property name="draw-indicator">True</property>
+                                <child>
+                                  <object class="GtkBox">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <child>
+                                      <object class="GtkLabel">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="label" translatable="yes">Allow some qubes to access &lt;b&gt;ALL&lt;/b&gt; keys stored on your U2F device</property>
+                                        <property name="use-markup">True</property>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                  </object>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">5</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkBox" id="usb_u2f_blanket_box">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="margin-start">30</property>
+                                <property name="orientation">vertical</property>
+                                <child>
+                                  <object class="GtkBox">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="halign">center</property>
+                                    <property name="spacing">20</property>
+                                    <child>
+                                      <object class="GtkImage">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="halign">start</property>
+                                        <property name="valign">center</property>
+                                        <property name="pixel-size">48</property>
+                                        <property name="icon-name">qubes-info</property>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <object class="GtkLabel" id="usb_u2f_info">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="halign">start</property>
+                                        <property name="label" translatable="yes">Caution: this can lead toa security vulnerability.</property>
+                                        <property name="use-markup">True</property>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                    <style>
+                                      <class name="info_box"/>
+                                    </style>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">False</property>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkFlowBox" id="usb_u2f_blanket_flowbox">
+                                    <property name="visible">True</property>
                                     <property name="can-focus">False</property>
                                     <property name="margin-end">40</property>
+                                    <style>
+                                      <class name="flowbox_container"/>
+                                    </style>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkBox" id="usb_u2f_blanket_add_box">
+                                    <property name="can-focus">False</property>
+                                    <property name="margin-end">30</property>
                                     <property name="spacing">10</property>
                                     <child>
                                       <object class="GtkLabel">
@@ -1098,13 +1385,13 @@ Documentation will open in a disposable qube.</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkComboBox" id="usb_u2f_register_some_qube_combo">
+                                      <object class="GtkComboBox" id="usb_u2f_blanket_qube_combo">
                                         <property name="visible">True</property>
                                         <property name="can-focus">False</property>
                                         <property name="has-entry">True</property>
                                         <child internal-child="entry">
                                           <object class="GtkEntry">
-                                            <property name="can-focus">True</property>
+                                            <property name="can-focus">False</property>
                                           </object>
                                         </child>
                                       </object>
@@ -1115,7 +1402,7 @@ Documentation will open in a disposable qube.</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkButton" id="usb_u2f_register_some_add_cancel">
+                                      <object class="GtkButton" id="usb_u2f_blanket_add_cancel">
                                         <property name="label" translatable="yes">CANCEL</property>
                                         <property name="visible">True</property>
                                         <property name="can-focus">True</property>
@@ -1134,7 +1421,7 @@ Documentation will open in a disposable qube.</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkButton" id="usb_u2f_register_some_add_confirm">
+                                      <object class="GtkButton" id="usb_u2f_blanket_add_confirm">
                                         <property name="label" translatable="yes">  ADD  </property>
                                         <property name="visible">True</property>
                                         <property name="can-focus">True</property>
@@ -1159,7 +1446,7 @@ Documentation will open in a disposable qube.</property>
                                   <packing>
                                     <property name="expand">False</property>
                                     <property name="fill">True</property>
-                                    <property name="position">1</property>
+                                    <property name="position">2</property>
                                   </packing>
                                 </child>
                                 <child>
@@ -1172,11 +1459,12 @@ Documentation will open in a disposable qube.</property>
                                   <packing>
                                     <property name="expand">False</property>
                                     <property name="fill">True</property>
-                                    <property name="position">2</property>
+                                    <property name="position">3</property>
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkButton" id="usb_u2f_register_some_add_button">
+                                  <object class="GtkButton" id="usb_u2f_blanket_add_button">
+                                    <property name="visible">True</property>
                                     <property name="can-focus">True</property>
                                     <property name="receives-default">True</property>
                                     <property name="halign">start</property>
@@ -1226,14 +1514,14 @@ Documentation will open in a disposable qube.</property>
                                   <packing>
                                     <property name="expand">False</property>
                                     <property name="fill">True</property>
-                                    <property name="position">3</property>
+                                    <property name="position">4</property>
                                   </packing>
                                 </child>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
                                 <property name="fill">True</property>
-                                <property name="position">2</property>
+                                <property name="position">6</property>
                               </packing>
                             </child>
                           </object>
@@ -1241,279 +1529,6 @@ Documentation will open in a disposable qube.</property>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
                             <property name="position">12</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkCheckButton" id="usb_u2f_blanket_check">
-                            <property name="visible">True</property>
-                            <property name="can-focus">True</property>
-                            <property name="receives-default">False</property>
-                            <property name="draw-indicator">True</property>
-                            <child>
-                              <object class="GtkBox">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <child>
-                                  <object class="GtkLabel">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="label" translatable="yes">Allow some qubes to access &lt;b&gt;ALL&lt;/b&gt; keys stored on your U2F device</property>
-                                    <property name="use-markup">True</property>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                              </object>
-                            </child>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">13</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkBox" id="usb_u2f_blanket_box">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                            <property name="margin-start">30</property>
-                            <property name="orientation">vertical</property>
-                            <child>
-                              <object class="GtkFlowBox" id="usb_u2f_blanket_flowbox">
-                                <property name="can-focus">False</property>
-                                <property name="margin-end">40</property>
-                                <style>
-                                  <class name="flowbox_container"/>
-                                </style>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkBox" id="usb_u2f_blanket_add_exception_box">
-                                <property name="can-focus">False</property>
-                                <property name="margin-end">30</property>
-                                <property name="spacing">10</property>
-                                <child>
-                                  <object class="GtkLabel">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="label" translatable="yes">Add qube:</property>
-                                    <attributes>
-                                      <attribute name="weight" value="bold"/>
-                                    </attributes>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <object class="GtkImage">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="tooltip-text" translatable="yes">If you can't see the qube you want to use here, install the qubes-u2f package in its template (or in the qube itself, if it's a standalone qube).</property>
-                                    <property name="xalign">0.5</property>
-                                    <property name="yalign">0.6000000238418579</property>
-                                    <property name="pixel-size">20</property>
-                                    <property name="icon-name">qubes-question</property>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="padding">3</property>
-                                    <property name="position">1</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <object class="GtkComboBox" id="usb_u2f_exception_qube_combo1">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="has-entry">True</property>
-                                    <child internal-child="entry">
-                                      <object class="GtkEntry">
-                                        <property name="can-focus">False</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">2</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <object class="GtkButton" id="usb_u2f_add_exception_cancel1">
-                                    <property name="label" translatable="yes">CANCEL</property>
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">True</property>
-                                    <property name="receives-default">True</property>
-                                    <property name="relief">none</property>
-                                    <style>
-                                      <class name="button_cancel"/>
-                                      <class name="flat_button"/>
-                                      <class name="flat"/>
-                                    </style>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">3</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <object class="GtkButton" id="usb_u2f_add_exception_confirm1">
-                                    <property name="label" translatable="yes">  ADD  </property>
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">True</property>
-                                    <property name="receives-default">True</property>
-                                    <property name="relief">none</property>
-                                    <style>
-                                      <class name="button_save"/>
-                                      <class name="flat_button"/>
-                                      <class name="flat"/>
-                                    </style>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">4</property>
-                                  </packing>
-                                </child>
-                                <style>
-                                  <class name="edited_row"/>
-                                </style>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkSeparator">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="valign">center</property>
-                                <property name="hexpand">True</property>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="position">2</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="usb_u2f_add_exception_button1">
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">True</property>
-                                <property name="halign">start</property>
-                                <property name="relief">none</property>
-                                <child>
-                                  <object class="GtkBox">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="tooltip-text" translatable="yes">Key qubes store your GPG keys for use with other qubes.</property>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="label" translatable="yes">+ADD</property>
-                                        <style>
-                                          <class name="add_label"/>
-                                        </style>
-                                      </object>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">0</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="xpad">5</property>
-                                        <property name="label" translatable="yes">qube</property>
-                                        <style>
-                                          <class name="explanation_text"/>
-                                        </style>
-                                      </object>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">1</property>
-                                      </packing>
-                                    </child>
-                                  </object>
-                                </child>
-                                <style>
-                                  <class name="flat"/>
-                                </style>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="position">3</property>
-                              </packing>
-                            </child>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">14</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkBox">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                            <property name="halign">center</property>
-                            <property name="spacing">20</property>
-                            <child>
-                              <object class="GtkImage">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="halign">start</property>
-                                <property name="valign">center</property>
-                                <property name="pixel-size">48</property>
-                                <property name="icon-name">qubes-info</property>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkLabel" id="usb_u2f_info">
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="halign">start</property>
-                                <property name="label" translatable="yes">Caution: this can lead toa security vulnerability.</property>
-                                <property name="use-markup">True</property>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                            <style>
-                              <class name="info_box"/>
-                            </style>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">False</property>
-                            <property name="position">20</property>
                           </packing>
                         </child>
                         <style>
