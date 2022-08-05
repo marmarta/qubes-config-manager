@@ -531,3 +531,53 @@ class ImageTextButton(Gtk.Button):
             self.set_sensitive(False)
 
         self.show_all()
+
+
+class WidgetWithButtons(Gtk.Box):
+    """This is a simple wrapper for editable widgets
+    with additional confirm/cancel/edit buttons"""
+    def __init__(self, widget):
+        """
+        To avoid circular dependencies, Widget is not annotated, but it
+        should be Union[ActionWidget, VMWidget]
+        """
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
+        self.select_widget = widget
+
+        self.edit_button = ImageTextButton(icon_name='qubes-customize',
+                                           label=None,
+                                           click_function=self._edit_clicked,
+                                           style_classes=["flat"])
+        self.confirm_button = ImageTextButton(
+            icon_name="qubes-ok", label="ACCEPT",
+            click_function=self._confirm_clicked,
+            style_classes=["button_save", "flat_button"])
+        self.cancel_button = ImageTextButton(
+            icon_name="qubes-delete", label="CANCEL",
+            click_function=self._cancel_clicked,
+            style_classes=["button_cancel", "flat_button"])
+
+        self.pack_start(self.select_widget, False, False, 0)
+        self.pack_start(self.edit_button, False, False, 0)
+        self.pack_start(self.confirm_button, False, False, 10)
+        self.pack_start(self.cancel_button, False, False, 10)
+
+        self.show_all()
+        self._set_editable(False)
+
+    def _set_editable(self, state: bool):
+        self.select_widget.set_editable(state)
+        self.edit_button.set_visible(not state)
+        self.cancel_button.set_visible(state)
+        self.confirm_button.set_visible(state)
+
+    def _edit_clicked(self, _widget):
+        self._set_editable(True)
+
+    def _cancel_clicked(self, _widget):
+        self.select_widget.revert_changes()
+        self._set_editable(False)
+
+    def _confirm_clicked(self, _widget):
+        self.select_widget.save_changes()
+        self._set_editable(False)

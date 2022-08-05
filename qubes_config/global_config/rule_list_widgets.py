@@ -68,8 +68,9 @@ class VMWidget(Gtk.Box):
                  initial_value: str,
                  additional_text: Optional[str] = None,
                  additional_widget: Optional[Gtk.Widget] = None,
-                 filter_function: Callable[[qubesadmin.vm.QubesVM],
-                                                    bool] = None):
+                 filter_function: Optional[Callable[[qubesadmin.vm.QubesVM],
+                                                    bool]] = None,
+                 change_callback: Optional[Callable] = None):
         """
         :param qapp: Qubes object
         :param categories: list of additional categories available for this
@@ -93,6 +94,7 @@ class VMWidget(Gtk.Box):
         self.model = VMListModeler(combobox=self.combobox,
                                    qapp=self.qapp,
                                    filter_function=self.filter_function,
+                                   event_callback=change_callback,
                                    current_value=str(self.selected_value),
                                    additional_options=categories)
 

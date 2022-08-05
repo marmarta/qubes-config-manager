@@ -20,20 +20,10 @@
 """
 Widget that's a flow box with vms.
 """
-import os
-import subprocess
-from typing import Optional, List, Dict, Callable
-
-from qrexec.policy.parser import Rule
+from typing import Optional, List, Callable
 
 from ..widgets.qubes_widgets_library import VMListModeler, show_error, \
-    ask_question, NONE_CATEGORY, QubeName
-from ..widgets.utils import get_boolean_feature, get_feature
-from .page_handler import PageHandler
-from .policy_rules import RuleTargeted, SimpleVerbDescription
-from .policy_manager import PolicyManager
-from .rule_list_widgets import NoActionListBoxRow
-from .conflict_handler import ConflictFileHandler
+    ask_question, QubeName
 
 import gi
 
@@ -118,7 +108,7 @@ class VMFlowboxHandler:
             qapp=self.qapp,
             filter_function=filter_function)
 
-        # TODO: sort?
+        self.flowbox.set_sort_func(self._sort_flowbox)
 
         self._initial_vms = sorted(initial_vms)
         for vm in self._initial_vms:
@@ -132,6 +122,14 @@ class VMFlowboxHandler:
                                           self._add_cancel_clicked)
         self.add_confirm.connect('clicked',
                                           self._add_confirm_clicked)
+
+    def _sort_flowbox(self, child_1, child_2):
+        vm_1 = str(child_1.vm)
+        vm_2 = str(child_2.vm)
+        if vm_1 == vm_2:
+            return 0
+        return 1 if vm_1 > vm_2 else -1
+
 
     def _add_button_clicked(self, _widget):
         self.add_box.set_visible(True)

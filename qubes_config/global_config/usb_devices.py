@@ -20,21 +20,17 @@
 """
 USB Devices-related functionality.
 """
-import os
-import subprocess
 from functools import partial
-from typing import Optional, List, Dict, Union
+from typing import List, Union
 
 from qrexec.policy.parser import Rule, Deny, Allow
 
-from ..widgets.qubes_widgets_library import VMListModeler, show_error, \
-    ask_question, NONE_CATEGORY, QubeName, ImageTextButton
+from ..widgets.qubes_widgets_library import WidgetWithButtons
 from ..widgets.utils import get_feature, apply_feature_change_from_widget, apply_feature_change
 from .page_handler import PageHandler
-from .policy_rules import RuleSimple, SimpleVerbDescription
+from .policy_rules import RuleSimple
 from .policy_manager import PolicyManager
-from .rule_list_widgets import NoActionListBoxRow, VMWidget, ActionWidget
-from .conflict_handler import ConflictFileHandler
+from .rule_list_widgets import VMWidget, ActionWidget
 from .vm_flowbox import VMFlowboxHandler
 
 import gi
@@ -59,54 +55,11 @@ gbulb.install()
 # if response == Gtk.ResponseType.NO:
 #     return
 
-class WidgetWithButtons(Gtk.Box):
-    """This is a simple wrapper for editable widgets
-    with additional confirm/cancel/edit buttons"""
-    def __init__(self, widget: Union[ActionWidget, VMWidget]):
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
-        self.select_widget = widget
-
-        self.edit_button = ImageTextButton(icon_name='qubes-customize',
-                                           label=None,
-                                           click_function=self._edit_clicked,
-                                           style_classes=["flat"])
-        self.confirm_button = ImageTextButton(
-            icon_name="qubes-ok", label="ACCEPT",
-            click_function=self._confirm_clicked,
-            style_classes=["button_save", "flat_button"])
-        self.cancel_button = ImageTextButton(
-            icon_name="qubes-delete", label="CANCEL",
-            click_function=self._cancel_clicked,
-            style_classes=["button_cancel", "flat_button"])
-
-        self.pack_start(self.select_widget, False, False, 0)
-        self.pack_start(self.edit_button, False, False, 0)
-        self.pack_start(self.confirm_button, False, False, 10)
-        self.pack_start(self.cancel_button, False, False, 10)
-
-        self.show_all()
-        self._set_editable(False)
-
-    def _set_editable(self, state: bool):
-        self.select_widget.set_editable(state)
-        self.edit_button.set_visible(not state)
-        self.cancel_button.set_visible(state)
-        self.confirm_button.set_visible(state)
-
-    def _edit_clicked(self, _widget):
-        self._set_editable(True)
-
-    def _cancel_clicked(self, _widget):
-        self.select_widget.revert_changes()
-        self._set_editable(False)
-
-    def _confirm_clicked(self, _widget):
-        self.select_widget.save_changes()
-        self._set_editable(False)
-
-
 class USBVMHandler:
+    """Handler for the usb vm selector."""
+
     FEATURE_NAME = 'config-usbvm-name'
+
     def __init__(self, qapp: qubesadmin.Qubes, gtk_builder: Gtk.Builder):
         self.qapp = qapp
         self.vm = self.qapp.domains[self.qapp.local_name]
@@ -115,18 +68,23 @@ class USBVMHandler:
             gtk_builder.get_object('usb_select_usb_qube_box')
 
         self.select_widget = VMWidget(
-                qapp=self.qapp, categories=None,
-                initial_value=self._get_current_usbvm())
+            qapp=self.qapp, categories=None,
+            initial_value=self._get_current_usbvm(),
+            change_callback=self._emit_signal)
 
         self.usb_qube_box.pack_start(
             WidgetWithButtons(self.select_widget), False, False, 0)
+
+    def _emit_signal(self, *_args):
+        self.usb_qube_box.get_toplevel().emit('usbvm-changed', None)
 
     def _get_current_usbvm(self):
         usb_vm_name = get_feature(self.vm, self.FEATURE_NAME, 'sys-usb')
         return self.qapp.domains.get(usb_vm_name)
 
     def save_changes(self):
-        apply_feature_change_from_widget(self.select_widget, self.vm, self.FEATURE_NAME)
+        apply_feature_change_from_widget(self.select_widget,
+                                         self.vm, self.FEATURE_NAME)
         # # TODO: do some sort of general close all edits?
 
     def get_selected_usbvm(self):
@@ -256,7 +214,7 @@ class U2FPolicyHandler:
 
         self.blanket_check: Gtk.CheckButton = \
             gtk_builder.get_object('usb_u2f_blanket_check')
-        # TODO: make a prettier empty flowbox default...
+
         # TODO: add default: not dom0 func
 
         self.initially_enabled_vms : List[qubesadmin.vm.QubesVM] = []
@@ -289,8 +247,6 @@ class U2FPolicyHandler:
         for widget, box in self.widget_to_box.items():
             widget.connect('toggled', partial(self._enable_clicked, box))
             self._enable_clicked(box, widget)
-
-# TODO: warn about problem if usb vm has it not installed, check supported feature, CAN NOT be enabled
 
     def _enable_clicked(self, related_box: Union[Gtk.Box, VMFlowboxHandler],
                         widget: Gtk.CheckButton):
@@ -361,7 +317,6 @@ class U2FPolicyHandler:
 # WHEN TRYING TO ADD and not available scream and say: nope, do you want to add?
 # TODO: add some sort of info/validation - if no VM is selected, cannot save with enabled
     def save_changes(self):
-        # TODO: now everything gets saved, is it bad?
         if not self.enable_check.get_sensitive():
             return
 
@@ -375,7 +330,7 @@ class U2FPolicyHandler:
                 self.policy_manager.text_to_rules(self.default_policy),
                 self.current_token)
 
-            self._initialize_data() # TODO:too slow?
+            self._initialize_data()
             return
 
         enabled_vms = self.enable_some_handler.selected_vms
@@ -409,14 +364,13 @@ class U2FPolicyHandler:
         self.policy_manager.save_rules(self.policy_filename, rules,
                                        self.current_token)
 
-        self._initialize_data() # TODO: SLOW?
+        self._initialize_data()
 
     def reset(self):
         self._initialize_data()
 
     def is_changed(self) -> bool:
         pass
-
 
 
 class DevicesHandler(PageHandler):
@@ -428,6 +382,8 @@ class DevicesHandler(PageHandler):
  ):
         self.qapp = qapp
         self.policy_manager = policy_manager
+
+        self.main_window = gtk_builder.get_object('main_window')
 
         self.usbvm_handler = USBVMHandler(self.qapp, gtk_builder)
 
@@ -442,7 +398,12 @@ class DevicesHandler(PageHandler):
         # self.conflict_handler = ConflictFileHandler(
         #     gtk_builder, "updates", self.service_name,
         #     self.policy_file_name, self.policy_manager)
+        self.main_window.connect('usbvm-changed', self._usbvm_changed)
 
+    def _usbvm_changed(self, *_args):
+        sys_usb = self.usbvm_handler.get_selected_usbvm()
+        self.input_handler.sys_usb = sys_usb
+        self.u2f_handler.sys_usb = sys_usb
 
     def check_for_unsaved(self) -> bool:
         """Check if there are any unsaved changes and ask user for an action.
@@ -459,38 +420,3 @@ class DevicesHandler(PageHandler):
         self.input_handler.save_changes()
         self.u2f_handler.save_changes()
         return True
-
-# see docs for input? maybe add a link?
-
-# 2fa authentication
-# for u2f keys
-# link docs
-# policy qubes.u2f
-# enable service (show only those who have possible via supported service) and install package
-# qubes-u2f-proxy service
-# policy: this service adds a virtual device, when firefox or whatnot tries, it asks this device
-# ask policy is useless: if you do it slowly, it will fail due to technical constraints of the U2F format
-# source: vm z dostępem do sys-usb allow deny [hardcoded sys-usb]
-
-# actually as usually somebody lied
-# two services: u2f register [register a new key,
-# this can have a allow-all option safely, use this allow/deny exceptions like with ??]
-# and u2f authenticate which is problematic [this gets an argument, nobody knows this]
-# you can do allow *, but this will allow a VM to use ANY key from the u2f
-# if you want a vm to be able to use just one key, just register it in the vm
-
-# see docs, the allow for RegisterArgument+a.... is basically a "use u2f switch"
-# if some vms can do register, they need allow
-# so basically: enable u2f,
-# all/select vms can use this
-# these vms can use all keys
-
-# add some sort of open settings, add a special button maybe?
-# default is disabled in input, enabled and disabled instead of verb indef
-# tablet/touchscreen
-# add more docs to input devices
-# literowka all qubes CAN
-
-# more lies
-# both Register and Register argument need to be on to register stuff
-# can use line from docs, anyvm is fine

@@ -478,6 +478,11 @@ class GlobalConfig(Gtk.Application):
                            GObject.SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT,
                            (GObject.TYPE_PYOBJECT,))
 
+        GObject.signal_new('usbvm-changed',
+                           Gtk.Window,
+                           GObject.SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT,
+                           (GObject.TYPE_PYOBJECT,))
+
         self.builder = Gtk.Builder()
         self.builder.add_from_file(pkg_resources.resource_filename(
             __name__, '../global_config.glade'))
@@ -571,7 +576,7 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
 
     def _handle_urls(self):
         url_label_ids = ["url_info", "openinvm_info", "splitgpg_info",
-                         "usb_info"]
+                         "usb_info", "basics_info"]
         for url_label_id in url_label_ids:
             label: Gtk.Label = self.builder.get_object(url_label_id)
             label.connect("activate-link", self._activate_link)
