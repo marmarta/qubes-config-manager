@@ -45,6 +45,7 @@ from .updates_handler import UpdatesHandler
 from .usb_devices import DevicesHandler
 from ..widgets.utils import apply_feature_change_from_widget, get_feature, \
     get_boolean_feature
+from .basics_handler import BasicSettingsHandler
 
 import gi
 
@@ -57,207 +58,6 @@ gbulb.install()
 
 logger = logging.getLogger('qubes-config-manager')
 
-
-class TraitHolder(abc.ABC):
-    """Abstract trait (property, feature, anything)"""
-    def __init__(self, relevant_widget: TraitSelector):
-        """
-        :param relevant_widget: widget that contains relevant property data
-        """
-        self.relevant_widget = relevant_widget
-
-    @abc.abstractmethod
-    def set_trait(self, new_value):
-        """
-        Set the appropriate trait, if changed.
-        """
-
-    @abc.abstractmethod
-    def get_current_value(self):
-        """
-        Return whatever is the current value of the trait,
-        :return:
-        """
-
-class VMFeatureHolder(TraitHolder):
-    """VM Feature."""
-    def __init__(self, feature_name: str, feature_holder: qubesadmin.vm.QubesVM,
-                 default_value, relevant_widget: TraitSelector,
-                 is_boolean: bool = False):
-        """
-        :param feature_name: name of the feature
-        :param feature_holder: object that has the feature
-        :param default_value: default feature value
-        :param relevant_widget: widget that contains relevant property data
-        :param is_boolean: is the feature a bool? (needed because boolean
-        features are encoded as 1 or empty string)
-        """
-        super().__init__(relevant_widget)
-        self.feature_holder = feature_holder
-        self.feature_name = feature_name
-        self.default_value = default_value
-        self.is_boolean = is_boolean
-        if self.is_boolean:
-            self.current_value = self._get_boolean_feature()
-        else:
-            self.current_value = self._get_feature()
-
-    def _get_feature(self, force_default_none: bool = False):
-        """
-        get feature value
-        :param force_default_none: if True, use None as default regardless
-        of TraitHolder
-        """
-        default = None if force_default_none else self.default_value
-        try:
-            return self.feature_holder.features.get(
-                self.feature_name, default)
-        except qubesadmin.exc.QubesDaemonAccessError:
-            return self.default_value
-
-    def _get_boolean_feature(self):
-        """helper function to get a feature converted to a Bool if it does
-        exist. Necessary because of the true/false in features being coded as
-        1/empty string."""
-        result = self._get_feature(force_default_none=True)
-        if result is not None:
-            result = bool(result)
-        return result
-
-    def get_current_value(self):
-        return self.current_value
-
-    def set_trait(self, new_value):
-        """ set the feature"""
-        # TODO: implement all possible edgecases
-
-        self.feature_holder.features[self.feature_name] = new_value
-        if self.is_boolean:
-            self.current_value = self._get_boolean_feature()
-        else:
-            self.current_value = self._get_feature()
-
-
-class VMPropertyHolder(TraitHolder):
-    """A property that holds VMs."""
-    def __init__(self, property_name: str,
-                 property_holder: Union[qubesadmin.vm.QubesVM,
-                                        qubesadmin.Qubes],
-                 relevant_widget: TraitSelector,
-                 default_value: Optional[Any] = None):
-        """
-        :param property_name: name of the property
-        :param property_holder: object that has the property
-        :param relevant_widget: widget that contains relevant property data
-        :param default_value: default value of the property
-        """
-        super().__init__(relevant_widget)
-        self.property_holder = property_holder
-        self.property_name = property_name
-        self.default_value = default_value
-        self.current_value = getattr(self.property_holder, self.property_name,
-                                     default_value)
-
-    def set_trait(self, new_value):
-        if hasattr(self.property_holder, self.property_name):
-            setattr(self.property_holder, self.property_name, new_value)
-            self.current_value = getattr(self.property_holder,
-                                         self.property_name,
-                                         self.default_value)
-        else:
-            # TODO ???
-            return
-
-    def get_current_value(self):
-        return self.current_value
-
-
-class BasicSettingsHandler(PageHandler):
-    """
-    Handler for the Basic Settings page.
-    """
-    def __init__(self, gtk_builder: Gtk.Builder, qapp: qubesadmin.Qubes):
-        """
-        :param gtk_builder: gtk_builder object
-        :param qapp: Qubes object
-        """
-        self.qapp = qapp
-        self.vm = self.qapp.domains[self.qapp.local_name]
-
-        self.clockvm_combo = gtk_builder.get_object('basics_clockvm_combo')
-        self.clockvm_handler = VMListModeler(
-            combobox=self.clockvm_combo, qapp=self.qapp,
-            filter_function=lambda x: x.klass != 'TemplateVM',
-            event_callback=None, default_value=None,
-            current_value=self.qapp.clockvm, style_changes=True,
-            additional_options=NONE_CATEGORY)
-
-        self.deftemplate_combo: Gtk.ComboBox = \
-            gtk_builder.get_object('basics_deftemplate_combo')
-        self.deftemplate_handler = VMListModeler(
-            combobox=self.deftemplate_combo, qapp=self.qapp,
-            filter_function=lambda x: x.klass == 'TemplateVM',
-            event_callback=None, default_value=None,
-            current_value=self.qapp.default_template, style_changes=True,
-            additional_options=NONE_CATEGORY)
-
-        self.defdispvm_combo: Gtk.ComboBox = \
-            gtk_builder.get_object('basics_defdispvm_combo')
-        self.defdispvm_handler = VMListModeler(
-            combobox=self.defdispvm_combo, qapp=self.qapp,
-            filter_function=lambda x: getattr(
-                x, 'template_for_dispvms', False),
-            event_callback=None, default_value=None,
-            current_value=self.qapp.default_dispvm, style_changes=True,
-            additional_options=NONE_CATEGORY)
-
-        self.fullscreen_combo: Gtk.ComboBoxText = \
-            gtk_builder.get_object('basics_fullscreen_combo')
-        self.fullscreen_handler = TextModeler(
-            self.fullscreen_combo,
-            {'default (disallow)': None, 'allow': True, 'disallow': False},
-            selected_value=get_boolean_feature(self.vm,
-                                               'gui-default-allow-fullscreen'),
-            style_changes=True)
-
-        self.utf_combo: Gtk.ComboBoxText = \
-            gtk_builder.get_object('basics_utf_windows_combo')
-        self.utf_handler = TextModeler(
-            self.utf_combo,
-            {'default (disallow)': None, 'allow': True, 'disallow': False},
-            selected_value=get_boolean_feature(self.vm,
-                                               'gui-default-allow-utf8-titles'),
-            style_changes=True)
-
-        self.tray_icon_combo: Gtk.ComboBoxText = \
-            gtk_builder.get_object('basics_tray_icon_combo')
-        self.tray_icon_handler = TextModeler(
-            self.tray_icon_combo,
-            {'default (thin border)': None,
-             'full background': 'bg',
-             'thin border': 'border1',
-             'thick border': 'border2',
-             'tinted icon': 'tint',
-             'tinted icon with modified white': 'tint+whitehack',
-             'tinted icon with 50% saturation': 'tint+saturation50'},
-            selected_value=get_boolean_feature(self.vm,
-                                               'gui-default-trayicon-mode'),
-            style_changes=True)
-
-        # complex features
-        # TODO: maybe add some funkier methods to those dropdowns, so that
-        #  we can just iterate over all of them and apply?
-
-    def save(self):
-        pass
-        # TODO: implement
-
-    def reset(self):
-        pass # TODO: implement
-
-    def check_for_unsaved(self) -> bool:
-        return True
-    # TODO: implement
 
 class ClipboardHandler(PageHandler):
     """Handler for Clipboard policy. Adds a couple of comboboxes to a
@@ -308,8 +108,8 @@ qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
             style_changes=True)
 
     def reset(self):
-        self.copy_handler.reset_value()
-        self.paste_handler.reset_value()
+        self.copy_handler.reset()
+        self.paste_handler.reset()
         self.clipboard_handler.reset()
 
     def save(self):

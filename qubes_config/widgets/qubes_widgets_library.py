@@ -176,6 +176,15 @@ class TraitSelector(abc.ABC):
         Has the value changed from initial value?
         """
 
+    @abc.abstractmethod
+    def reset(self):
+        """Restore the initially selected value"""
+
+    @abc.abstractmethod
+    def update_initial(self):
+        """Mark the currently selected value as initial value, for use
+        for instance for is_changed"""
+
 
 class TextModeler(TraitSelector):
     """
@@ -229,7 +238,7 @@ class TextModeler(TraitSelector):
             if value == selected_value:
                 self._combo.set_active_id(key)
 
-    def reset_value(self):
+    def reset(self):
         """Select initial value."""
         for key, value in self._values.items():
             if value == self._initial_value:
@@ -239,6 +248,9 @@ class TextModeler(TraitSelector):
         self._combo.get_style_context().remove_class('combo-changed')
         if self.is_changed():
             self._combo.get_style_context().add_class('combo-changed')
+
+    def update_initial(self):
+        self._initial_value = self._combo.get_active_text()
 
 
 class VMListModeler(TraitSelector):
@@ -321,6 +333,10 @@ class VMListModeler(TraitSelector):
          be updated to whatever the current value is. Useful if saving changes
          happened."""
         self._initial_id = self.combo.get_active_id()
+
+    def reset(self):
+        """Reset changes."""
+        self.combo.set_active_id(self._initial_id)
 
     def _get_icon(self, name):
         if name not in self._icons:

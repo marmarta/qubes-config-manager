@@ -40,7 +40,7 @@
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label" translatable="yes">qube Defaults</property>
+                            <property name="label" translatable="yes">Common qubes</property>
                             <property name="xalign">0</property>
                             <style>
                               <class name="group_title"/>
@@ -113,7 +113,7 @@
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label" translatable="yes">Desktop Defaults</property>
+                            <property name="label" translatable="yes">Desktop defaults</property>
                             <property name="xalign">0</property>
                             <style>
                               <class name="group_title"/>
@@ -318,7 +318,7 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkSpinButton" id="basics_minmem_combo">
+                          <object class="GtkSpinButton" id="basics_min_memory">
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                           </object>
@@ -415,7 +415,7 @@
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Net qube:</property>
+                                <property name="label" translatable="yes">Default net qube:</property>
                                 <property name="xalign">0</property>
                               </object>
                               <packing>
@@ -455,7 +455,7 @@
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Template:</property>
+                                <property name="label" translatable="yes">Default template:</property>
                                 <property name="xalign">0</property>
                               </object>
                               <packing>
@@ -495,7 +495,7 @@
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Disposable qube template:</property>
+                                <property name="label" translatable="yes">Default disposable qube template:</property>
                                 <property name="xalign">0</property>
                               </object>
                               <packing>
@@ -531,7 +531,7 @@
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label" translatable="yes">Settings related to window management.</property>
+                            <property name="label" translatable="yes">Settings related to window management. Changes made here require the restart of affected qubes before they come into effect.</property>
                             <property name="xalign">0</property>
                             <style>
                               <class name="explanation"/>
