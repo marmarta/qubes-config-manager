@@ -83,8 +83,21 @@ class VMFlowboxHandler:
     """
     def __init__(self, gtk_builder: Gtk.Builder, qapp: qubesadmin.Qubes,
                  prefix: str, initial_vms: List[qubesadmin.vm.QubesVM],
-                 filter_function: Optional[Callable] = None):
+                 filter_function: Optional[Callable] = None,
+                 verification_callback:
+                 Optional[Callable[[qubesadmin.vm.QubesVM], bool]] = None):
+        """
+        :param gtk_builder: Gtk.Builder
+        :param qapp: qubesadmin.Qubes
+        :param prefix: widget name prefix (see above)
+        :param initial_vms: list of initially selected vms
+        :param filter_function: function to filter vms available in the dropdown
+        :param verification_callback: if provided, will be called before adding
+        a vm; return True if verification was successful and false if it has
+        failed
+        """
         self.qapp = qapp
+        self.verification_callback = verification_callback
 
         self.flowbox: Gtk.FlowBox = \
             gtk_builder.get_object(f'{prefix}_flowbox')
@@ -139,6 +152,9 @@ class VMFlowboxHandler:
 
     def _add_confirm_clicked(self, _widget):
         select_vm = self.add_qube_model.get_selected()
+        if self.verification_callback:
+            if not self.verification_callback(select_vm):
+                return
         if select_vm in self.selected_vms:
             show_error("Cannot add qube", "This qube is already selected.")
             return
@@ -150,6 +166,12 @@ class VMFlowboxHandler:
         self.box.set_visible(state)
         if not state:
             self.add_box.set_visible(False)
+
+    def add_selected_vm(self, vm):
+        """
+        Add a vm to selected vms.
+        """
+        self.flowbox.add(VMFlowBoxButton(vm))
 
     @property
     def selected_vms(self) -> List[qubesadmin.vm.QubesVM]:

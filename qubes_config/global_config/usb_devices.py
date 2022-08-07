@@ -25,7 +25,7 @@ from typing import List, Union, Optional, Dict
 
 from qrexec.policy.parser import Allow
 
-from ..widgets.qubes_widgets_library import WidgetWithButtons
+from ..widgets.qubes_widgets_library import WidgetWithButtons, ask_question
 from ..widgets.utils import get_feature, apply_feature_change_from_widget, \
     apply_feature_change
 from .page_handler import PageHandler
@@ -253,11 +253,13 @@ class U2FPolicyHandler:
 
         self.register_some_handler = VMFlowboxHandler(
             gtk_builder, self.qapp, "usb_u2f_register_some",
-            self.initial_register_vms, lambda vm: vm in self.available_vms)
+            self.initial_register_vms, lambda vm: vm in self.available_vms,
+            verification_callback=self._verify_additional_vm)
 
         self.blanket_handler = VMFlowboxHandler(
             gtk_builder, self.qapp, "usb_u2f_blanket",
-            self.initial_blanket_vms, lambda vm: vm in self.available_vms)
+            self.initial_blanket_vms, lambda vm: vm in self.available_vms,
+            verification_callback=self._verify_additional_vm)
 
         self.widget_to_box = {
             self.enable_check: self.box,
@@ -284,6 +286,18 @@ class U2FPolicyHandler:
     def _warn(self):
         # warn about weird data?
         pass
+
+    def _verify_additional_vm(self, vm):
+        if vm in self.enable_some_handler.selected_vms:
+            return True
+        response = ask_question(self.enable_check.get_toplevel(),
+                                "U2F not enabled in qube",
+                                "U2F is not enabled in this qube. Do you "
+                                "want to enable it?")
+        if response == Gtk.ResponseType.YES:
+            self.enable_some_handler.add_selected_vm(vm)
+            return True
+        return False
 
     def _initialize_data(self):
         self.initially_enabled_vms.clear()
