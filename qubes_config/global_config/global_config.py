@@ -81,7 +81,7 @@ class ClipboardHandler(PageHandler):
                 service_name='qubes.ClipboardPaste',
                 policy_file_name='50-config-clipboard',
                 default_policy="""qubes.ClipboardPaste * @adminvm @anyvm deny\n
-        qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
+qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
                 verb_description=SimpleVerbDescription({
                     "ask": 'be allowed to paste\n into clipboard of',
                     "deny": 'be allowed to paste\n into clipboard of'

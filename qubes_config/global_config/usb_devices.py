@@ -170,6 +170,8 @@ qubes.InputTablet * {self.sys_usb} @adminvm deny
 
         self.policy_manager.save_rules(self.policy_file_name, rules,
                                        self.current_token)
+        _, self.current_token = self.policy_manager.get_rules_from_filename(
+            self.policy_file_name, self.default_policy)
 
         for widget in self.action_widgets.values():
             widget.update_changed()
@@ -357,6 +359,9 @@ class U2FPolicyHandler:
                 self.policy_manager.text_to_rules(self.default_policy),
                 self.current_token)
 
+            _, self.current_token = self.policy_manager.get_rules_from_filename(
+                self.policy_filename, self.default_policy)
+
             self._initialize_data()
             return
 
@@ -395,6 +400,8 @@ class U2FPolicyHandler:
 
         self.policy_manager.save_rules(self.policy_filename, rules,
                                        self.current_token)
+        _, self.current_token = self.policy_manager.get_rules_from_filename(
+            self.policy_filename, self.default_policy)
 
         self._initialize_data()
 

@@ -43,7 +43,8 @@ def show_error(title, text):
     dialog.set_title(title)
     dialog.set_markup(text)
     dialog.connect("response", lambda *x: dialog.destroy())
-    dialog.show()
+    dialog.run()
+    dialog.destroy()
 
 
 def ask_question(parent, title: str, text: str,

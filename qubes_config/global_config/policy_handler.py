@@ -349,6 +349,9 @@ class PolicyHandler(PageHandler):
         rules = self.current_rules
         self.policy_manager.save_rules(self.policy_file_name,
                                        rules, self.current_token)
+        _, self.current_token = self.policy_manager.get_rules_from_filename(
+            self.policy_file_name, self.default_policy)
+
         self.initial_rules = deepcopy(rules)
 
     def get_unsaved(self) -> str:

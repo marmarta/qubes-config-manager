@@ -568,7 +568,8 @@ class UpdateProxy:
         if rules:
             self.policy_manager.save_rules(self.policy_file_name,
                                            rules, self.current_token)
-
+            _, self.current_token = self.policy_manager.get_rules_from_filename(
+                self.policy_file_name, "")
 
 class UpdatesHandler(PageHandler):
     """Handler for all the disparate Updates functions."""
