@@ -21,12 +21,13 @@
 USB Devices-related functionality.
 """
 from functools import partial
-from typing import List, Union
+from typing import List, Union, Optional, Dict
 
-from qrexec.policy.parser import Rule, Deny, Allow
+from qrexec.policy.parser import Allow
 
 from ..widgets.qubes_widgets_library import WidgetWithButtons
-from ..widgets.utils import get_feature, apply_feature_change_from_widget, apply_feature_change
+from ..widgets.utils import get_feature, apply_feature_change_from_widget, \
+    apply_feature_change
 from .page_handler import PageHandler
 from .policy_rules import RuleSimple
 from .policy_manager import PolicyManager
@@ -45,15 +46,6 @@ from gi.repository import Gtk
 import gbulb
 gbulb.install()
 
-
-# TODO: make this asking somehow available in widget with buttons wrapper?
-# response = ask_question(self.usb_qube_box.get_toplevel(),
-#                         "Change USB qube",
-#                         "Are you absolutely sure you want to change the USB qube? "
-#                         "You will also need to <b>manually</b> change device"
-#                         " assignment.")
-# if response == Gtk.ResponseType.NO:
-#     return
 
 class USBVMHandler:
     """Handler for the usb vm selector."""
@@ -83,16 +75,19 @@ class USBVMHandler:
         return self.qapp.domains.get(usb_vm_name)
 
     def save_changes(self):
+        """Save user changes."""
         apply_feature_change_from_widget(self.select_widget,
                                          self.vm, self.FEATURE_NAME)
         # # TODO: do some sort of general close all edits?
 
     def get_selected_usbvm(self):
+        """Get currently chosen usbvm."""
         # TODO: how this interacts with select in progress?????
         return self.select_widget.get_selected()
 
 
 class InputDeviceHandler:
+    """Handler for various qubes.Input policies."""
     ACTION_CHOICES = {
         "ask": "always ask",
         "allow": "enable",
@@ -120,10 +115,7 @@ qubes.InputTablet * {self.sys_usb} @adminvm deny
         self.policy_order = {'qubes.InputKeyboard': 0,
                              'qubes.InputMouse': 1,
                              'qubes.InputTablet': 2}
-        self.action_widgets = {
-            'qubes.InputKeyboard': None,
-            'qubes.InputMouse': None,
-            'qubes.InputTablet': None}
+        self.action_widgets: Dict[str, ActionWidget] = {}
 
         self.rules, self.current_token = \
             self.policy_manager.get_rules_from_filename(
@@ -151,23 +143,22 @@ qubes.InputTablet * {self.sys_usb} @adminvm deny
                              left=1, top=self.policy_order[rule.service],
                              width=1, height=1)
 
-# multifile conflict file handler
-
     def _warn(self):
-        print("IO IO police plz come to FB")
+        pass
         # TODO: fixme
 
     def save_changes(self):
+        """Save user changes"""
         rules = []
         for widget in self.action_widgets.values():
             widget.rule.action = widget.get_selected()
             rules.append(widget.rule.raw_rule)
 
-        # TODO: oy1!!!! current token handling everywhere check!!! doesn't it break or smth?
         self.policy_manager.save_rules(self.policy_file_name, rules,
                                        self.current_token)
 
     def is_changed(self):
+        """Is the selection changed from initial values?"""
         for widget in self.action_widgets.values():
             if widget.is_changed():
                 return True
@@ -175,6 +166,7 @@ qubes.InputTablet * {self.sys_usb} @adminvm deny
 
 
 class U2FPolicyHandler:
+    """Handler for u2f policy and services."""
     SERVICE_FEATURE = 'service.qubes-u2f-proxy'
     SUPPORTED_SERVICE_FEATURE = 'supported-service.qubes-u2f-proxy'
     AUTH_POLICY = 'u2f.Authenticate'
@@ -201,7 +193,8 @@ class U2FPolicyHandler:
 
         self.enable_check: Gtk.CheckButton = \
             gtk_builder.get_object('usb_u2f_enable_check') # general enable
-        self.box: Gtk.Box = gtk_builder.get_object('usb_u2f_enable_box')  # general box
+        self.box: Gtk.Box = \
+            gtk_builder.get_object('usb_u2f_enable_box')  # general box
 
         self.register_check: Gtk.CheckButton = \
             gtk_builder.get_object('usb_u2f_register_check')
@@ -222,7 +215,7 @@ class U2FPolicyHandler:
         self.initial_register_vms: List[qubesadmin.vm.QubesVM] = []
         self.initial_blanket_vms: List[qubesadmin.vm.QubesVM] = []
         self.allow_all_register: bool = False
-        self.current_token = None
+        self.current_token: Optional[str] = None
 
         self._initialize_data()
 
@@ -248,7 +241,8 @@ class U2FPolicyHandler:
             widget.connect('toggled', partial(self._enable_clicked, box))
             self._enable_clicked(box, widget)
 
-    def _enable_clicked(self, related_box: Union[Gtk.Box, VMFlowboxHandler],
+    @staticmethod
+    def _enable_clicked(related_box: Union[Gtk.Box, VMFlowboxHandler],
                         widget: Gtk.CheckButton):
         related_box.set_visible(widget.get_active())
 
@@ -314,9 +308,9 @@ class U2FPolicyHandler:
                 self.register_some_radio.set_active(True)
 
         self.blanket_check.set_active(bool(self.initial_blanket_vms))
-# WHEN TRYING TO ADD and not available scream and say: nope, do you want to add?
-# TODO: add some sort of info/validation - if no VM is selected, cannot save with enabled
+
     def save_changes(self):
+        """Save user changes in policy."""
         if not self.enable_check.get_sensitive():
             return
 
@@ -344,22 +338,27 @@ class U2FPolicyHandler:
         if not self.register_check.get_active():
             rules.extend(self.policy_manager.text_to_rules(
                 f"{self.REGISTER_POLICY} * @anyvm @anyvm deny\n"
-                f"{self.POLICY_REGISTER_POLICY} +{self.REGISTER_POLICY} @anyvm @anyvm deny"))
+                f"{self.POLICY_REGISTER_POLICY} +"
+                f"{self.REGISTER_POLICY} @anyvm @anyvm deny"))
         else:
             if self.register_all_radio.get_active():
                 rules.extend(self.policy_manager.text_to_rules(
-                    f"{self.POLICY_REGISTER_POLICY} +{self.REGISTER_POLICY} {self.sys_usb} @anyvm allow target=dom0"))
+                    f"{self.POLICY_REGISTER_POLICY} +{self.REGISTER_POLICY} "
+                    f"{self.sys_usb} @anyvm allow target=dom0"))
                 rules.extend(self.policy_manager.text_to_rules(
                     f"{self.REGISTER_POLICY} * @anyvm {self.sys_usb} allow"))
             else:
-                # TODO: if none scream?
                 for vm in self.register_some_handler.selected_vms:
-                    rules.extend(self.policy_manager.text_to_rules(f"{self.REGISTER_POLICY} * {vm} {self.sys_usb} allow"))
-                rules.extend(self.policy_manager.text_to_rules("policy.RegisterArgument +u2f.Authenticate sys-usb @anyvm allow target=dom0"))
+                    rules.extend(self.policy_manager.text_to_rules(
+                        f"{self.REGISTER_POLICY} * {vm} {self.sys_usb} allow"))
+                rules.extend(self.policy_manager.text_to_rules(
+                    "policy.RegisterArgument +u2f.Authenticate "
+                    "sys-usb @anyvm allow target=dom0"))
 
         if self.blanket_check.get_active():
             for vm in self.blanket_handler.selected_vms:
-                rules.extend(self.policy_manager.text_to_rules(f"{self.AUTH_POLICY} * {vm} {self.sys_usb} allow"))
+                rules.extend(self.policy_manager.text_to_rules(
+                    f"{self.AUTH_POLICY} * {vm} {self.sys_usb} allow"))
 
         self.policy_manager.save_rules(self.policy_filename, rules,
                                        self.current_token)
@@ -367,10 +366,12 @@ class U2FPolicyHandler:
         self._initialize_data()
 
     def reset(self):
+        """Reset state to initial state."""
         self._initialize_data()
 
     def is_changed(self) -> bool:
-        pass
+        # TODO: fixme
+        """Have the rules changed from initial setup?"""
 
 
 class DevicesHandler(PageHandler):
@@ -394,10 +395,6 @@ class DevicesHandler(PageHandler):
 
         self.u2f_handler = U2FPolicyHandler(self.qapp, self.policy_manager,
                                             gtk_builder, usb_vm)
-        # TODO: conflict files for input?
-        # self.conflict_handler = ConflictFileHandler(
-        #     gtk_builder, "updates", self.service_name,
-        #     self.policy_file_name, self.policy_manager)
         self.main_window.connect('usbvm-changed', self._usbvm_changed)
 
     def _usbvm_changed(self, *_args):

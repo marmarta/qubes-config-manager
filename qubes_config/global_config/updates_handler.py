@@ -27,8 +27,8 @@ from typing import Optional, List, Dict
 from qrexec.policy.parser import Rule
 
 from ..widgets.qubes_widgets_library import VMListModeler, show_error, \
-    ask_question, NONE_CATEGORY, QubeName
-from ..widgets.utils import get_boolean_feature, get_feature, apply_feature_change
+    ask_question, NONE_CATEGORY
+from ..widgets.utils import get_boolean_feature, apply_feature_change
 from .page_handler import PageHandler
 from .policy_rules import RuleTargeted, SimpleVerbDescription
 from .policy_manager import PolicyManager
@@ -489,10 +489,10 @@ class UpdateProxy:
                 return str(other_row)
         if new_source == new_target:
             return 'Target cannot be the same as source'
-        new_target = self.qapp.domains[new_target]
-        new_source = self.qapp.domains[new_source]
-        if 'whonix-updatevm' in new_source.tags and \
-                'anon-gateway' not in new_target.tags:
+        new_target_vm = self.qapp.domains[new_target]
+        new_source_vm = self.qapp.domains[new_source]
+        if 'whonix-updatevm' in new_source_vm.tags and \
+                'anon-gateway' not in new_target_vm.tags:
             return "Whonix qubes can only use Whonix update proxies!"
         return None
 

@@ -123,13 +123,13 @@ class VMFlowboxHandler:
         self.add_confirm.connect('clicked',
                                           self._add_confirm_clicked)
 
-    def _sort_flowbox(self, child_1, child_2):
+    @staticmethod
+    def _sort_flowbox(child_1, child_2):
         vm_1 = str(child_1.vm)
         vm_2 = str(child_2.vm)
         if vm_1 == vm_2:
             return 0
         return 1 if vm_1 > vm_2 else -1
-
 
     def _add_button_clicked(self, _widget):
         self.add_box.set_visible(True)
@@ -146,6 +146,7 @@ class VMFlowboxHandler:
         self.add_box.set_visible(False)
 
     def set_visible(self, state: bool):
+        """Set flowbox to visible/usable."""
         self.box.set_visible(state)
         if not state:
             self.add_box.set_visible(False)
@@ -161,12 +162,15 @@ class VMFlowboxHandler:
         return selected_vms
 
     def is_changed(self) -> bool:
+        """Is the flowbox changed from initial state?"""
         return self.selected_vms != self._initial_vms
 
     def save_changes(self):
+        """Mark changes as saved, for use in is_changed."""
         self._initial_vms = self.selected_vms
 
     def reset(self):
+        """Reset changed to initial state."""
         for child in self.flowbox.get_children():
             self.flowbox.remove(child)
 

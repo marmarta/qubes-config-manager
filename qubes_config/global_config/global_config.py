@@ -23,8 +23,7 @@
 import re
 import sys
 import threading
-from typing import Optional, Dict, Union, Any
-import abc
+from typing import Dict
 import pkg_resources
 import subprocess
 import logging
@@ -33,8 +32,7 @@ import qubesadmin
 import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.vm
-from ..widgets.qubes_widgets_library import VMListModeler, \
-    TextModeler, TraitSelector, NONE_CATEGORY, ask_question
+from ..widgets.qubes_widgets_library import TextModeler, ask_question
 from .page_handler import PageHandler
 from .policy_handler import PolicyHandler, VMSubsetPolicyHandler
 from .policy_rules import RuleSimple, \
@@ -43,8 +41,7 @@ from .policy_rules import RuleSimple, \
 from .policy_manager import PolicyManager
 from .updates_handler import UpdatesHandler
 from .usb_devices import DevicesHandler
-from ..widgets.utils import apply_feature_change_from_widget, get_feature, \
-    get_boolean_feature
+from ..widgets.utils import apply_feature_change_from_widget, get_feature
 from .basics_handler import BasicSettingsHandler
 
 import gi
@@ -113,8 +110,10 @@ qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
         self.clipboard_handler.reset()
 
     def save(self):
-        apply_feature_change_from_widget(self.copy_handler, self.vm, self.COPY_FEATURE)
-        apply_feature_change_from_widget(self.paste_handler, self.vm, self.PASTE_FEATURE)
+        apply_feature_change_from_widget(self.copy_handler,
+                                         self.vm, self.COPY_FEATURE)
+        apply_feature_change_from_widget(self.paste_handler,
+                                         self.vm, self.PASTE_FEATURE)
         return self.clipboard_handler.save()
 
     def check_for_unsaved(self) -> bool:

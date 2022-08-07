@@ -19,12 +19,8 @@
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 """Handler for the general settings page"""
 import re
-import sys
-import threading
-from typing import Optional, Dict, Union, Any, Callable
+from typing import Optional, Dict, Any, Callable, List, Union
 import abc
-import pkg_resources
-import subprocess
 import logging
 import itertools
 from configparser import ConfigParser
@@ -36,22 +32,15 @@ import qubesadmin.vm
 from qubesadmin.utils import parse_size
 
 from ..widgets.qubes_widgets_library import VMListModeler, \
-    TextModeler, TraitSelector, NONE_CATEGORY, ask_question
+    TextModeler, TraitSelector, NONE_CATEGORY
 from .page_handler import PageHandler
-from .policy_handler import PolicyHandler, VMSubsetPolicyHandler
-from .policy_rules import RuleSimple, \
-    RuleSimpleAskIsAllow, RuleTargeted, SimpleVerbDescription, \
-    TargetedVerbDescription, RuleSimpleNoAllow
-from .policy_manager import PolicyManager
-from .updates_handler import UpdatesHandler
-from .usb_devices import DevicesHandler
-from ..widgets.utils import apply_feature_change_from_widget, get_feature, \
-    get_boolean_feature, apply_feature_change
+from ..widgets.utils import get_feature, get_boolean_feature, \
+    apply_feature_change
 
 import gi
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GLib, GObject
+from gi.repository import Gtk
 
 import gbulb
 gbulb.install()
@@ -61,8 +50,10 @@ logger = logging.getLogger('qubes-config-manager')
 
 
 class KernelVersion:  # pylint: disable=too-few-public-methods
-    # Cannot use distutils.version.LooseVersion, because it fails at handling
-    # versions that have no numbers in them
+    """Helper class to be used in sorting kernels. Cannot use
+    distutils.version.LooseVersion, because it fails at handling
+    versions that have no numbers in them, which is quite possible with
+    custom kernels."""
     def __init__(self, string):
         self.string = string
         self.groups = re.compile(r'(\d+)').split(self.string)
@@ -82,6 +73,7 @@ class KernelVersion:  # pylint: disable=too-few-public-methods
 
 
 class AbstractTraitHolder(abc.ABC):
+    """Handler for all sorts of widgets reflecting system traits."""
     @abc.abstractmethod
     def get_model(self) -> TraitSelector:
         """Get the TraitSelector for current Trait."""
@@ -92,20 +84,24 @@ class AbstractTraitHolder(abc.ABC):
 
     @abc.abstractmethod
     def update_current_value(self):
-        """Set current value to whatever is selected."""
+        """Set current value in the system to whatever is selected."""
 
     def is_changed(self) -> bool:
+        """Has the user selected something different from the initial value?"""
         return self.get_model().is_changed()
 
     def save_changes(self):
+        """Save changes: update system value and mark it as new initial value"""
         self.update_current_value()
         self.get_model().update_initial()
 
     def reset(self):
+        """Reset selection to the initial value."""
         self.get_model().reset()
 
 
 class PropertyHandler(AbstractTraitHolder):
+    """Handler comboboxes reflecting for object properties."""
     def __init__(self, qapp: qubesadmin.Qubes, trait_holder: Any,
                  trait_name: str, widget: Gtk.ComboBox, vm_filter: Callable,
                  additional_options: Optional[Dict[str, str]] = None):
@@ -136,6 +132,7 @@ class PropertyHandler(AbstractTraitHolder):
 
 
 class FeatureHandler(AbstractTraitHolder):
+    """Handler for comboboxes reflecting vm features."""
     def __init__(self, trait_holder: Any, trait_name: str,
                  widget: Gtk.ComboBoxText, options: Dict[str, Any],
                  is_bool: bool = False):
@@ -162,9 +159,8 @@ class FeatureHandler(AbstractTraitHolder):
     def get_model(self) -> TraitSelector:
         return self.model
 
-# TODO: discuss extracting this?
-
 class QMemManHelper:
+    """Helper class to handle the ugliness of managing qmemman config."""
     QMEMMAN_CONFIG_PATH = '/etc/qubes/qmemman.conf'
     MINMEM_NAME = 'vm-min-mem'
     DOM0_NAME = 'dom0-mem-boost'
@@ -184,8 +180,8 @@ class QMemManHelper:
 
         if self.qmemman_config.has_section('global'):
             for key in result:
-                value = self.qmemman_config.get('global', key)
-                value = parse_size(value)
+                str_value = self.qmemman_config.get('global', key)
+                value = parse_size(str_value)
                 result[key] = int(value / 1024 / 1024)
 
         return result
@@ -209,9 +205,9 @@ class QMemManHelper:
             self.qmemman_config.set(
                 'global', 'cache-margin-factor', str(1.3))
 
-            qmemman_config_file = open(self.QMEMMAN_CONFIG_PATH, 'a')
-            self.qmemman_config.write(qmemman_config_file)
-            qmemman_config_file.close()
+            with open(self.QMEMMAN_CONFIG_PATH, 'a') as qmemman_config_file:
+                self.qmemman_config.write(qmemman_config_file)
+
         else:
             # If there already is a 'global' section, we don't use
             # SafeConfigParser.write() - it would get rid of
@@ -220,28 +216,26 @@ class QMemManHelper:
                             for key, value in text_dict.items()}
 
             config_lines = []
-            qmemman_config_file = open(self.QMEMMAN_CONFIG_PATH, 'r')
-
-            for line in qmemman_config_file:
-                for key in lines_to_add:
-                    if line.strip().startswith(key):
-                        config_lines.append(lines_to_add[key])
-                        del lines_to_add[key]
-                        break
-                else:
-                    config_lines.append(line)
-
-            qmemman_config_file.close()
+            with open(self.QMEMMAN_CONFIG_PATH, 'r') as qmemman_config_file:
+                for line in qmemman_config_file:
+                    for key in lines_to_add:
+                        if line.strip().startswith(key):
+                            config_lines.append(lines_to_add[key])
+                            del lines_to_add[key]
+                            break
+                    else:
+                        config_lines.append(line)
 
             for line in lines_to_add:
                 config_lines.append(line)
 
-            qmemman_config_file = open(self.QMEMMAN_CONFIG_PATH, 'w')
-            qmemman_config_file.writelines(config_lines)
-            qmemman_config_file.close()
+            with open(self.QMEMMAN_CONFIG_PATH, 'w') as qmemman_config_file:
+                qmemman_config_file.writelines(config_lines)
 
 
 class MemoryHandler:
+    """Handler for memory / QMemMan settings. Requires SpinButton widgets:
+    'basics_min_memory' and 'basics_dom0_memory'"""
     def __init__(self, gtk_builder):
         self.min_memory_spin: Gtk.SpinButton = \
             gtk_builder.get_object('basics_min_memory')
@@ -271,6 +265,7 @@ class MemoryHandler:
             self.initial_values.get(self.mem_helper.DOM0_NAME, 0))
 
     def save_changes(self):
+        """Save changes: update system value and mark it as new initial value"""
         if not self.is_changed():
             return
 
@@ -282,6 +277,7 @@ class MemoryHandler:
         self.mem_helper.save_values(values)
 
     def reset(self):
+        """Reset selection to the initial value."""
         if not self.min_memory_spin.is_sensitive():
             return
 
@@ -291,6 +287,7 @@ class MemoryHandler:
             self.mem_helper.DOM0_NAME, 0))
 
     def is_changed(self) -> bool:
+        """Has the user selected something different from the initial value?"""
         if not self.min_memory_spin.is_sensitive() or \
                 not self.dom0_memory_spin.is_sensitive():
             return False
@@ -303,6 +300,7 @@ class MemoryHandler:
         return False
 
 class KernelHolder(AbstractTraitHolder):
+    """Trait holder for list of available Linux kernels"""
     def __init__(self, qapp: qubesadmin.Qubes, widget: Gtk.ComboBoxText):
         self.qapp = qapp
         self.widget = widget
@@ -345,7 +343,7 @@ class BasicSettingsHandler(PageHandler):
         self.qapp = qapp
         self.vm = self.qapp.domains[self.qapp.local_name]
 
-        self.handlers = []
+        self.handlers: List[Union[AbstractTraitHolder, MemoryHandler]] = []
 
         self.clockvm_combo = gtk_builder.get_object('basics_clockvm_combo')
         self.deftemplate_combo: Gtk.ComboBox = \
@@ -408,17 +406,20 @@ class BasicSettingsHandler(PageHandler):
 
         self.handlers.append(MemoryHandler(gtk_builder))
 
-
-    def _clock_vm_filter(self, vm) -> bool:
+    @staticmethod
+    def _clock_vm_filter(vm) -> bool:
         return vm.klass != 'TemplateVM'
 
-    def _default_template_filter(self, vm) -> bool:
+    @staticmethod
+    def _default_template_filter(vm) -> bool:
         return vm.klass == 'TemplateVM'
 
-    def _default_netvm_filter(self, vm) -> bool:
+    @staticmethod
+    def _default_netvm_filter(vm) -> bool:
         return getattr(vm, 'provides_network', False)
 
-    def _default_dispvm_filter(self, vm) -> bool:
+    @staticmethod
+    def _default_dispvm_filter(vm) -> bool:
         return getattr(vm, 'template_for_dispvms', False)
 
     def save(self):

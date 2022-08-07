@@ -17,6 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
+"""Qubes helper functions"""
 import qubesadmin
 import qubesadmin.exc
 import qubesadmin.vm
@@ -60,7 +61,7 @@ def apply_feature_change(vm: qubesadmin.vm.QubesVM,
         else:
             vm.features[feature_name] = new_value
     except qubesadmin.exc.QubesDaemonAccessError:
+        # pylint: disable=raise-missing-from
         raise qubesadmin.exc.QubesException(
             "Failed to set {} due to insufficient "
             "permissions".format(feature_name))
-
