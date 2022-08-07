@@ -70,5 +70,16 @@ radiobutton:checked radio {
     padding: 15px;
 }
 
-.app_list {
+.content_box {
+    background: @light-gray;
+    border-width: 2px;
+    border-color: @medium-gray;
+    padding-left: 100px;
+    padding-right: 100px;
+    box-shadow: @medium-gray 2px -2px 2px -2px inset;
+    padding-top: 50px;
+}
+
+#main_window {
+    background: @dark-gray-2;
 }
