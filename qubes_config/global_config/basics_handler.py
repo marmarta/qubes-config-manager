@@ -194,8 +194,7 @@ class QMemManHelper:
         """Wants a dict of 'vm-min-mem': value in MB and
         'dom0-mem-boost': value in MB"""
         # qmemman settings
-
-        text_dict = {key: str(value) + 'MiB'
+        text_dict = {key: str(int(value)) + 'MiB'
                      for key, value in values_dict.items()}
 
         assert len(text_dict) == 2 and \
@@ -249,7 +248,13 @@ class MemoryHandler:
         self.dom0_memory_spin: Gtk.SpinButton = \
             gtk_builder.get_object('basics_dom0_memory')
 
-        self.min_memory_adjustment = Gtk.A
+        self.min_memory_adjustment = Gtk.Adjustment()
+        self.min_memory_adjustment.configure(0, 0, 999999, 1, 10, 0)
+        self.dom0_memory_adjustment = Gtk.Adjustment()
+        self.dom0_memory_adjustment.configure(0, 0, 999999, 1, 10, 0)
+
+        self.min_memory_spin.configure(self.min_memory_adjustment, 0.1, 0)
+        self.dom0_memory_spin.configure(self.dom0_memory_adjustment, 0.1, 0)
 
         self.mem_helper = QMemManHelper()
         self.initial_values = {}
