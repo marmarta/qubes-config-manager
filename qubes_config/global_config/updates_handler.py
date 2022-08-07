@@ -84,12 +84,12 @@ class RepoHandler:
                 self.template_community_testing,
              'qubes-templates-community': self.template_community,
             }]
+        self.initial_state: Dict[str, bool] = {}
 
         self.template_community.connect('toggled', self._community_toggled)
 
         self.repos: Dict[str, Dict] = dict()
         self._load_data()
-
         self._load_state()
         self._community_toggled()
 
@@ -128,6 +128,10 @@ class RepoHandler:
                     widget.set_active(self.repos[repo]['enabled'])
                     break
 
+        for repo_dict in self.repo_to_widget_mapping:
+            for repo, widget in repo_dict.items():
+                self.initial_state[repo] = widget.get_active()
+
     @staticmethod
     def _run_qrexec_repo(service, arg=''):
         # Set default locale to C in order to prevent error msg
@@ -165,23 +169,36 @@ class RepoHandler:
             ))
             raise RuntimeError(msg) from ex
 
-    def is_changed(self) -> bool:
-        """Check if there are any unsaved changes and ask user for an action.
-        Return True if changes have been handled, False if not."""
+    def get_unsaved(self) -> str:
+        """Get human-readable description of unsaved changes, or
+        empty string if none were found."""
         if not self.repos:
-            return False
+            return ""
+
+        dom0_changed = False
+        itl_changed = False
+        community_changed = False
 
         for repo_dict in self.repo_to_widget_mapping:
             for repo, widget in repo_dict.items():
-                if self.repos[repo]['enabled'] != widget.get_active():
-                    return True
-                if widget.get_active() and self.repos[repo]['enabled'] == \
-                        widget.get_active():
-                    break
+                if self.initial_state[repo] != widget.get_active():
+                    if 'dom0' in repo:
+                        dom0_changed = True
+                    elif 'community' in repo:
+                        community_changed = True
+                    elif 'itl' in repo:
+                        itl_changed = True
+        unsaved = []
+        if dom0_changed:
+            unsaved.append("dom0 update source changed")
+        if itl_changed:
+            unsaved.append("Official template update source changed")
+        if community_changed:
+            unsaved.append("Community template update source changed")
 
-        return False
+        return "\n".join(unsaved)
 
-    def save_changes(self):
+    def save(self):
         """Save all changes."""
         for repo_dict in self.repo_to_widget_mapping:
             found = False
@@ -193,14 +210,16 @@ class RepoHandler:
                     else:
                         self._set_repository(repo, False)
                 except RuntimeError as ex:
-                    show_error('Failed to set repository data',
-                               f"An error has occurred: {ex}")
+                    raise qubesadmin.exc.QubesException(
+                        f'Failed to set repository data: {ex}') from ex
         self._load_data()
         self._load_state()
 
-    def reset_changes(self):
+    def reset(self):
         """Reset any user changes."""
-        self._load_state()
+        for repo_dict in self.repo_to_widget_mapping:
+            for repo, widget in repo_dict.items():
+                widget.set_active(self.initial_state[repo])
 
 
 class UpdateCheckerHandler:
@@ -241,20 +260,20 @@ class UpdateCheckerHandler:
         self.enable_radio.connect('toggled', self._set_label)
         self.disable_radio.connect('toggled', self._set_label)
 
-        initial_exceptions: List[qubesadmin.vm.QubesVM] = []
+        self.initial_exceptions: List[qubesadmin.vm.QubesVM] = []
 
         for vm in self.qapp.domains:
             if vm.klass == 'AdminVM':
                 continue
             if get_boolean_feature(vm, self.FEATURE_NAME, True) != \
                     self.initial_default:
-                initial_exceptions.append(vm)
+                self.initial_exceptions.append(vm)
 
-        self.exceptions_check.set_active(bool(initial_exceptions))
+        self.exceptions_check.set_active(bool(self.initial_exceptions))
 
         self.flowbox_handler = VMFlowboxHandler(
             gtk_builder, qapp, "updates_exception",
-            initial_vms=initial_exceptions,
+            initial_vms=self.initial_exceptions,
             filter_function=(lambda vm: vm.klass != 'AdminVM'))
 
         self._enable_exceptions_clicked()
@@ -284,7 +303,22 @@ class UpdateCheckerHandler:
             return True
         return self.flowbox_handler.is_changed()
 
-    def save_changes(self):
+    def get_unsaved(self) -> str:
+        """Get human-readable description of unsaved changes, or
+        empty string if none were found."""
+        unsaved = []
+        if self.initial_dom0 != self.dom0_update_check.get_active():
+            unsaved.append('dom0 "check for updates" setting')
+        if self.initial_default != self.enable_radio.get_active():
+            unsaved.append('Default "check for updates" setting')
+        if self.exceptions_check.get_active() != \
+                bool(self.initial_exceptions) or \
+                self.flowbox_handler.is_changed():
+            unsaved.append("Qubes selected for unusual 'check for updates'"
+                           " behaviors")
+        return "\n".join(unsaved)
+
+    def save(self):
         """Save any changes."""
         # FUTURE: this is fairly slow
         if self.initial_dom0 != self.dom0_update_check.get_active():
@@ -308,12 +342,13 @@ class UpdateCheckerHandler:
                 vm_state = default_state if vm not in exceptions else \
                     not default_state
                 apply_feature_change(vm, self.FEATURE_NAME, vm_state)
-        self.flowbox_handler.save_changes()
+        self.flowbox_handler.save()
 
-    def reset_changes(self):
+    def reset(self):
         """Reset changes and go back to initial state."""
         self.dom0_update_check.set_active(self.initial_dom0)
         self.enable_radio.set_active(self.initial_default)
+        self.exceptions_check.set_active(bool(self.initial_exceptions))
         self.flowbox_handler.reset()
 
 
@@ -412,11 +447,11 @@ class UpdateProxy:
             else:
                 remaining_rules.append(rule)
 
-        self.updatevm_model.select_entry(str(def_updatevm))
+        self.updatevm_model.select_value(str(def_updatevm))
         self.updatevm_model.update_initial()
 
         if self.has_whonix:
-            self.whonix_updatevm_model.select_entry(str(def_whonix_updatevm))
+            self.whonix_updatevm_model.select_value(str(def_whonix_updatevm))
             self.whonix_updatevm_model.update_initial()
 
         for child in self.updatevm_exception_list.get_children():
@@ -437,8 +472,7 @@ class UpdateProxy:
 
     def add_new_rule(self, *_args):
         """Add a new rule."""
-        if not self.close_all_edits():
-            return
+        self.close_all_edits()
         new_rule = self.policy_manager.new_rule(
             self.service_name, str(self.first_eligible_vm), '@default',
             f'allow target={self.default_updatevm}')
@@ -450,13 +484,11 @@ class UpdateProxy:
         if row.editing:
             # if the current row was clicked, nothing should happen
             return
-        if not self.close_all_edits():
-            return
+        self.close_all_edits()
         row.set_edit_mode(True)
 
-    def close_all_edits(self) -> bool:
-        """Attempt to close all edited rows; if failed, return False, else
-        return True"""
+    def close_all_edits(self):
+        """Close all edited rows"""
         for row in self.updatevm_exception_list.get_children():
             if row.editing:
                 if not row.is_changed():
@@ -468,10 +500,9 @@ class UpdateProxy:
                     f"rule?\n{str(row)}")
                 if response == Gtk.ResponseType.YES:
                     if not row.validate_and_save():
-                        return False
+                        row.revert()
                 else:
                     row.revert()
-        return True
 
     def verify_new_rule(self, row: NoActionListBoxRow,
                         new_source: str, new_target: str,
@@ -512,14 +543,13 @@ class UpdateProxy:
             return True
         if self.current_exception_rules != self.rules[:-2]:
             return True
-
         return False
 
     def reset(self):
         """Reset to initial state."""
         self.load_rules()
 
-    def save_changes(self):
+    def save(self):
         """Save currently chosen settings."""
         rules = self.current_exception_rules
 
@@ -586,52 +616,31 @@ class UpdatesHandler(PageHandler):
             self.policy_file_name, self.policy_manager)
 
 
-    def close_all_edits(self) -> bool:
-        """Attempt to close all edited rows; if failed, return False, else
-        return True"""
-        return self.update_proxy.close_all_edits()
+    def close_all_edits(self):
+        """Close all edited rows"""
+        self.update_proxy.close_all_edits()
 
-    def _has_unsaved_changes(self) -> bool:
-        if self.repo_handler.is_changed():
-            return True
-        if self.dom0_updatevm_model.is_changed():
-            return True
-        if self.update_checker.is_changed():
-            return True
-        if self.update_proxy.is_changed():
-            return True
-        return False
-
-
-    def check_for_unsaved(self) -> bool:
+    def get_unsaved(self) -> str:
         """Check if there are any unsaved changes and ask user for an action.
         Return True if changes have been handled, False if not."""
-        if not self.close_all_edits():
-            return False
-        if self._has_unsaved_changes():
-            # the silly widget invoked here is invoked because we need
-            # _something_ to get the toplevel window
-            response = ask_question(
-                self.dom0_updatevm_combo.get_toplevel(),
-                "Unsaved changes found",
-                "There are unsaved changes. Do you want to save them?",
-                Gtk.ButtonsType.YES_NO)
-            if response == Gtk.ResponseType.YES:
-                self.save()
-            else:
-                self.reset()
-        return True
+        self.close_all_edits()
+
+        unsaved = [self.repo_handler.get_unsaved(),
+                   self.update_checker.get_unsaved()]
+
+        if self.dom0_updatevm_model.is_changed():
+            unsaved.append("dom0 Update Proxy")
+        if self.update_proxy.is_changed():
+            unsaved.append("Update proxy settings")
+        unsaved = [x for x in unsaved if x]
+        return "\n".join(unsaved)
+
 
     def reset(self):
         """Reset state to initial or last saved state, whichever is newer."""
-
-        self.repo_handler.reset_changes()
-
-        self.dom0_updatevm_model.select_entry(
-            self.dom0_updatevm_model.initial_value)
-
-        self.update_checker.reset_changes()
-
+        self.dom0_updatevm_model.reset()
+        self.repo_handler.reset()
+        self.update_checker.reset()
         self.update_proxy.reset()
 
     def save(self):
@@ -640,18 +649,10 @@ class UpdatesHandler(PageHandler):
 
         for handler in [self.repo_handler, self.update_checker,
                         self.update_proxy]:
-            try:
-                handler.save_changes() # type: ignore
-            except Exception as ex:
-                show_error("Failed to save changes",
-                           f"Failed to save some changes: {ex}")
+            handler.save()  # type: ignore
 
         if self.dom0_updatevm_model.is_changed():
-            try:
-                self.qapp.updatevm = self.dom0_updatevm_model.get_selected()
-            except Exception as ex:
-                show_error("Failed to save changes",
-                           f"Failed to save dom0 update proxy: {ex}")
+            self.qapp.updatevm = self.dom0_updatevm_model.get_selected()
 
 # Filtering for dropdowns:
 # qubes-update-proxy service? or set it up when adding as proxy??

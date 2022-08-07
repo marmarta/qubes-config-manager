@@ -23,7 +23,7 @@
 import re
 import sys
 import threading
-from typing import Dict
+from typing import Dict, Optional, List, Union
 import pkg_resources
 import subprocess
 import logging
@@ -32,7 +32,7 @@ import qubesadmin
 import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.vm
-from ..widgets.qubes_widgets_library import TextModeler, ask_question
+from ..widgets.qubes_widgets_library import ask_question, show_error
 from .page_handler import PageHandler
 from .policy_handler import PolicyHandler, VMSubsetPolicyHandler
 from .policy_rules import RuleSimple, \
@@ -41,8 +41,7 @@ from .policy_rules import RuleSimple, \
 from .policy_manager import PolicyManager
 from .updates_handler import UpdatesHandler
 from .usb_devices import DevicesHandler
-from ..widgets.utils import apply_feature_change_from_widget, get_feature
-from .basics_handler import BasicSettingsHandler
+from .basics_handler import BasicSettingsHandler, FeatureHandler
 
 import gi
 
@@ -68,7 +67,13 @@ class ClipboardHandler(PageHandler):
         self.policy_manager = policy_manager
         self.vm = self.qapp.domains[self.qapp.local_name]
 
-        self.clipboard_handler = PolicyHandler(
+        self.copy_combo: Gtk.ComboBoxText = \
+            gtk_builder.get_object('clipboard_copy_combo')
+        self.paste_combo: Gtk.ComboBoxText = \
+            gtk_builder.get_object('clipboard_paste_combo')
+
+        self.handlers: List[Union[PolicyHandler, FeatureHandler]] = [
+            PolicyHandler(
                 qapp=self.qapp,
                 gtk_builder=gtk_builder,
                 policy_manager=policy_manager,
@@ -76,57 +81,48 @@ class ClipboardHandler(PageHandler):
                 service_name='qubes.ClipboardPaste',
                 policy_file_name='50-config-clipboard',
                 default_policy="""qubes.ClipboardPaste * @adminvm @anyvm deny\n
-qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
+        qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
                 verb_description=SimpleVerbDescription({
                     "ask": 'be allowed to paste\n into clipboard of',
                     "deny": 'be allowed to paste\n into clipboard of'
                 }),
-                rule_class=RuleSimpleAskIsAllow)
+                rule_class=RuleSimpleAskIsAllow),
+            FeatureHandler(
+                trait_holder=self.vm, trait_name=self.COPY_FEATURE,
+                widget=self.copy_combo,
+                options={'default (Ctrl+Shift+C)': None,
+                         'Ctrl+Shift+C': 'Ctrl-Shift-c',
+                         'Ctrl+Win+C': 'Ctrl-Mod4-c'},
+                readable_name="Global Clipboard copy shortcut"
+            ),
+            FeatureHandler(
+                trait_holder=self.vm, trait_name=self.PASTE_FEATURE,
+                widget=self.paste_combo,
+                options= {'default (Ctrl+Shift+V)': None,
+                          'Ctrl+Shift+V': 'Ctrl-Shift-V',
+                          'Ctrl+Win+V': 'Ctrl-Mod4-v',
+                          'Ctrl+Insert': 'Ctrl-Ins'},
+                readable_name="Global Clipboard paste shortcut"
+            )
+        ]
 
-        self.copy_combo: Gtk.ComboBoxText = \
-            gtk_builder.get_object('clipboard_copy_combo')
-        self.copy_handler = TextModeler(
-            self.copy_combo,
-            {'default (Ctrl+Shift+C)': None,
-             'Ctrl+Shift+C': 'Ctrl-Shift-c',
-             'Ctrl+Win+C': 'Ctrl-Mod4-c'},
-            selected_value=get_feature(self.vm, self.COPY_FEATURE),
-            style_changes=True)
-
-        self.paste_combo: Gtk.ComboBoxText = \
-            gtk_builder.get_object('clipboard_paste_combo')
-        self.paste_handler = TextModeler(
-            self.paste_combo,
-            {'default (Ctrl+Shift+V)': None,
-             'Ctrl+Shift+V': 'Ctrl-Shift-V',
-             'Ctrl+Win+V': 'Ctrl-Mod4-v',
-             'Ctrl+Insert': 'Ctrl-Ins'},
-            selected_value=get_feature(self.vm, self.PASTE_FEATURE),
-            style_changes=True)
+        # TODO: use the nice wrappers from basics?
 
     def reset(self):
-        self.copy_handler.reset()
-        self.paste_handler.reset()
-        self.clipboard_handler.reset()
+        for handler in self.handlers:
+            handler.reset()
 
     def save(self):
-        apply_feature_change_from_widget(self.copy_handler,
-                                         self.vm, self.COPY_FEATURE)
-        apply_feature_change_from_widget(self.paste_handler,
-                                         self.vm, self.PASTE_FEATURE)
-        return self.clipboard_handler.save()
+        for handler in self.handlers:
+            handler.save()
 
-    def check_for_unsaved(self) -> bool:
-        if self.copy_handler.is_changed() or self.paste_handler.is_changed():
-            response = ask_question(self.copy_combo.get_toplevel(),
-                                    "Unsaved changes found",
-                                    "Do you want to save changes?")
-            if response == Gtk.ResponseType.YES:
-                self.save()
-            else:
-                self.reset()
-                return True
-        return self.clipboard_handler.check_for_unsaved()
+    def get_unsaved(self) -> str:
+        unsaved = []
+        for handler in self.handlers:
+            unsaved_changes = handler.get_unsaved()
+            if unsaved_changes:
+                unsaved.append(unsaved_changes)
+        return "\n".join(unsaved)
 
 
 class FileAccessHandler(PageHandler):
@@ -182,11 +178,16 @@ qubes.OpenInVM * @anyvm @anyvm ask""",
         self.openinvm_handler.reset()
 
     def save(self):
-        return self.filecopy_handler.save() and self.openinvm_handler.save()
+        self.filecopy_handler.save()
+        self.openinvm_handler.save()
 
-    def check_for_unsaved(self) -> bool:
-        return self.filecopy_handler.check_for_unsaved() \
-               and self.openinvm_handler.check_for_unsaved()
+    def get_unsaved(self) -> str:
+        unsaved = []
+        for handler in [self.filecopy_handler, self.openinvm_handler]:
+            unsaved_changes = handler.get_unsaved()
+            if unsaved_changes:
+                unsaved.append(unsaved_changes)
+        return "\n".join(unsaved)
 
 
 class ThisDeviceHandler(PageHandler):
@@ -238,9 +239,8 @@ class ThisDeviceHandler(PageHandler):
         # does not apply
         pass
 
-    def check_for_unsaved(self) -> bool:
-        # does not apply
-        return True
+    def get_unsaved(self) -> str:
+        return ""
 
 
 class GlobalConfig(Gtk.Application):
@@ -268,8 +268,7 @@ class GlobalConfig(Gtk.Application):
     def perform_setup(self):
         # pylint: disable=attribute-defined-outside-init
         """
-        The function that performs actual widget realization and setup. Should
-        be only called once, in the main instance of this application.
+        The function that performs actual widget realization and setup.
         """
 
         GObject.signal_new('rules-changed',
@@ -304,17 +303,16 @@ class GlobalConfig(Gtk.Application):
 
         self.main_window.connect('delete-event', self._ask_to_quit)
 
-        # match page by id to handler; this is not pretty, but Gtk likes
-        # to ID pages by their number, there is no simple page_id
-        self.handlers: Dict[int, PageHandler] = {
-            0: BasicSettingsHandler(self.builder, self.qapp),
-            1: DevicesHandler(self.qapp, policy_manager, self.builder),
-            2: UpdatesHandler(
+        # match page by widget name to handler
+        self.handlers: Dict[str, PageHandler] = {
+            'basics': BasicSettingsHandler(self.builder, self.qapp),
+            'usb': DevicesHandler(self.qapp, policy_manager, self.builder),
+            'updates': UpdatesHandler(
                 qapp=self.qapp,
                 policy_manager=policy_manager,
                 gtk_builder=self.builder
             ),
-            3: VMSubsetPolicyHandler(
+            'splitgpg': VMSubsetPolicyHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
                 policy_manager=policy_manager,
@@ -333,17 +331,17 @@ class GlobalConfig(Gtk.Application):
                     "ask": 'to access GPG\nkeys from',
                     "deny": 'access GPG\nkeys from'
                 })),
-            4: ClipboardHandler(
+            'clipboard': ClipboardHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
                 policy_manager=policy_manager
             ),
-            5: FileAccessHandler(
+            'file': FileAccessHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
                 policy_manager=policy_manager
             ),
-            6: PolicyHandler(
+            'url': PolicyHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
                 policy_manager=policy_manager,
@@ -366,7 +364,7 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
                     }
                 ),
                 rule_class=RuleTargeted),
-            7: ThisDeviceHandler(self.qapp, self.builder),
+            'thisdevice': ThisDeviceHandler(self.qapp, self.builder),
         }
 
         self.main_notebook.connect("switch-page", self._page_switched)
@@ -392,18 +390,60 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
             ['qvm-run', '-p', '--service', f'--dispvm={default_dvm}',
              'qubes.OpenURL'], input=url.encode(), check=False)
 
+    def get_current_page(self) -> Optional[PageHandler]:
+        """Get currently visible page."""
+        page_num = self.main_notebook.get_current_page()
+        return self.handlers.get(
+            self.main_notebook.get_nth_page(page_num).get_name(), None)
+
+    def verify_changes(self) -> bool:
+        """Verify the current state of the page. Return True if page can
+        be abandoned, False if there are unsaved changes remaining."""
+        page = self.get_current_page()
+        if page:
+            unsaved = page.get_unsaved()
+            if unsaved:
+                response = self._ask_threeway_question(unsaved)
+                if response == Gtk.ResponseType.YES:
+                    try:
+                        page.save()
+                    except Exception as ex:
+                        show_error("Could not save changes",
+                                   f"The following error occurred: {ex}")
+                        return False
+                elif response == Gtk.ResponseType.NO:
+                    page.reset()
+                else:
+                    return False
+        return True
+
     def _page_switched(self, *_args):
         old_page_num = self.main_notebook.get_current_page()
-        old_page = self.handlers.get(old_page_num, None)
-        if old_page and not old_page.check_for_unsaved():
+        allow_switch = self.verify_changes()
+        if not allow_switch:
             GLib.timeout_add(1, lambda: self.main_notebook.set_current_page(
                 old_page_num))
 
+    def _ask_threeway_question(self, description: str) -> Gtk.ResponseType:
+        # The following unsaved changes were found:
+        # blah blah
+        # Do you want to save the changes?
+        # Save changes (yes)
+        # Discard changes (no)
+        # Cancel (cancel) but
+        # TODO: implement
+        response = ask_question(self.main_window, "Unsaved changes",
+                                f"Changes found:\n{description}")
+        return response
+
     def _apply(self, _widget):
-        current_handler = self.handlers.get(
-            self.main_notebook.get_current_page(), None)
-        if current_handler:
-            current_handler.save()
+        page = self.get_current_page()
+        if page:
+            try:
+                page.save()
+            except Exception as ex:
+                show_error("Could not save changes",
+                           f"The following error occurred: {ex}")
 
     def _quit(self, _widget):
         self.quit()
@@ -413,9 +453,8 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
         self._quit(widget)
 
     def _ask_to_quit(self, *_args):
-        current_page = self.handlers.get(
-            self.main_notebook.get_current_page(), None)
-        if current_page and not current_page.check_for_unsaved():
+        can_quit = self.verify_changes()
+        if not can_quit:
             return True
         self.quit()
         return False

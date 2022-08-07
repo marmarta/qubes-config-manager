@@ -165,7 +165,7 @@ class VMFlowboxHandler:
         """Is the flowbox changed from initial state?"""
         return self.selected_vms != self._initial_vms
 
-    def save_changes(self):
+    def save(self):
         """Mark changes as saved, for use in is_changed."""
         self._initial_vms = self.selected_vms
 

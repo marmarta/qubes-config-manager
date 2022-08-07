@@ -479,7 +479,7 @@ class TemplateSelectorCombo(TemplateSelector):
 
     def select_vm(self, vm_name: str):
         """Select qube provided by name."""
-        self.modeler.select_entry(vm_name)
+        self.modeler.select_value(vm_name)
 
     def is_vm_available(self, vm: qubesadmin.vm.QubesVM) -> bool:
         """
@@ -556,7 +556,7 @@ class TemplateSelectorNoneCombo(TemplateSelector):
             # this is a weird edge case that should not happen, but let's cover
             # it just in case
             self.radio_none.set_active(True)
-        self.modeler.select_entry(vm_name)
+        self.modeler.select_value(vm_name)
 
     def is_vm_available(self, vm: qubesadmin.vm.QubesVM) -> bool:
         """

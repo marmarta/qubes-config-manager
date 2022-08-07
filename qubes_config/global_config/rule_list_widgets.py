@@ -135,7 +135,7 @@ class VMWidget(Gtk.Box):
         new_value = self.model.get_selected()
         return str(self.selected_value) != str(new_value)
 
-    def save_changes(self):
+    def save(self):
         """Store changes in model; must be used before set_editable(True) if
         it's desired to see changes reflected in non-editable state"""
         new_value = str(self.model.get_selected())
@@ -148,7 +148,7 @@ class VMWidget(Gtk.Box):
 
     def revert_changes(self):
         """Roll back to last saved state."""
-        self.model.select_entry(self.selected_value)
+        self.model.select_value(self.selected_value)
 
 
 class ActionWidget(Gtk.Box):
@@ -220,7 +220,7 @@ class ActionWidget(Gtk.Box):
         new_value = self.model.get_selected()
         return str(self.selected_value) != str(new_value)
 
-    def save_changes(self):
+    def save(self):
         """Store changes in model; must be used before set_editable(True) if
         it's desired to see changes reflected in non-editable state"""
         new_value = self.model.get_selected()
@@ -424,9 +424,9 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         self.rule.source = new_source
         self.rule.target = new_target
         self.rule.action = new_action
-        self.source_widget.save_changes()
-        self.target_widget.save_changes()
-        self.action_widget.save_changes()
+        self.source_widget.save()
+        self.target_widget.save()
+        self.action_widget.save()
         self.set_edit_mode(False)
         self.get_parent().invalidate_sort()
 

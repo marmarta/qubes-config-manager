@@ -86,11 +86,15 @@ class AbstractTraitHolder(abc.ABC):
     def update_current_value(self):
         """Set current value in the system to whatever is selected."""
 
+    @abc.abstractmethod
+    def get_readable_description(self) -> str:
+        """Get a readable description."""
+
     def is_changed(self) -> bool:
         """Has the user selected something different from the initial value?"""
         return self.get_model().is_changed()
 
-    def save_changes(self):
+    def save(self):
         """Save changes: update system value and mark it as new initial value"""
         self.update_current_value()
         self.get_model().update_initial()
@@ -99,16 +103,25 @@ class AbstractTraitHolder(abc.ABC):
         """Reset selection to the initial value."""
         self.get_model().reset()
 
+    def get_unsaved(self):
+        """Get human-readable description of unsaved changes, or
+        empty string if none were found."""
+        if self.is_changed():
+            return self.get_readable_description()
+        return ""
+
 
 class PropertyHandler(AbstractTraitHolder):
-    """Handler comboboxes reflecting for object properties."""
+    """Handles comboboxes reflecting for object properties."""
     def __init__(self, qapp: qubesadmin.Qubes, trait_holder: Any,
                  trait_name: str, widget: Gtk.ComboBox, vm_filter: Callable,
+                 readable_name: str,
                  additional_options: Optional[Dict[str, str]] = None):
         self.qapp = qapp
         self.trait_holder = trait_holder
         self.trait_name = trait_name
         self.widget = widget
+        self.readable_name = readable_name
 
         self.model = VMListModeler(
             combobox=self.widget,
@@ -118,6 +131,9 @@ class PropertyHandler(AbstractTraitHolder):
             style_changes=True,
             additional_options=additional_options
         )
+
+    def get_readable_description(self) -> str:
+        return self.readable_name
 
     def get_current_value(self):
         return getattr(self.trait_holder, self.trait_name, None)
@@ -132,19 +148,23 @@ class PropertyHandler(AbstractTraitHolder):
 
 
 class FeatureHandler(AbstractTraitHolder):
-    """Handler for comboboxes reflecting vm features."""
+    """Handles comboboxes reflecting vm features."""
     def __init__(self, trait_holder: Any, trait_name: str,
                  widget: Gtk.ComboBoxText, options: Dict[str, Any],
-                 is_bool: bool = False):
+                 readable_name: str, is_bool: bool = False):
         self.trait_holder = trait_holder
         self.trait_name = trait_name
         self.widget = widget
         self.is_bool = is_bool
+        self.readable_name = readable_name
 
         self.model = TextModeler(
             combobox=self.widget,
             values=options, selected_value=self.get_current_value(),
             style_changes=True)
+
+    def get_readable_description(self) -> str:
+        return self.readable_name + ": " + self.widget.get_active_text()
 
     def get_current_value(self):
         if self.is_bool:
@@ -264,7 +284,12 @@ class MemoryHandler:
         self.dom0_memory_spin.set_value(
             self.initial_values.get(self.mem_helper.DOM0_NAME, 0))
 
-    def save_changes(self):
+    def get_readable_description(self) -> str:
+        """Get human-readable description of the widget state"""
+        return f"Minimum qube memory: {self.min_memory_spin.get_value()}" \
+               f"\nDom0 memory boost: {self.dom0_memory_spin.get_value()}"
+
+    def save(self):
         """Save changes: update system value and mark it as new initial value"""
         if not self.is_changed():
             return
@@ -299,6 +324,14 @@ class MemoryHandler:
             return True
         return False
 
+    def get_unsaved(self):
+        """Get human-readable description of unsaved changes, or
+        empty string if none were found."""
+        if self.is_changed():
+            return self.get_readable_description()
+        return ""
+
+
 class KernelHolder(AbstractTraitHolder):
     """Trait holder for list of available Linux kernels"""
     def __init__(self, qapp: qubesadmin.Qubes, widget: Gtk.ComboBoxText):
@@ -319,6 +352,9 @@ class KernelHolder(AbstractTraitHolder):
         kernels_dict = {kernel: kernel for kernel in kernels}
         kernels_dict['(none)'] = None
         return kernels_dict
+
+    def get_readable_description(self) -> str:
+        return f"Kernel: {self.widget.get_active_text()}"
 
     def get_current_value(self):
         return self.qapp.default_kernel
@@ -364,32 +400,33 @@ class BasicSettingsHandler(PageHandler):
         self.handlers.append(PropertyHandler(
             qapp=self.qapp, trait_holder=self.qapp, trait_name="clockvm",
             widget=self.clockvm_combo, vm_filter=self._clock_vm_filter,
-            additional_options=NONE_CATEGORY))
+            readable_name="Clock qube", additional_options=NONE_CATEGORY))
         self.handlers.append(PropertyHandler(
             qapp=self.qapp, trait_holder=self.qapp,
             trait_name="default_template", widget=self.deftemplate_combo,
             vm_filter=self._default_template_filter,
-            additional_options=NONE_CATEGORY))
+            readable_name="Default template", additional_options=NONE_CATEGORY))
         self.handlers.append(PropertyHandler(
             qapp=self.qapp, trait_holder=self.qapp, trait_name="default_netvm",
             widget=self.defnetvm_combo, vm_filter=self._default_netvm_filter,
-            additional_options=NONE_CATEGORY))
+            readable_name="Default net qube", additional_options=NONE_CATEGORY))
         self.handlers.append(PropertyHandler(
             qapp=self.qapp, trait_holder=self.vm, trait_name="default_dispvm",
             widget=self.defdispvm_combo, vm_filter=self._default_dispvm_filter,
+            readable_name="Default disposable qube template",
             additional_options=NONE_CATEGORY))
         self.handlers.append(FeatureHandler(
             trait_holder=self.vm, trait_name='gui-default-allow-fullscreen',
             widget=self.fullscreen_combo,
             options={'default (disallow)': None, 'allow': True,
                      'disallow': False},
-            is_bool=True))
+            readable_name="Allow fullscreen", is_bool=True))
         self.handlers.append(FeatureHandler(
             trait_holder=self.vm, trait_name='gui-default-allow-utf8-titles',
             widget=self.utf_combo,
             options={'default (disallow)': None, 'allow': True,
                      'disallow': False},
-            is_bool=True))
+            readable_name="Allow utf8 window titles", is_bool=True))
         self.handlers.append(FeatureHandler(
             trait_holder=self.vm, trait_name='gui-default-trayicon-mode',
             widget=self.tray_icon_combo,
@@ -400,7 +437,7 @@ class BasicSettingsHandler(PageHandler):
              'tinted icon': 'tint',
              'tinted icon with modified white': 'tint+whitehack',
              'tinted icon with 50% saturation': 'tint+saturation50'},
-            is_bool=False))
+            readable_name="Tray icon mode", is_bool=False))
         self.handlers.append(KernelHolder(qapp=self.qapp,
                                           widget=self.kernel_combo))
 
@@ -424,14 +461,14 @@ class BasicSettingsHandler(PageHandler):
 
     def save(self):
         for handler in self.handlers:
-            handler.save_changes()
+            handler.save()
 
     def reset(self):
         for handler in self.handlers:
             handler.reset()
 
-    def check_for_unsaved(self) -> bool:
+    def get_unsaved(self) -> str:
+        unsaved = []
         for handler in self.handlers:
-            if handler.is_changed():
-                return False
-        return True
+            unsaved.append(handler.get_unsaved())
+        return "\n".join([x for x in unsaved if x])

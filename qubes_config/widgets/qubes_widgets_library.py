@@ -219,7 +219,7 @@ class TextModeler(TraitSelector):
         else:
             self._combo.set_active(0)
 
-        self._initial_value = self._combo.get_active_text()
+        self._initial_text = self._combo.get_active_text()
 
         if style_changes:
             self._combo.connect('changed', self._on_changed)
@@ -230,7 +230,7 @@ class TextModeler(TraitSelector):
 
     def is_changed(self) -> bool:
         """Return True is selected value has changed from initial."""
-        return self._initial_value != self._combo.get_active_text()
+        return self._initial_text != self._combo.get_active_text()
 
     def select_value(self, selected_value):
         """Select provided value."""
@@ -240,9 +240,7 @@ class TextModeler(TraitSelector):
 
     def reset(self):
         """Select initial value."""
-        for key, value in self._values.items():
-            if value == self._initial_value:
-                self._combo.set_active_id(key)
+        self._combo.set_active_id(self._initial_text)
 
     def _on_changed(self, _widget):
         self._combo.get_style_context().remove_class('combo-changed')
@@ -250,7 +248,7 @@ class TextModeler(TraitSelector):
             self._combo.get_style_context().add_class('combo-changed')
 
     def update_initial(self):
-        self._initial_value = self._combo.get_active_text()
+        self._initial_text = self._combo.get_active_text()
 
 
 class VMListModeler(TraitSelector):
@@ -300,7 +298,6 @@ class VMListModeler(TraitSelector):
 
         self._theme = Gtk.IconTheme.get_default()
 
-        self.initial_value: Optional[str] = None
         self._create_entries(filter_function, default_value, additional_options,
                              current_value)
 
@@ -309,9 +306,9 @@ class VMListModeler(TraitSelector):
         self._initial_id = None
 
         if current_value:
-            self.select_entry(current_value)
+            self.select_value(current_value)
         elif default_value:
-            self.select_entry(default_value)
+            self.select_value(default_value)
         else:
             self.combo.set_active(0)
 
@@ -368,12 +365,9 @@ class VMListModeler(TraitSelector):
             vm_name = domain.name
             icon = self._get_icon(domain.icon)
             display_name = vm_name
-            if self.initial_value is None:
-                self.initial_value = display_name
 
             if domain == default_value:
                 display_name = display_name + ' (default)'
-                self.initial_value = display_name
 
             self._entries[display_name] = {
                 "api_name": vm_name,
@@ -501,7 +495,7 @@ class VMListModeler(TraitSelector):
                    self._entries[selected]["api_name"]
         return None
 
-    def select_entry(self, vm_name):
+    def select_value(self, vm_name):
         """
         Select VM by name.
         :param vm_name: str
@@ -580,6 +574,7 @@ class WidgetWithButtons(Gtk.Box):
 
         self.show_all()
         self._set_editable(False)
+        self._initial_value = self.select_widget.get_selected()
 
     def _set_editable(self, state: bool):
         self.select_widget.set_editable(state)
@@ -595,5 +590,25 @@ class WidgetWithButtons(Gtk.Box):
         self._set_editable(False)
 
     def _confirm_clicked(self, _widget):
-        self.select_widget.save_changes()
+        self.select_widget.save()
         self._set_editable(False)
+
+    def reset(self):
+        """Reset all changes."""
+        self.select_widget.model.select_value(self._initial_value)
+        self.select_widget.model.update_initial()
+        self.select_widget.save()
+        self._set_editable(False)
+
+    def close_edit(self):
+        """Close edit options and revert changes since last confirm."""
+        self._cancel_clicked(None)
+
+    def is_changed(self) -> bool:
+        """Has the selection been changed from initial value?"""
+        return self._initial_value != self.select_widget.get_selected()
+
+    def update_changed(self):
+        """Notify widget that the initial value (for purposes of tracking
+        changes) should be updated."""
+        self._initial_value = self.select_widget.get_selected()

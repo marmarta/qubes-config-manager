@@ -147,8 +147,7 @@ class PolicyHandler(PageHandler):
 
     def add_new_rule(self, *_args):
         """Add a new rule."""
-        if not self.close_all_edits():
-            return
+        self.close_all_edits()
         deny_all_rule = self.policy_manager.new_rule(
             self.service_name, '@anyvm', '@anyvm', 'deny')
         new_row = RuleListBoxRow(self,
@@ -233,8 +232,7 @@ class PolicyHandler(PageHandler):
     def _show_hide_raw(self, *_args):
         # if showing raws, make sure editing is done
         if not self.raw_box.get_visible():
-            if not self.close_all_edits():
-                return
+            self.close_all_edits()
         self.raw_box.set_visible(
             not self.raw_box.get_visible())
         if self.raw_box.get_visible():
@@ -294,8 +292,7 @@ class PolicyHandler(PageHandler):
         self._custom_toggled()
 
     def _custom_toggled(self, _widget=None):
-        if not self.close_all_edits():
-            return
+        self.close_all_edits()
         self.set_custom_editable(self.enable_radio.get_active())
         self.fill_raw_rules()
 
@@ -303,8 +300,7 @@ class PolicyHandler(PageHandler):
         if row.editing:
             # if the current row was clicked, nothing should happen
             return
-        if not self.close_all_edits():
-            return
+        self.close_all_edits()
         row.set_edit_mode(True)
 
     def verify_new_rule(self, row: RuleListBoxRow,
@@ -323,9 +319,8 @@ class PolicyHandler(PageHandler):
                 return str(other_row)
         return None
 
-    def close_all_edits(self) -> bool:
-        """Attempt to close all edited rows; if failed, return False, else
-        return True"""
+    def close_all_edits(self):
+        """Close all edited rows."""
         for row in self.current_rows:
             if row.editing:
                 if not row.is_changed():
@@ -335,33 +330,12 @@ class PolicyHandler(PageHandler):
                     "A rule is currently being edited",
                     "Do you want to save changes to the following "
                     f"rule?\n{str(row)}")
+                # TODO: improve with save/discard buttons
                 if response == Gtk.ResponseType.YES:
                     if not row.validate_and_save():
-                        return False
+                        row.revert()
                 else:
                     row.revert()
-        return True
-
-    def check_for_unsaved(self) -> bool:
-        """Check if there are any unsaved changes and ask user for an action.
-        Return True if changes have been handled, False if not."""
-        if not self.close_all_edits():
-            return False
-        unsaved_found = False
-        if len(self.initial_rules) != len(self.current_rules):
-            unsaved_found = True
-        for rule1, rule2 in zip(self.initial_rules, self.current_rules):
-            if str(rule1) != str(rule2):
-                unsaved_found = True
-
-        if unsaved_found:
-            response = ask_question(self.main_list_box.get_toplevel(),
-                "Save changes",
-                "Do you want to save changes to current policy rules?")
-            if response == Gtk.ResponseType.YES:
-                return self.save()
-            self.reset()
-        return True
 
     def reset(self):
         """Reset state to initial or last saved state, whichever is newer."""
@@ -371,17 +345,27 @@ class PolicyHandler(PageHandler):
         self.check_custom_rules(rules)
 
     def save(self):
-        """Save current rules, whatever they are - custom or default.
-        Return True if successful, False otherwise"""
+        """Save current rules, whatever they are - custom or default."""
         rules = self.current_rules
-        try:
-            self.policy_manager.save_rules(self.policy_file_name,
-                                           rules, self.current_token)
-        except Exception as ex:
-            show_error("Failed to save rules", f"Error {str(ex)}")
-            return False
+        self.policy_manager.save_rules(self.policy_file_name,
+                                       rules, self.current_token)
         self.initial_rules = deepcopy(rules)
-        return True
+
+    def get_unsaved(self) -> str:
+        """Get human-readable description of unsaved changes, or
+        empty string if none were found."""
+        self.close_all_edits()
+
+        unsaved_found = False
+        if len(self.initial_rules) != len(self.current_rules):
+            unsaved_found = True
+        for rule1, rule2 in zip(self.initial_rules, self.current_rules):
+            if str(rule1) != str(rule2):
+                unsaved_found = True
+
+        if unsaved_found:
+            return "Policy rules"
+        return ""
 
 
 class VMSubsetPolicyHandler(PolicyHandler):
@@ -555,8 +539,7 @@ class VMSubsetPolicyHandler(PolicyHandler):
 
     def add_new_rule(self, *_args):
         """Add a new rule."""
-        if not self.close_all_edits():
-            return
+        self.close_all_edits()
         for qube in self.select_qubes:
             rule = self.policy_manager.new_rule(
                 self.service_name, str(qube), str(qube), 'deny')
@@ -564,14 +547,11 @@ class VMSubsetPolicyHandler(PolicyHandler):
             new_row.activate()
             break
 
-    def close_all_edits(self) -> bool:
-        """Attempt to close all edited rows; if failed, return False, else
-        return True"""
-        if not super().close_all_edits():
-            return False
+    def close_all_edits(self):
+        """Close all edited rows"""
+        super().close_all_edits()
         if self.add_select_box.get_visible():
             self._add_select_cancel()
-        return True
 
     @property
     def current_rules(self) -> List[Rule]:
@@ -579,6 +559,8 @@ class VMSubsetPolicyHandler(PolicyHandler):
         Due to possible existing manual rules, every rule with @default
         is saved as two rules: a normal one and a one with target/default_target
         put in the default space"""
+        if self.disable_radio.get_active():
+            return self.policy_manager.text_to_rules(self.default_policy)
         rules: List[Rule] = []
         for row in self.exception_list_box.get_children():
             new_rule: Rule = row.rule.raw_rule

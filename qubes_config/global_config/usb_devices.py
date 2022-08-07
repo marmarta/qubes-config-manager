@@ -63,9 +63,8 @@ class USBVMHandler:
             qapp=self.qapp, categories=None,
             initial_value=self._get_current_usbvm(),
             change_callback=self._emit_signal)
-
-        self.usb_qube_box.pack_start(
-            WidgetWithButtons(self.select_widget), False, False, 0)
+        self.widget_with_buttons = WidgetWithButtons(self.select_widget)
+        self.usb_qube_box.pack_start(self.widget_with_buttons, False, False, 0)
 
     def _emit_signal(self, *_args):
         self.usb_qube_box.get_toplevel().emit('usbvm-changed', None)
@@ -74,16 +73,28 @@ class USBVMHandler:
         usb_vm_name = get_feature(self.vm, self.FEATURE_NAME, 'sys-usb')
         return self.qapp.domains.get(usb_vm_name)
 
-    def save_changes(self):
+    def save(self):
         """Save user changes."""
         apply_feature_change_from_widget(self.select_widget,
                                          self.vm, self.FEATURE_NAME)
+        self.widget_with_buttons.update_changed()
         # # TODO: do some sort of general close all edits?
 
     def get_selected_usbvm(self):
         """Get currently chosen usbvm."""
         # TODO: how this interacts with select in progress?????
         return self.select_widget.get_selected()
+
+    def get_unsaved(self) -> str:
+        """Get human-readable description of unsaved changes, or
+        empty string if none were found."""
+        if self.widget_with_buttons.is_changed():
+            return "USB qube"
+        return ""
+
+    def reset(self):
+        """Reset all changes to their initial state."""
+        self.widget_with_buttons.reset()
 
 
 class InputDeviceHandler:
@@ -115,7 +126,7 @@ qubes.InputTablet * {self.sys_usb} @adminvm deny
         self.policy_order = {'qubes.InputKeyboard': 0,
                              'qubes.InputMouse': 1,
                              'qubes.InputTablet': 2}
-        self.action_widgets: Dict[str, ActionWidget] = {}
+        self.action_widgets: Dict[str, WidgetWithButtons] = {}
 
         self.rules, self.current_token = \
             self.policy_manager.get_rules_from_filename(
@@ -137,9 +148,10 @@ qubes.InputTablet * {self.sys_usb} @adminvm deny
                 initial_value=type(rule.action).__name__.lower(),
                 verb_description=None,
                 rule=wrapped_rule)
+            widget_with_buttons = WidgetWithButtons(action_widget)
 
-            self.action_widgets[rule.service] = action_widget
-            self.grid.attach(child=WidgetWithButtons(action_widget),
+            self.action_widgets[rule.service] = widget_with_buttons
+            self.grid.attach(child=widget_with_buttons,
                              left=1, top=self.policy_order[rule.service],
                              width=1, height=1)
 
@@ -147,22 +159,36 @@ qubes.InputTablet * {self.sys_usb} @adminvm deny
         pass
         # TODO: fixme
 
-    def save_changes(self):
+    def save(self):
         """Save user changes"""
         rules = []
         for widget in self.action_widgets.values():
-            widget.rule.action = widget.get_selected()
-            rules.append(widget.rule.raw_rule)
+            widget.close_edit()
+            widget.select_widget.rule.action = \
+                widget.select_widget.get_selected()
+            rules.append(widget.select_widget.rule.raw_rule)
 
         self.policy_manager.save_rules(self.policy_file_name, rules,
                                        self.current_token)
 
-    def is_changed(self):
-        """Is the selection changed from initial values?"""
         for widget in self.action_widgets.values():
+            widget.update_changed()
+
+    def get_unsaved(self) -> str:
+        """Get human-readable description of unsaved changes, or
+        empty string if none were found."""
+        unsaved = []
+        for policy, widget in self.action_widgets.items():
+            widget.close_edit()
             if widget.is_changed():
-                return True
-        return False
+                name = policy[len('qubes.Input'):]
+                unsaved.append(f'{name} input settings')
+        return "\n".join(unsaved)
+
+    def reset(self):
+        """Reset changes to the initial state."""
+        for widget in self.action_widgets.values():
+            widget.reset()
 
 
 class U2FPolicyHandler:
@@ -241,6 +267,13 @@ class U2FPolicyHandler:
             widget.connect('toggled', partial(self._enable_clicked, box))
             self._enable_clicked(box, widget)
 
+        self.initial_enable_state: bool = self.enable_check.get_active()
+        self.initial_register_state: bool = self.register_check.get_active()
+        self.initial_register_all_state: bool = \
+            self.register_all_radio.get_active()
+        self.initial_blanket_check_state: bool = self.blanket_check.get_active()
+
+
     @staticmethod
     def _enable_clicked(related_box: Union[Gtk.Box, VMFlowboxHandler],
                         widget: Gtk.CheckButton):
@@ -309,7 +342,7 @@ class U2FPolicyHandler:
 
         self.blanket_check.set_active(bool(self.initial_blanket_vms))
 
-    def save_changes(self):
+    def save(self):
         """Save user changes in policy."""
         if not self.enable_check.get_sensitive():
             return
@@ -368,10 +401,36 @@ class U2FPolicyHandler:
     def reset(self):
         """Reset state to initial state."""
         self._initialize_data()
+        self.enable_some_handler.reset()
+        self.register_some_handler.reset()
+        self.blanket_handler.reset()
 
-    def is_changed(self) -> bool:
-        # TODO: fixme
-        """Have the rules changed from initial setup?"""
+    def get_unsaved(self) -> str:
+        """Get human-readable description of unsaved changes, or
+        empty string if none were found."""
+        if self.initial_enable_state != self.enable_check.get_active():
+            if self.enable_check.get_active():
+                return "U2F enabled"
+            return "Uf2 disabled"
+        if not self.enable_check.get_active():
+            return ""
+
+        unsaved = []
+
+        if self.enable_some_handler.selected_vms != self.initially_enabled_vms:
+            unsaved.append("List of qubes with U2F enabled changed")
+        if self.initial_register_state != self.register_check.get_active() or \
+            self.initial_register_all_state != \
+                self.register_all_radio.get_active() or \
+                self.register_some_handler.selected_vms != \
+                self.initial_register_vms:
+            unsaved.append("U2F key registration settings changed")
+        if self.initial_blanket_check_state != \
+                self.blanket_check.get_active() or \
+                self.blanket_handler.selected_vms != self.initial_blanket_vms:
+            unsaved.append("List of qubes with unrestricted U2F key "
+                           "access changed")
+        return "\n".join(unsaved)
 
 
 class DevicesHandler(PageHandler):
@@ -402,18 +461,22 @@ class DevicesHandler(PageHandler):
         self.input_handler.sys_usb = sys_usb
         self.u2f_handler.sys_usb = sys_usb
 
-    def check_for_unsaved(self) -> bool:
-        """Check if there are any unsaved changes and ask user for an action.
-        Return True if changes have been handled, False if not."""
-        return True
+    def get_unsaved(self) -> str:
+        """Get human-readable description of unsaved changes, or
+        empty string if none were found."""
+        unsaved = [self.usbvm_handler.get_unsaved(),
+                   self.input_handler.get_unsaved(),
+                   self.u2f_handler.get_unsaved()]
+        return "\n".join([x for x in unsaved if x])
 
     def reset(self):
         """Reset state to initial or last saved state, whichever is newer."""
+        self.usbvm_handler.reset()
+        self.input_handler.reset()
+        self.u2f_handler.reset()
 
     def save(self):
-        """Save current rules, whatever they are - custom or default.
-        Return True if successful, False otherwise"""
-        self.usbvm_handler.save_changes()
-        self.input_handler.save_changes()
-        self.u2f_handler.save_changes()
-        return True
+        """Save current rules, whatever they are - custom or default."""
+        self.usbvm_handler.save()
+        self.input_handler.save()
+        self.u2f_handler.save()

@@ -22,6 +22,7 @@
             <property name="tab-pos">left</property>
             <child>
               <object class="GtkScrolledWindow" id="basics_scrolled_window">
+                <property name="name">basics</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="shadow-type">in</property>
@@ -745,6 +746,7 @@ Documentation will open in a disposable qube.</property>
             </child>
             <child>
               <object class="GtkScrolledWindow" id="usb_scrolled_window">
+                <property name="name">usb</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="shadow-type">in</property>
@@ -1981,6 +1983,7 @@ Documentation will open in a disposable qube.</property>
             </child>
             <child>
               <object class="GtkScrolledWindow" id="updates_scrolled_window">
+                <property name="name">updates</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="shadow-type">in</property>
@@ -3340,6 +3343,7 @@ Documentation will open in a disposable qube.</property>
             </child>
             <child>
               <object class="GtkScrolledWindow" id="splitgpg_scrolled_window">
+                <property name="name">splitgpg</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="shadow-type">in</property>
@@ -4150,6 +4154,7 @@ Documentation will open in a disposable qube.</property>
             </child>
             <child>
               <object class="GtkScrolledWindow" id="clipboard_scrolled_window">
+                <property name="name">clipboard</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="shadow-type">in</property>
@@ -4834,6 +4839,7 @@ Documentation will open in a disposable qube.</property>
             </child>
             <child>
               <object class="GtkScrolledWindow" id="file_scrolled_window">
+                <property name="name">file</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="shadow-type">in</property>
@@ -6026,6 +6032,7 @@ Documentation will open in a disposable qube.</property>
             </child>
             <child>
               <object class="GtkScrolledWindow" id="url_scrolled_window">
+                <property name="name">url</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="shadow-type">in</property>
@@ -6660,6 +6667,7 @@ from one qube in another non-disposable qube.</property>
             </child>
             <child>
               <object class="GtkScrolledWindow" id="thisdevice_scrolled_window">
+                <property name="name">thisdevice</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="shadow-type">in</property>

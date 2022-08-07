@@ -20,18 +20,18 @@
 """Abstract class representing Settings pages."""
 import abc
 
-
 class PageHandler(abc.ABC):
     """abstract class for page handlers"""
     @abc.abstractmethod
     def save(self):
-        """save settings changed in page"""
+        """Save all changes. This should raise exceptions if save was
+        unsuccessful"""
 
     @abc.abstractmethod
     def reset(self):
         """Undo all of user's changes"""
 
     @abc.abstractmethod
-    def check_for_unsaved(self) -> bool:
-        """Check if there are any unsaved changes and ask user for an action.
-        Return True if changes have been handled, False if not."""
+    def get_unsaved(self) -> str:
+        """Get human-readable description of unsaved changes, or
+        empty string if none were found."""
