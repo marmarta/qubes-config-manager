@@ -296,7 +296,7 @@ class U2FPolicyHandler:
                 if vm == self.sys_usb:
                     continue
                 self.available_vms.append(vm)
-            if vm.features.get(self.SERVICE_FEATURE):
+            if get_feature(vm, self.SERVICE_FEATURE):
                 self.initially_enabled_vms.append(vm)
         available_in_sys_usb = self.sys_usb.features.check_with_template(
                     self.SUPPORTED_SERVICE_FEATURE)

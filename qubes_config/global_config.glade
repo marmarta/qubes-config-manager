@@ -780,7 +780,8 @@ Documentation will open in a disposable qube.</property>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label" translatable="yes">A USB qube is the one to which USB controllers are connected. By default it is &lt;tt&gt;sys-usb&lt;/tt&gt;, and is should &lt;b&gt;not&lt;/b&gt; be changed unless you really know what you're doing. If you need to change it, you also need to manually change device assignments in Qube Settings.</property>
+                            <property name="label" translatable="yes">A USB qube is the one to which USB controllers are connected. By default it is &lt;tt&gt;sys-usb&lt;/tt&gt;, and is should &lt;b&gt;not&lt;/b&gt; be changed unless you really know what you're doing. If you need to change it, you also need to manually change device assignments in Qube Settings.
+&lt;b&gt;Note:&lt;/b&gt; Changes here apply &lt;b&gt;ONLY&lt;/b&gt; to various policy settings on this page. If you do not change USB controller assignment, this setting will not change system behavior.</property>
                             <property name="use-markup">True</property>
                             <property name="wrap">True</property>
                             <property name="xalign">0</property>

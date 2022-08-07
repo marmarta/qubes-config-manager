@@ -322,16 +322,18 @@ class UpdateCheckerHandler:
         """Save any changes."""
         # FUTURE: this is fairly slow
         if self.initial_dom0 != self.dom0_update_check.get_active():
-            self.qapp.domains['dom0'].features[self.FEATURE_NAME] = \
-                self.dom0_update_check.get_active()
+            apply_feature_change(self.qapp.domains['dom0'],
+                                 self.FEATURE_NAME,
+                                 self.dom0_update_check.get_active())
             self.initial_dom0 = self.dom0_update_check.get_active()
 
         default_state = self.enable_radio.get_active()
         changed_default = False
 
         if self.initial_default != default_state:
-            self.qapp.domains['dom0'].features[
-                'config.default.qubes-update-check'] = default_state
+            apply_feature_change(
+                self.qapp.domains['dom0'], 'config.default.qubes-update-check',
+                default_state)
             changed_default = True
 
         exceptions = self.flowbox_handler.selected_vms
