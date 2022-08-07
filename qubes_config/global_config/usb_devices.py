@@ -33,6 +33,7 @@ from .policy_rules import RuleSimple
 from .policy_manager import PolicyManager
 from .rule_list_widgets import VMWidget, ActionWidget
 from .vm_flowbox import VMFlowboxHandler
+from .conflict_handler import ConflictFileHandler
 
 import gi
 
@@ -155,6 +156,13 @@ qubes.InputTablet * {self.sys_usb} @adminvm deny
                              left=1, top=self.policy_order[rule.service],
                              width=1, height=1)
 
+        self.conflict_file_handler = ConflictFileHandler(
+            gtk_builder=gtk_builder, prefix="usb_input",
+            service_names=list(self.policy_order.keys()),
+            own_file_name=self.policy_file_name,
+            policy_manager=self.policy_manager)
+
+
     def _warn(self):
         pass
         # TODO: fixme
@@ -276,6 +284,13 @@ class U2FPolicyHandler:
         self.initial_register_all_state: bool = \
             self.register_all_radio.get_active()
         self.initial_blanket_check_state: bool = self.blanket_check.get_active()
+
+        self.conflict_file_handler = ConflictFileHandler(
+            gtk_builder=gtk_builder, prefix="usb_u2f",
+            service_names=[self.REGISTER_POLICY,
+                           self.POLICY_REGISTER_POLICY, self.AUTH_POLICY],
+            own_file_name=self.policy_filename,
+            policy_manager=self.policy_manager)
 
 
     @staticmethod

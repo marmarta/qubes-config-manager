@@ -18,6 +18,8 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 """Handle detecting and showing policy file conflicts."""
+from typing import List
+
 from .policy_manager import PolicyManager
 
 import gi
@@ -55,9 +57,10 @@ class ConflictFileListRow(Gtk.ListBoxRow):
 
 class ConflictFileHandler:
     """Handler for conflicting policy files."""
-    def __init__(self, gtk_builder: Gtk.Builder, prefix: str, service_name: str,
-                 own_file_name: str, policy_manager: PolicyManager):
-        self.service_name = service_name
+    def __init__(self, gtk_builder: Gtk.Builder, prefix: str,
+                 service_names: List[str], own_file_name: str,
+                 policy_manager: PolicyManager):
+        self.service_names = service_names
         self.own_file_name = own_file_name
         self.policy_manager = policy_manager
 
@@ -66,8 +69,12 @@ class ConflictFileHandler:
         self.problem_list: Gtk.ListBox = gtk_builder.get_object(
             f'{prefix}_problem_files_list')
 
-        conflicting_files = self.policy_manager.get_conflicting_policy_files(
-            self.service_name, self.own_file_name)
+        conflicting_files = []
+
+        for service in self.service_names:
+            conflicting_files.extend(
+                self.policy_manager.get_conflicting_policy_files(
+                service, self.own_file_name))
 
         if conflicting_files:
             self.problem_box.set_visible(True)

@@ -132,8 +132,10 @@ class PolicyHandler(PageHandler):
         self.exception_list_box.set_sort_func(self.rule_sorting_function)
 
         self.conflict_handler = ConflictFileHandler(
-            gtk_builder, prefix, self.service_name,
-            self.policy_file_name, self.policy_manager)
+            gtk_builder=gtk_builder, prefix=prefix,
+            service_names=[self.service_name],
+            own_file_name=self.policy_file_name,
+            policy_manager=self.policy_manager)
 
         self.initial_rules, self.current_token = \
             self.policy_manager.get_rules_from_filename(

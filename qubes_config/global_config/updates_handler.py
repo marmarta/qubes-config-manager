@@ -616,8 +616,10 @@ class UpdatesHandler(PageHandler):
                                         service_name=self.service_name)
 
         self.conflict_handler = ConflictFileHandler(
-            gtk_builder, "updates", self.service_name,
-            self.policy_file_name, self.policy_manager)
+            gtk_builder=gtk_builder, prefix="updates",
+            service_names=[self.service_name],
+            own_file_name=self.policy_file_name,
+            policy_manager=self.policy_manager)
 
 
     def close_all_edits(self):
