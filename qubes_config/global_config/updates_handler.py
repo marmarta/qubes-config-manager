@@ -476,8 +476,8 @@ class UpdateProxy:
         """Add a new rule."""
         self.close_all_edits()
         new_rule = self.policy_manager.new_rule(
-            self.service_name, str(self.first_eligible_vm), '@default',
-            f'allow target={self.default_updatevm}')
+            service=self.service_name, source=str(self.first_eligible_vm),
+            target='@default', action=f'allow target={self.default_updatevm}')
         new_row = self._get_row(new_rule)
         self.updatevm_exception_list.add(new_row)
         new_row.activate()
@@ -557,15 +557,16 @@ class UpdateProxy:
 
         if rules or self.whonix_updatevm_model.is_changed():
             rules.append(
-                self.policy_manager.new_rule(self.service_name,
-                    "@tag:whonix-updatevm", "@default",
-                    f"allow "
+                self.policy_manager.new_rule(service=self.service_name,
+                    source="@tag:whonix-updatevm", target="@default",
+                    action="allow "
                     f"target={self.whonix_updatevm_model.get_selected()}"))
         if rules or self.updatevm_model.is_changed():
             rules.append(
-                self.policy_manager.new_rule(self.service_name,
-                    "@type:TemplateVM", "@default",
-                    f"allow target={self.updatevm_model.get_selected()}"))
+                self.policy_manager.new_rule(service=self.service_name,
+                    source="@type:TemplateVM", target="@default",
+                    action="allow "
+                           f"target={self.updatevm_model.get_selected()}"))
 
         if rules:
             self.policy_manager.save_rules(self.policy_file_name,

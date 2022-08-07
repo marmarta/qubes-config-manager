@@ -374,29 +374,42 @@ class U2FPolicyHandler:
 
         # register rules
         if not self.register_check.get_active():
-            rules.extend(self.policy_manager.text_to_rules(
-                f"{self.REGISTER_POLICY} * @anyvm @anyvm deny\n"
-                f"{self.POLICY_REGISTER_POLICY} +"
-                f"{self.REGISTER_POLICY} @anyvm @anyvm deny"))
+            rules.append(self.policy_manager.new_rule(
+                service=self.REGISTER_POLICY, source="@anyvm",
+                target="@anyvm", action="deny"))
+            rules.append(self.policy_manager.new_rule(
+                service=self.POLICY_REGISTER_POLICY,
+                argument=f"+{self.REGISTER_POLICY}", source="@anyvm",
+                target="@anyvm", action="deny"))
         else:
             if self.register_all_radio.get_active():
-                rules.extend(self.policy_manager.text_to_rules(
-                    f"{self.POLICY_REGISTER_POLICY} +{self.REGISTER_POLICY} "
-                    f"{self.sys_usb} @anyvm allow target=dom0"))
-                rules.extend(self.policy_manager.text_to_rules(
-                    f"{self.REGISTER_POLICY} * @anyvm {self.sys_usb} allow"))
+                rules.append(self.policy_manager.new_rule(
+                    service=self.POLICY_REGISTER_POLICY,
+                    argument=f"+{self.REGISTER_POLICY}",
+                    source=str(self.sys_usb),
+                    target="@anyvm", action="allow target=dom0"))
+                rules.append(self.policy_manager.new_rule(
+                    service=self.REGISTER_POLICY,
+                    source="@anyvm",
+                    target=str(self.sys_usb), action="allow"))
             else:
                 for vm in self.register_some_handler.selected_vms:
-                    rules.extend(self.policy_manager.text_to_rules(
-                        f"{self.REGISTER_POLICY} * {vm} {self.sys_usb} allow"))
-                rules.extend(self.policy_manager.text_to_rules(
-                    "policy.RegisterArgument +u2f.Authenticate "
-                    "sys-usb @anyvm allow target=dom0"))
+                    rules.append(self.policy_manager.new_rule(
+                        service=self.REGISTER_POLICY,
+                        source=str(vm),
+                        target=str(self.sys_usb), action="allow"))
+                rules.append(self.policy_manager.new_rule(
+                    service=self.POLICY_REGISTER_POLICY,
+                    argument=f"+{self.REGISTER_POLICY}",
+                    source=str(self.sys_usb),
+                    target="@anyvm", action="allow target=dom0"))
 
         if self.blanket_check.get_active():
             for vm in self.blanket_handler.selected_vms:
-                rules.extend(self.policy_manager.text_to_rules(
-                    f"{self.AUTH_POLICY} * {vm} {self.sys_usb} allow"))
+                rules.append(self.policy_manager.new_rule(
+                    service=self.AUTH_POLICY,
+                    source=str(vm),
+                    target=str(self.sys_usb), action="allow"))
 
         self.policy_manager.save_rules(self.policy_filename, rules,
                                        self.current_token)

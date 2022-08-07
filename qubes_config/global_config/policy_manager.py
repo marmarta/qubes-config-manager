@@ -87,11 +87,12 @@ class PolicyManager:
         return True
 
     @staticmethod
-    def new_rule(service: str, source: str, target: str, action: str) -> Rule:
+    def new_rule(service: str, source: str, target: str, action: str,
+                 argument: str = "*") -> Rule:
         """Create a new Rule object from given parameters: service, source,
         target and action should be provided according to policy file specs."""
         return Rule.from_line(
-            None, f"{service}\t*\t{source}\t{target}\t{action}",
+            None, f"{service}\t{argument}\t{source}\t{target}\t{action}",
             filepath=None, lineno=0)
 
     def save_rules(self, file_name: str, rules_list: List[Rule],

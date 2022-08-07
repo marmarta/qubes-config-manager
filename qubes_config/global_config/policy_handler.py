@@ -149,7 +149,8 @@ class PolicyHandler(PageHandler):
         """Add a new rule."""
         self.close_all_edits()
         deny_all_rule = self.policy_manager.new_rule(
-            self.service_name, '@anyvm', '@anyvm', 'deny')
+            service=self.service_name, source='@anyvm',
+            target='@anyvm', action='deny')
         new_row = RuleListBoxRow(self,
             self.rule_class(deny_all_rule), self.qapp, self.verb_description)
         self.exception_list_box.add(new_row)
@@ -197,7 +198,8 @@ class PolicyHandler(PageHandler):
 
         if not self.main_list_box.get_children():
             deny_all_rule = self.policy_manager.new_rule(
-                self.service_name, '@anyvm', '@anyvm', 'deny')
+                service=self.service_name, source='@anyvm',
+                target='@anyvm', action='deny')
             self.main_list_box.add(
                 RuleListBoxRow(self,
                     self.rule_class(deny_all_rule), self.qapp,
@@ -532,7 +534,8 @@ class VMSubsetPolicyHandler(PolicyHandler):
                 return
         new_qube = str(self.select_qube_model.get_selected())
         new_rule = self.policy_manager.new_rule(
-            self.service_name, '@anyvm', new_qube, 'ask')
+            service=self.service_name, source='@anyvm',
+            target=new_qube, action='ask')
         self._add_main_rule(new_rule)
         self.add_select_box.set_visible(False)
         self.main_list_box.emit('rules-changed', None)
@@ -545,7 +548,8 @@ class VMSubsetPolicyHandler(PolicyHandler):
         self.close_all_edits()
         for qube in self.select_qubes:
             rule = self.policy_manager.new_rule(
-                self.service_name, str(qube), str(qube), 'deny')
+                service=self.service_name, source=str(qube),
+                target=str(qube), action='deny')
             new_row = self._add_exception_rule(rule)
             new_row.activate()
             break
@@ -580,8 +584,9 @@ class VMSubsetPolicyHandler(PolicyHandler):
                 else:
                     continue
                 another_rule = self.policy_manager.new_rule(
-                    self.service_name, new_rule.source, new_target,
-                    type(new_rule.action).__name__.lower())
+                    service=self.service_name, source=new_rule.source,
+                    target=new_target,
+                    action=type(new_rule.action).__name__.lower())
                 if str(another_rule) in [str(rule) for rule in rules]:
                     # do not save duplicates
                     continue
