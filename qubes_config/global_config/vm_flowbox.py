@@ -37,6 +37,21 @@ from gi.repository import Gtk
 import gbulb
 gbulb.install()
 
+
+class PlaceholderText(Gtk.FlowBoxChild):
+    """Placeholder to be shown if no qubes are selected"""
+    def __init__(self):
+        super().__init__()
+        self.label = Gtk.Label()
+        self.label.set_text('No qubes selected')
+        self.label.get_style_context().add_class('didascalia')
+        self.add(self.label)
+        self.show_all()
+
+    def __str__(self):  # pylint: disable=arguments-differ
+        return "placeholder"
+
+
 class VMFlowBoxButton(Gtk.FlowBoxChild):
     """Simple button  representing a VM that can be deleted."""
     def __init__(self, vm: qubesadmin.vm.QubesVM):
@@ -67,7 +82,12 @@ class VMFlowBoxButton(Gtk.FlowBoxChild):
             "Are you sure you want to remove this exception?")
         if response == Gtk.ResponseType.NO:
             return
-        self.get_parent().remove(self)
+        parent = self.get_parent()
+        parent.remove(self)
+        parent.emit('child-removed', None)
+
+    def __str__(self):  # pylint: disable=arguments-differ
+        return str(self.vm)
 
 
 class VMFlowboxHandler:
@@ -122,12 +142,14 @@ class VMFlowboxHandler:
             filter_function=filter_function)
 
         self.flowbox.set_sort_func(self._sort_flowbox)
+        self.placeholder = PlaceholderText()
+        self.flowbox.add(self.placeholder)
 
         self._initial_vms = sorted(initial_vms)
         for vm in self._initial_vms:
             self.flowbox.add(VMFlowBoxButton(vm))
         self.flowbox.show_all()
-
+        self.placeholder.set_visible(not bool(self._initial_vms))
 
         self.add_button.connect('clicked',
                                           self._add_button_clicked)
@@ -135,11 +157,13 @@ class VMFlowboxHandler:
                                           self._add_cancel_clicked)
         self.add_confirm.connect('clicked',
                                           self._add_confirm_clicked)
+        self.flowbox.connect('child-removed',
+                             self._vm_removed)
 
     @staticmethod
     def _sort_flowbox(child_1, child_2):
-        vm_1 = str(child_1.vm)
-        vm_2 = str(child_2.vm)
+        vm_1 = str(child_1)
+        vm_2 = str(child_2)
         if vm_1 == vm_2:
             return 0
         return 1 if vm_1 > vm_2 else -1
@@ -159,7 +183,11 @@ class VMFlowboxHandler:
             show_error("Cannot add qube", "This qube is already selected.")
             return
         self.flowbox.add(VMFlowBoxButton(select_vm))
+        self.placeholder.set_visible(False)
         self.add_box.set_visible(False)
+
+    def _vm_removed(self, *_args):
+        self.placeholder.set_visible(not bool(self.selected_vms))
 
     def set_visible(self, state: bool):
         """Set flowbox to visible/usable."""
@@ -180,6 +208,8 @@ class VMFlowboxHandler:
         if not self.box.get_visible():
             return selected_vms
         for child in self.flowbox.get_children():
+            if isinstance(child, PlaceholderText):
+                continue
             selected_vms.append(child.vm)
         return selected_vms
 

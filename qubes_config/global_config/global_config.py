@@ -281,6 +281,11 @@ class GlobalConfig(Gtk.Application):
                            GObject.SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT,
                            (GObject.TYPE_PYOBJECT,))
 
+        GObject.signal_new('child-removed',
+                           Gtk.FlowBox,
+                           GObject.SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT,
+                           (GObject.TYPE_PYOBJECT,))
+
         self.builder = Gtk.Builder()
         self.builder.add_from_file(pkg_resources.resource_filename(
             __name__, '../global_config.glade'))
