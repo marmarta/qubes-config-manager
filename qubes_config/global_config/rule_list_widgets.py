@@ -20,9 +20,10 @@
 """Widgets used by various list of policy rules."""
 from typing import Optional, Dict, Callable
 
-from ..widgets.qubes_widgets_library import VMListModeler, TextModeler,\
-    ImageTextButton, TokenName, BiDictionary
+from ..widgets.gtk_widgets import VMListModeler, TextModeler,\
+    ImageTextButton, TokenName
 from ..widgets.gtk_utils import show_error, ask_question
+from ..widgets.utils import BiDictionary
 from .policy_rules import AbstractRuleWrapper, AbstractVerbDescription
 
 import gi

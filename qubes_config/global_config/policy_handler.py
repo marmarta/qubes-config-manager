@@ -27,7 +27,7 @@ from typing import Optional, List, Type, Set
 from qrexec.policy.parser import Rule
 from qrexec.exc import PolicySyntaxError
 
-from ..widgets.qubes_widgets_library import VMListModeler
+from ..widgets.gtk_widgets import VMListModeler
 from ..widgets.gtk_utils import load_icon, show_error, ask_question
 from .page_handler import PageHandler
 from .policy_rules import AbstractRuleWrapper, AbstractVerbDescription

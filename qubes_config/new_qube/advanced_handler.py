@@ -22,7 +22,7 @@ from typing import Optional, Dict, Any
 import logging
 
 import qubesadmin.vm
-from ..widgets.qubes_widgets_library import TextModeler
+from ..widgets.gtk_widgets import TextModeler
 from ..widgets.gtk_utils import load_icon
 
 import gi

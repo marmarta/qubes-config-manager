@@ -38,36 +38,12 @@ NONE_CATEGORY = {
 }
 
 
-class BiDictionary(dict):
-    """Helper bi-directional dictionary. By design, duplicate values
-    cause errors."""
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.inverted: Dict[Any, Any] = {}
-        for key, value in self.items():
-            if value in self.inverted:
-                raise ValueError
-            self.inverted[value] = key
-
-    def __setitem__(self, key, value):
-        if key in self:
-            del self.inverted[self[key]]
-        super().__setitem__(key, value)
-        if value in self.inverted:
-            raise ValueError
-        self.inverted[value] = key
-
-    def __delitem__(self, key):
-        del self.inverted[self[key]]
-        super().__delitem__(key)
-
-
 class TokenName(Gtk.Box):
     """
     A Gtk.Box containing a (optionally changing) nicely formatted token/vm name.
     """
     def __init__(self, token_name: str, qapp: qubesadmin.Qubes,
-                 categories: Optional[Dict[str, str]]):
+                 categories: Optional[Dict[str, str]] = None):
         """
         :param token_name: string for of the token
         :param qapp: Qubes object
@@ -102,22 +78,23 @@ class QubeName(Gtk.Box):
     A Gtk.Box containing qube icon plus name, colored in the label color and
     bolded.
     """
-    def __init__(self, vm: qubesadmin.vm.QubesVM):
+    def __init__(self, vm: Optional[qubesadmin.vm.QubesVM]):
         """
         :param vm: Qubes VM to be represented.
         """
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.vm = vm
-        if vm is not None:
-            self.image = Gtk.Image()
-            self.image.set_from_pixbuf(load_icon(vm.icon, 20, 20))
         self.label = Gtk.Label()
         self.label.set_label(vm.name if vm else 'None')
 
         self.set_spacing(5)
-        self.image.set_halign(Gtk.Align.CENTER)
 
-        self.pack_start(self.image, False, False, 0)
+        if vm is not None:
+            self._image = Gtk.Image()
+            self._image.set_from_pixbuf(load_icon(vm.icon, 20, 20))
+            self._image.set_halign(Gtk.Align.CENTER)
+            self.pack_start(self._image, False, False, 0)
+
         self.pack_start(self.label, False, False, 0)
 
         self.get_style_context().add_class('qube-box-base')
@@ -159,16 +136,17 @@ class TextModeler(TraitSelector):
     """
     def __init__(self, combobox: Gtk.ComboBoxText,
                  values: Dict[str, Any],
-                 selected_value: Optional[str] = None,
+                 selected_value: Optional[Any] = None,
                  style_changes: bool = False):
         """
         :param combobox: target ComboBoxText object
         :param values: dictionary of displayed strings and corresponding values.
-        :param selected_value: which value should be selected initially, if None
-         the first option will be selected; if not in available choices, will be
-         added.
+        :param selected_value: which of the corresponding values should be
+        selected initially; if None and there is no None value available,
+         the first option will be selected; if provided value is not in the
+         available choices, it will be added.
         :param style_changes: if True, combo-changed style class will be
-        applied when combobox value changes
+        applied when combobox value is different from initial value.
         """
         self._combo: Gtk.ComboBoxText = combobox
         self._values: Dict[str, Any] = values
@@ -176,17 +154,21 @@ class TextModeler(TraitSelector):
         if selected_value and selected_value not in self._values.values():
             self._values[selected_value] = selected_value
 
-        for text in self._values.keys():
+        self._initial_text = None
+        for text, value in self._values.items():
             # to ensure that the correct option id is selected, we use
             # explicit id for both text and id
             self._combo.append(text, text)
+            if selected_value and selected_value == value:
+                self._initial_text = text
+            elif selected_value is None and value is None:
+                self._initial_text = text
 
-        if selected_value:
-            self.select_value(selected_value)
+        if self._initial_text:
+            self._combo.set_active_id(self._initial_text)
         else:
             self._combo.set_active(0)
-
-        self._initial_text = self._combo.get_active_text()
+            self._initial_text = self._combo.get_active_text()
 
         if style_changes:
             self._combo.connect('changed', self._on_changed)

@@ -20,8 +20,10 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=missing-module-docstring
+import pytest
+
 from ..widgets.utils import apply_feature_change, get_boolean_feature, \
-    get_feature, apply_feature_change_from_widget
+    get_feature, apply_feature_change_from_widget, BiDictionary
 
 def test_get_feature(test_qapp):
     """Test if get feature methods behave correctly, in
@@ -109,3 +111,20 @@ def test_apply_change_from_widget(test_qapp):
         ('test-vm', 'admin.vm.feature.Remove', feature_name, None)] = \
         b'0\x001'
     apply_feature_change_from_widget(MockWidget(True, None), vm, feature_name)
+
+
+def test_bidict():
+    d = {'a': 1, 'b': 2}
+
+    bidict = BiDictionary(d)
+    assert bidict.inverted == {1: 'a', 2: 'b'}
+    bidict['c'] = 3
+    assert bidict.inverted == {1: 'a', 2: 'b', 3: 'c'}
+    del bidict['a']
+    assert bidict.inverted == {2: 'b', 3: 'c'}
+    with pytest.raises(ValueError):
+        bidict['b'] = 3
+
+    with pytest.raises(ValueError):
+        d = {'a': 1, 'b': 1}
+        BiDictionary(d)

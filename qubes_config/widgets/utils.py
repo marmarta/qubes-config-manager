@@ -22,7 +22,7 @@ import qubesadmin
 import qubesadmin.exc
 import qubesadmin.vm
 
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 
 
 def get_feature(vm, feature_name, default_value=None):
@@ -65,3 +65,27 @@ def apply_feature_change(vm: qubesadmin.vm.QubesVM,
         raise qubesadmin.exc.QubesException(
             "Failed to set {} due to insufficient "
             "permissions".format(feature_name))
+
+
+class BiDictionary(dict):
+    """Helper bi-directional dictionary. By design, duplicate values
+    cause errors."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.inverted: Dict[Any, Any] = {}
+        for key, value in self.items():
+            if value in self.inverted:
+                raise ValueError
+            self.inverted[value] = key
+
+    def __setitem__(self, key, value):
+        if key in self:
+            del self.inverted[self[key]]
+        super().__setitem__(key, value)
+        if value in self.inverted:
+            raise ValueError
+        self.inverted[value] = key
+
+    def __delitem__(self, key):
+        del self.inverted[self[key]]
+        super().__delitem__(key)

@@ -25,7 +25,7 @@ from typing import List, Union, Optional, Dict
 
 from qrexec.policy.parser import Allow
 
-from ..widgets.qubes_widgets_library import WidgetWithButtons
+from ..widgets.gtk_widgets import WidgetWithButtons
 from ..widgets.utils import get_feature, apply_feature_change_from_widget, \
     apply_feature_change
 from ..widgets.gtk_utils import ask_question

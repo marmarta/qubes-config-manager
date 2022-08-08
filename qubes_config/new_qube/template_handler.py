@@ -26,7 +26,7 @@ import logging
 import qubesadmin
 import qubesadmin.events
 import qubesadmin.vm
-from ..widgets.qubes_widgets_library import VMListModeler
+from ..widgets.gtk_widgets import VMListModeler
 from .application_selector import ApplicationData
 
 import gi

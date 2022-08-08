@@ -24,7 +24,7 @@ from typing import Optional
 import logging
 
 import qubesadmin.vm
-from ..widgets.qubes_widgets_library import QubeName
+from ..widgets.gtk_widgets import QubeName
 from ..widgets.gtk_utils import load_icon
 
 import gi

@@ -22,7 +22,7 @@ Widget that's a flow box with vms.
 """
 from typing import Optional, List, Callable
 
-from ..widgets.qubes_widgets_library import VMListModeler, QubeName
+from ..widgets.gtk_widgets import VMListModeler, QubeName
 from ..widgets.gtk_utils import load_icon, show_error, ask_question
 
 import gi

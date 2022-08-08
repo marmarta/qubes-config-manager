@@ -31,7 +31,7 @@ import qubesadmin.exc
 import qubesadmin.vm
 from qubesadmin.utils import parse_size
 
-from ..widgets.qubes_widgets_library import VMListModeler, \
+from ..widgets.gtk_widgets import VMListModeler, \
     TextModeler, TraitSelector, NONE_CATEGORY
 from .page_handler import PageHandler
 from ..widgets.utils import get_feature, get_boolean_feature, \
