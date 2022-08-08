@@ -23,16 +23,19 @@ New Qube program.
 # pylint: disable=import-error
 import subprocess
 import sys
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict, Any
 import pkg_resources
 import logging
 
 import qubesadmin
 import qubesadmin.events
+import qubesadmin.exc
 import qubesadmin.vm
 from .application_selector import ApplicationBoxHandler
 from .template_handler import TemplateHandler, TemplateSelector
 from .network_selector import NetworkSelector
+from .advanced_handler import AdvancedHandler
+from ..widgets.qubes_widgets_library import show_error
 
 import gi
 
@@ -155,21 +158,7 @@ class CreateNewQube(Gtk.Application):
         self.app_box_handler = ApplicationBoxHandler(
             self.apps, self.builder, self.template_handler)
 
-        self.advanced_events: Gtk.EventBox = \
-            self.builder.get_object('eventbox_advanced')
-        self.advanced_box: Gtk.Box = \
-            self.builder.get_object('advanced_box')
-        self.advanced_expander_icon: Gtk.Image = \
-            self.builder.get_object('advanced_expander')
-        self.advanced_expander_label: Gtk.Label = \
-            self.builder.get_object('advanced_label')
-
-        self.advanced_pool: Gtk.ComboBoxText = \
-            self.builder.get_object('storage_pool_combobox')
-        self.advanced_initram: Gtk.SpinButton = self.builder.get_object(
-            'initram_spin_button')
-
-        self._setup_advanced()
+        self.advanced_handler = AdvancedHandler(self.builder, self.qapp)
 
         self.create_button: Gtk.Button = \
             self.builder.get_object('create_button')
@@ -181,50 +170,8 @@ class CreateNewQube(Gtk.Application):
 
         self.main_window.connect('delete-event', self._quit)
 
-    def _quit(self, _widget, *args):
+    def _quit(self, *_args):
         self.quit()
-
-    def _setup_advanced(self):
-        self.advanced_events.connect(
-            'button-release-event', self._show_hide_advanced)
-
-        for pool in self.qapp.pools.values():
-            if pool == self.qapp.default_pool:
-                self.advanced_pool.append(str(pool), f'default ({pool})')
-                self.advanced_pool.set_active_id(str(pool))
-            else:
-                self.advanced_pool.append(str(pool), str(pool))
-
-        # discuss: max ram?
-        self.advanced_initram.configure(
-            Gtk.Adjustment(value=0, lower=0, upper=100000, step_increment=1,
-                           page_increment=10, page_size=100),
-            climb_rate=10, digits=0)
-
-        self.advanced_initram.connect('output', self._format_initram)
-
-    def _format_initram(self, _widget):
-        value = self.advanced_initram.get_adjustment().get_value()
-        if value == 0:
-            text = '(default)'
-        else:
-            text = f'{value} MB'
-        self.advanced_initram.set_text(text)
-        return True
-
-    def _show_hide_advanced(self, *_args):
-        self.advanced_box.set_visible(
-            not self.advanced_box.get_visible())
-        if self.advanced_box.get_visible():
-            self.advanced_expander_icon.set_from_pixbuf(
-                Gtk.IconTheme.get_default().load_icon(
-                    'qubes-expander-shown', 20, 0))
-            self.advanced_expander_label.set_text('Hide advanced settings')
-        else:
-            self.advanced_expander_icon.set_from_pixbuf(
-                Gtk.IconTheme.get_default().load_icon(
-                    'qubes-expander-hidden', 18, 0))
-            self.advanced_expander_label.set_text('Show advanced settings')
 
     @staticmethod
     def _handle_theme():
@@ -258,23 +205,59 @@ class CreateNewQube(Gtk.Application):
             Gtk.IconTheme.get_default().load_icon(
                 'qubes-question-light', 20, 0))
 
-    def _do_create_qube(self, *_args, **_kwargs):
+    def _do_create_qube(self, *_args):
         if not self.qube_label or not self.qube_name:
             raise ValueError
 
         tree_iter = self.qube_label.get_active_iter()
+
         if tree_iter is not None:
             model = self.qube_label.get_model()
             label = self.qapp.labels[model[tree_iter][1]]
         else:
             return
 
-        args = {
-            "name": self.qube_name.get_text(),
-            "label": label,
-            "template": self.template_handler.get_selected_template()
-        }
-        vm: qubesadmin.vm.QubesVM = self.qapp.add_new_vm('AppVM', **args)
+        if self.qube_type_template.get_active():
+            klass = 'TemplateVM'
+        elif self.qube_type_standalone.get_active():
+            klass = 'StandaloneVM'
+        elif self.qube_type_disposable.get_active():
+            klass = 'DisposableVM'
+        else:
+            klass = 'AppVM'
+
+        properties: Dict[str, Any] = {'provides_network':
+                          self.advanced_handler.get_provides_network()}
+        if self.network_selector.get_selected_netvm():
+            properties['netvm'] = self.network_selector.get_selected_netvm()
+        if klass == 'StandaloneVM' and \
+                not self.template_handler.get_selected_template():
+            properties['virt_mode'] = 'hvm'
+            properties['kernel'] = None
+
+        if self.advanced_handler.get_init_ram():
+            properties['memory'] = self.advanced_handler.get_init_ram()
+
+        vm = None
+        err = None
+
+        try:
+            vm = self._create_qube(
+                vmclass=klass,
+                name=self.qube_name.get_text(),
+                label = label,
+                template=self.template_handler.get_selected_template(),
+                properties=properties,
+                pool=self.advanced_handler.get_pool(),
+            )
+        except qubesadmin.exc.QubesException as qex:
+            err  = str(qex)
+        except Exception as ex:  # pylint: disable=broad-except
+            err = repr(ex)
+
+        if err or not vm:
+            show_error("Could not create qube", f"An error occurred: {err}")
+            return
 
         apps = []
         for child in self.app_box_handler.flowbox.get_children():
@@ -289,8 +272,6 @@ class CreateNewQube(Gtk.Application):
                 stdin=subprocess.PIPE) as p:
             p.communicate('\n'.join(apps).encode())
 
-        vm.netvm = self.network_selector.get_selected_netvm()
-
         msg = Gtk.MessageDialog(
             self.main_window,
             Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
@@ -298,8 +279,42 @@ class CreateNewQube(Gtk.Application):
             Gtk.ButtonsType.OK,
             "Qube created successfully!")
         msg.run()
+
+        if self.advanced_handler.get_launch_settings():
+            subprocess.check_call(['qubes-vm-settings', str(vm)])
+        if self.advanced_handler.get_install_system():
+            subprocess.check_call(['qubes-vm-boot-from-device', str(vm)])
+
         # TODO: discuss: should we quit after a failure?
         self.quit()
+
+    def _create_qube(self, vmclass, name, label, template,
+                     properties, pool) -> qubesadmin.vm.QubesVM:
+        if vmclass == 'StandaloneVM' and template is not None:
+            args = {
+                'ignore_volumes': ['private']
+            }
+            if pool:
+                args['pool'] = pool
+
+            vm = self.qapp.clone_vm(template, name, vmclass, **args)
+            vm.label = label
+            for k, v in properties.items():
+                setattr(vm, k, v)
+        else:
+            args = {
+                "name": name,
+                "label": label,
+                "template": template
+            }
+            if pool:
+                args['pool'] = pool
+
+            vm = self.qapp.add_new_vm(vmclass, **args)
+            for k, v in properties.items():
+                setattr(vm, k, v)
+
+        return vm
 
 
 def main():

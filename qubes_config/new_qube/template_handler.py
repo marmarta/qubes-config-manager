@@ -80,7 +80,7 @@ class TemplateSelector(abc.ABC):
         :return: None
         """
         if widget is None or widget.get_active():
-            self.main_window.emit('template-changed', None)
+            self.main_window.emit('template-changed', self.get_selected_vm())
 
     def is_vm_available(self, vm: qubesadmin.vm.QubesVM) -> bool:
         """
@@ -118,8 +118,10 @@ class TemplateSelectorCombo(TemplateSelector):
 
         self.modeler = VMListModeler(
             combobox=self.combo, qapp=self.qapp,
-            filter_function=filter_function, event_callback=self.emit_signal,
+            filter_function=filter_function,
             default_value=default_value)
+        # done separately to avoid recursion problem
+        self.modeler.connect_change_callback(self.emit_signal)
 
     def set_visible(self, state: bool):
         """Change visibility of widgets to state (True-visible, False-hidden)"""
@@ -178,11 +180,13 @@ class TemplateSelectorNoneCombo(TemplateSelector):
 
         self.modeler = VMListModeler(
             combobox=self.combo_template, qapp=self.qapp,
-            filter_function=filter_function, event_callback=self.emit_signal,
+            filter_function=filter_function,
             default_value=default_value)
 
         self.radio_none.connect('toggled', self.emit_signal)
         self.radio_template.connect('toggled', self._radio_toggled)
+        # done separately to avoid infinite recursion
+        self.modeler.connect_change_callback(self.emit_signal)
 
     def _radio_toggled(self, widget: Gtk.RadioButton):
         if widget.get_active():
@@ -233,8 +237,7 @@ class TemplateHandler:
 
         GObject.signal_new('template-changed',
                            self.main_window,
-                           GObject.SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT,
-                           (GObject.TYPE_PYOBJECT,))
+                           GObject.SIGNAL_RUN_LAST, None, (str,))
 
         self.template_selectors: Dict[str, TemplateSelector] = {
             'qube_type_app': TemplateSelectorCombo(
@@ -270,7 +273,8 @@ class TemplateHandler:
         for selector_type, selector in self.template_selectors.items():
             selector.set_visible(selector_type == vm_type)
         self.selected_type = vm_type
-        self.main_window.emit('template-changed', None)
+        self.main_window.emit('template-changed',
+                              self.get_selected_template())
 
     def get_selected_template(self) -> Optional[qubesadmin.vm.QubesVM]:
         """Get currently selected VM."""

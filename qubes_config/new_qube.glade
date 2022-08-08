@@ -334,9 +334,6 @@
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="orientation">vertical</property>
-                    <child type="center">
-                      <placeholder/>
-                    </child>
                     <child>
                       <object class="GtkLabel">
                         <property name="visible">True</property>
@@ -1088,7 +1085,7 @@
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">True</property>
-                        <property name="position">21</property>
+                        <property name="position">20</property>
                       </packing>
                     </child>
                     <child>
@@ -1102,7 +1099,7 @@
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">True</property>
-                        <property name="position">22</property>
+                        <property name="position">21</property>
                       </packing>
                     </child>
                     <child>
@@ -1116,11 +1113,8 @@
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">True</property>
-                        <property name="position">23</property>
+                        <property name="position">22</property>
                       </packing>
-                    </child>
-                    <child>
-                      <placeholder/>
                     </child>
                     <child>
                       <object class="GtkLabel">
@@ -1135,7 +1129,7 @@
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">True</property>
-                        <property name="position">25</property>
+                        <property name="position">23</property>
                       </packing>
                     </child>
                     <child>
@@ -1182,7 +1176,7 @@
                         <property name="expand">False</property>
                         <property name="fill">True</property>
                         <property name="padding">5</property>
-                        <property name="position">26</property>
+                        <property name="position">24</property>
                       </packing>
                     </child>
                     <child>
@@ -1241,12 +1235,11 @@
                           <object class="GtkBox">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
+                            <property name="spacing">15</property>
                             <child>
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="margin-right">5</property>
-                                <property name="margin-end">5</property>
                                 <property name="label" translatable="yes">Storage pool:</property>
                               </object>
                               <packing>
@@ -1270,10 +1263,6 @@
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="margin-left">5</property>
-                                <property name="margin-right">5</property>
-                                <property name="margin-start">5</property>
-                                <property name="margin-end">5</property>
                                 <property name="label" translatable="yes">Initial RAM:</property>
                               </object>
                               <packing>
@@ -1298,6 +1287,18 @@
                                 <property name="position">3</property>
                               </packing>
                             </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">MB</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">4</property>
+                              </packing>
+                            </child>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -1305,18 +1306,24 @@
                             <property name="position">3</property>
                           </packing>
                         </child>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </object>
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">True</property>
-                        <property name="position">27</property>
+                        <property name="position">25</property>
                       </packing>
                     </child>
                     <child>
-                      <placeholder/>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="margin-bottom">50</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">26</property>
+                      </packing>
                     </child>
                     <style>
                       <class name="content_box"/>
