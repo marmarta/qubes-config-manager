@@ -45,9 +45,6 @@ import qubesadmin.exc
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
-import gbulb
-gbulb.install()
-
 
 class RepoHandler:
     """Handler for repository settings."""

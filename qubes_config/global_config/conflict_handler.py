@@ -27,8 +27,6 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
-import gbulb
-gbulb.install()
 
 class ConflictFileListRow(Gtk.ListBoxRow):
     """A ListBox row representing a policy file with conflicting info."""

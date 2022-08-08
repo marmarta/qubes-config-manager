@@ -42,10 +42,6 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
-import gbulb
-gbulb.install()
-
-
 logger = logging.getLogger('qubes-config-manager')
 
 

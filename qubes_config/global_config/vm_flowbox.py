@@ -34,9 +34,6 @@ import qubesadmin.exc
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
-import gbulb
-gbulb.install()
-
 
 class PlaceholderText(Gtk.FlowBoxChild):
     """Placeholder to be shown if no qubes are selected"""
