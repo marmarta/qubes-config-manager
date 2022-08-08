@@ -25,9 +25,10 @@ from typing import List, Union, Optional, Dict
 
 from qrexec.policy.parser import Allow
 
-from ..widgets.qubes_widgets_library import WidgetWithButtons, ask_question
+from ..widgets.qubes_widgets_library import WidgetWithButtons
 from ..widgets.utils import get_feature, apply_feature_change_from_widget, \
     apply_feature_change
+from ..widgets.gtk_utils import ask_question
 from .page_handler import PageHandler
 from .policy_rules import RuleSimple
 from .policy_manager import PolicyManager

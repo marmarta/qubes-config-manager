@@ -18,11 +18,15 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 """Tests for gtk utils"""
+from unittest.mock import patch, call
+
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import GdkPixbuf
+gi.require_version('GdkPixbuf', '2.0')
+from gi.repository import GdkPixbuf, Gtk
 
-from ..widgets.gtk_utils import load_icon, load_icon_at_gtk_size
+from ..widgets.gtk_utils import load_icon, load_icon_at_gtk_size, \
+    ask_question, show_error
 
 def test_load_icon():
     """Test loading icon methods; tests if they don't error out and
@@ -42,3 +46,21 @@ def test_load_icon():
     assert isinstance(icon_from_file, GdkPixbuf.Pixbuf)
     assert isinstance(icon_from_name, GdkPixbuf.Pixbuf)
     assert isinstance(icon_from_error, GdkPixbuf.Pixbuf)
+
+def test_ask_question():
+    """Simple test to see if the function does something
+    and if the function correctly executes run and destroy (instead of,
+    e.g., just show)"""
+    window = Gtk.Window()
+
+    with patch('gi.repository.Gtk.MessageDialog') as mock_dialog:
+        ask_question(window, "Text", "Text")
+        mock_dialog.assert_called()
+        assert call().run() in mock_dialog.mock_calls
+        assert call().destroy() in mock_dialog.mock_calls
+
+    with patch('gi.repository.Gtk.MessageDialog') as mock_dialog:
+        show_error("Text", "Text")
+        mock_dialog.assert_called()
+        assert call().run() in mock_dialog.mock_calls
+        assert call().destroy() in mock_dialog.mock_calls

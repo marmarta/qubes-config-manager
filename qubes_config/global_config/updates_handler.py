@@ -26,8 +26,8 @@ from typing import Optional, List, Dict
 
 from qrexec.policy.parser import Rule
 
-from ..widgets.qubes_widgets_library import VMListModeler, show_error, \
-    ask_question, NONE_CATEGORY
+from ..widgets.qubes_widgets_library import VMListModeler, NONE_CATEGORY
+from ..widgets.gtk_utils import show_error, ask_question
 from ..widgets.utils import get_boolean_feature, apply_feature_change
 from .page_handler import PageHandler
 from .policy_rules import RuleTargeted, SimpleVerbDescription

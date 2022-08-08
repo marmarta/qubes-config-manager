@@ -35,8 +35,7 @@ from .application_selector import ApplicationBoxHandler
 from .template_handler import TemplateHandler, TemplateSelector
 from .network_selector import NetworkSelector
 from .advanced_handler import AdvancedHandler
-from ..widgets.qubes_widgets_library import show_error
-from ..widgets.gtk_utils import load_icon
+from ..widgets.gtk_utils import load_icon, show_error
 
 import gi
 

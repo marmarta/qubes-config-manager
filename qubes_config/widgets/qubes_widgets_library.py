@@ -33,40 +33,6 @@ from typing import Optional, Callable, Dict, Any, Union, List
 
 from .gtk_utils import load_icon
 
-def show_error(title, text):
-    """
-    Helper function to display error messages.
-    """
-    dialog = Gtk.MessageDialog(
-        None, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.OK)
-    content_area = dialog.get_content_area()
-    content_area.get_style_context().add_class('question_dialog')
-    dialog.set_title(title)
-    dialog.set_markup(text)
-    dialog.connect("response", lambda *x: dialog.destroy())
-    dialog.run()
-    dialog.destroy()
-
-
-def ask_question(parent, title: str, text: str,
-                 options: Gtk.ButtonsType = Gtk.ButtonsType.YES_NO):
-    """
-    Helper function to show question dialogs.
-    """
-    dialog = Gtk.MessageDialog(
-        parent,
-        Gtk.DialogFlags.MODAL,
-        Gtk.MessageType.QUESTION, options)
-    dialog.set_title(title)
-    content_area = dialog.get_content_area()
-    content_area.get_style_context().add_class('question_dialog')
-    dialog.set_markup(f'<b>{title}</b>')
-    dialog.format_secondary_markup(text)
-    response = dialog.run()
-    dialog.destroy()
-    return response
-
-
 NONE_CATEGORY = {
     "None": "(none)"
 }

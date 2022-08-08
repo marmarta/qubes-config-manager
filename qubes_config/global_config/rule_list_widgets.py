@@ -21,7 +21,8 @@
 from typing import Optional, Dict, Callable
 
 from ..widgets.qubes_widgets_library import VMListModeler, TextModeler,\
-    ImageTextButton, show_error, TokenName, BiDictionary, ask_question
+    ImageTextButton, TokenName, BiDictionary
+from ..widgets.gtk_utils import show_error, ask_question
 from .policy_rules import AbstractRuleWrapper, AbstractVerbDescription
 
 import gi

@@ -32,7 +32,7 @@ import qubesadmin
 import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.vm
-from ..widgets.qubes_widgets_library import ask_question, show_error
+from ..widgets.gtk_utils import ask_question, show_error
 from .page_handler import PageHandler
 from .policy_handler import PolicyHandler, VMSubsetPolicyHandler
 from .policy_rules import RuleSimple, \
