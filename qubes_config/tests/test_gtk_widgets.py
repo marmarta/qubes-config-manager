@@ -150,6 +150,20 @@ def test_text_modeler_none():
     assert not text_modeler.is_changed()
 
 
+def test_text_modeler_missing():
+    """Initial value is not in values set"""
+    combobox = Gtk.ComboBoxText()
+
+    text_modeler = gtk_widgets.TextModeler(
+        combobox=combobox,
+        values= {'Good': 1, 'Ugly': 2, 'Bad': 3},
+        selected_value='Very Strange')
+
+    assert combobox.get_active_text() == 'Very Strange'
+    assert text_modeler.get_selected() == 'Very Strange'
+    assert not text_modeler.is_changed()
+
+
 def test_text_modeler_initial():
     """Initial value is set"""
     combobox = Gtk.ComboBoxText()
@@ -178,29 +192,333 @@ def test_text_modeler_initial_none():
     assert text_modeler.get_selected() is None
     assert not text_modeler.is_changed()
 
-# selected_value = 'Ugly',
-# style_changes = False
 
-# @patch('gi.repository.Gtk.IconTheme', spec=Gtk.IconTheme)
-# @patch('gi.repository.Gtk.Image.set_from_pixbuf')
-# def test_image_button(*_args):
-#     a = Mock()
-#     button = lib.ImageTextButton('text', None, click_function=a.do_stuff,
-#                                  style_classes=['flat'])
-#     button.clicked()
-#     print(a.mock_calls)
-#     assert False
-#
-#
-# def test_widget_with_buttons(mock, mock2):
-#     mock_widget = Mock()
-#     mock_widget.mock_add_spec(GObject)
-#     mock_widget.mock_add_spec(Gtk.Widget)
-#
-#     # with patch('gi.repository.Gtk.IconTheme',
-#     **{'load_icon.return_value': GdkPixbuf.Pixbuf()}):
-#     test_widget = lib.WidgetWithButtons(mock_widget)
-#
-#     test_widget.edit_button.clicked()
-#     print(mock_widget.mock_calls)
-#     assert False
+def test_text_modeler_style_changes():
+    combobox = Gtk.ComboBoxText()
+
+    text_modeler = gtk_widgets.TextModeler(
+        combobox=combobox,
+        values= {'Good': 1, 'Ugly': 2, 'Bad': 3},
+        selected_value=1,
+        style_changes=True
+    )
+
+    assert not combobox.get_style_context().has_class('combo-changed')
+
+    # change selected value manually
+    combobox.set_active(2)
+    assert combobox.get_style_context().has_class('combo-changed')
+
+    # and back to initial
+    combobox.set_active(0)
+    assert not combobox.get_style_context().has_class('combo-changed')
+
+    # change selected value with modeler
+    text_modeler.select_value(2)
+    assert combobox.get_style_context().has_class('combo-changed')
+
+    # and reset
+    text_modeler.reset()
+    assert not combobox.get_style_context().has_class('combo-changed')
+
+
+def test_text_modeler_style_changes_none_val():
+    combobox = Gtk.ComboBoxText()
+
+    text_modeler = gtk_widgets.TextModeler(
+        combobox=combobox,
+        values= {'Good': 1, 'Ugly': None, 'Bad': 3},
+        selected_value=None,
+        style_changes=True
+    )
+
+    assert not combobox.get_style_context().has_class('combo-changed')
+
+    # change selected value manually
+    combobox.set_active(2)
+    assert combobox.get_style_context().has_class('combo-changed')
+
+    # and back to initial
+    combobox.set_active(1)
+    assert not combobox.get_style_context().has_class('combo-changed')
+
+    # change selected value with modeler
+    text_modeler.select_value(3)
+    assert combobox.get_style_context().has_class('combo-changed')
+
+    # and reset
+    text_modeler.reset()
+    assert not combobox.get_style_context().has_class('combo-changed')
+
+    # change selected value with modeler v 2
+    text_modeler.select_value(3)
+    assert combobox.get_style_context().has_class('combo-changed')
+    text_modeler.select_value(None)
+    assert not combobox.get_style_context().has_class('combo-changed')
+
+#######################
+### VMModeler tests ###
+#######################
+
+def get_selected_text(combobox: Gtk.ComboBox):
+    tree_iter = combobox.get_active_iter()
+    model = combobox.get_model()
+    # 0 is row numer, 1 is readable name, 2 is pixbuf, 3 is api_name
+    return model[tree_iter][1]
+
+#### initial params
+
+def test_vmmodeler_simple(test_qapp):
+    """simplest vm modeler: no special params, just check it does not error
+    out"""
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    _ = gtk_widgets.VMListModeler(
+        combobox=combobox,
+        qapp=test_qapp,
+    )
+
+    assert get_selected_text(combobox) is not None
+
+def test_vmmodeler_selected(test_qapp):
+    """simplest vm modeler: no special params, just check it does not error
+    out"""
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    initial_vm = test_qapp.domains['test-vm']
+    _ = gtk_widgets.VMListModeler(
+        combobox=combobox,
+        qapp=test_qapp,
+        current_value=initial_vm,
+    )
+
+    assert get_selected_text(combobox) == 'test-vm'
+
+
+def test_vmmodeler_default(test_qapp):
+    """simplest vm modeler: no special params, just check it does not error
+    out"""
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    default_vm = test_qapp.domains['test-blue']
+    _ = gtk_widgets.VMListModeler(
+        combobox=combobox,
+        qapp=test_qapp,
+        default_value=default_vm
+    )
+
+    assert get_selected_text(combobox) == 'test-blue (default)'
+
+
+def test_vmmodeler_default_current(test_qapp):
+    """simplest vm modeler: no special params, just check it does not error
+    out"""
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    initial_vm = test_qapp.domains['test-vm']
+    default_vm = test_qapp.domains['test-blue']
+    _ = gtk_widgets.VMListModeler(
+        combobox=combobox,
+        qapp=test_qapp,
+        current_value=initial_vm,
+        default_value=default_vm
+    )
+
+    assert get_selected_text(combobox) == 'test-vm'
+    found = False
+    model = combobox.get_model()
+    for item in model:
+        if item[1] == 'test-blue (default)':
+            found = True
+    assert found
+
+
+def test_vmmodeler_filter(test_qapp):
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    vms = ['test-vm', 'test-blue', 'test-red']
+    vm_modeler = gtk_widgets.VMListModeler(
+        combobox=combobox,
+        qapp=test_qapp,
+        filter_function=lambda vm: str(vm) in vms
+    )
+
+    selected_vms = []
+    model = combobox.get_model()
+    for item in model:
+        selected_vms.append(item[1])
+
+    assert sorted(selected_vms) == sorted(vms)
+
+
+def test_vmmodeler_categories_none(test_qapp):
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    _ = gtk_widgets.VMListModeler(
+        combobox=combobox,
+        qapp=test_qapp,
+        additional_options=gtk_widgets.NONE_CATEGORY
+    )
+
+    assert get_selected_text(combobox) == '(none)'
+
+
+def test_vmmodeler_simple_actions(test_qapp):
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    modeler = gtk_widgets.VMListModeler(
+        combobox=combobox,
+        qapp=test_qapp,
+        current_value='test-vm'
+    )
+
+    vm = test_qapp.domains['test-vm']
+    other_vm = test_qapp.domains['test-blue']
+
+    # expected initial setup
+    assert combobox.get_child().get_text() == 'test-vm'
+    assert get_selected_text(combobox) == 'test-vm'
+    assert modeler.get_selected() == vm
+    assert not modeler.is_changed()
+
+    # select something else
+    modeler.select_value('test-blue')
+    assert combobox.get_child().get_text() == 'test-blue'
+    assert get_selected_text(combobox) == 'test-blue'
+    assert modeler.get_selected() == other_vm
+    assert modeler.is_changed()
+
+    # and reset
+    modeler.reset()
+    assert combobox.get_child().get_text() == 'test-vm'
+    assert get_selected_text(combobox) == 'test-vm'
+    assert modeler.get_selected() == vm
+    assert not modeler.is_changed()
+
+    # select something manually
+    combobox.set_active(combobox.get_active() + 1)
+    assert modeler.is_changed()
+
+    # and back to start
+    modeler.select_value('test-vm')
+    assert combobox.get_child().get_text() == 'test-vm'
+    assert get_selected_text(combobox) == 'test-vm'
+    assert modeler.get_selected() == vm
+    assert not modeler.is_changed()
+
+    # select and save changes
+    modeler.select_value('test-blue')
+    modeler.update_initial()
+    assert combobox.get_child().get_text() == 'test-blue'
+    assert get_selected_text(combobox) == 'test-blue'
+    assert modeler.get_selected() == other_vm
+    assert not modeler.is_changed()
+
+
+def test_vmmodeler_actions_complex(test_qapp):
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    additional_categories = gtk_widgets.NONE_CATEGORY.copy()
+    additional_categories['@anyvm'] = 'Any Qube'
+    modeler = gtk_widgets.VMListModeler(
+        combobox=combobox,
+        qapp=test_qapp,
+        current_value='@anyvm',
+        additional_options=additional_categories
+    )
+
+    vm = test_qapp.domains['test-vm']
+
+    # expected initial setup
+    assert get_selected_text(combobox) == 'Any Qube'
+    assert modeler.get_selected() == '@anyvm'
+    assert not modeler.is_changed()
+
+    # select something else
+    modeler.select_value('test-vm')
+    assert get_selected_text(combobox) == 'test-vm'
+    assert modeler.get_selected() == vm
+    assert modeler.is_changed()
+
+    # select none
+    modeler.select_value("None")
+    assert get_selected_text(combobox) == '(none)'
+    assert modeler.get_selected() is None
+    assert modeler.is_changed()
+
+    modeler.update_initial()
+    assert not modeler.is_changed()
+
+
+def test_modeler_style_changes(test_qapp):
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    entry_box = combobox.get_child()
+    modeler = gtk_widgets.VMListModeler(
+        combobox=combobox,
+        qapp=test_qapp,
+        current_value='test-vm',
+        style_changes=True
+    )
+
+    # switch selection back and forth
+    assert not entry_box.get_style_context().has_class('combo-changed')
+    modeler.select_value('test-blue')
+    assert entry_box.get_style_context().has_class('combo-changed')
+    modeler.select_value('test-vm')
+    assert not entry_box.get_style_context().has_class('combo-changed')
+
+    # switch and reset
+    modeler.select_value('test-blue')
+    assert entry_box.get_style_context().has_class('combo-changed')
+    modeler.reset()
+    assert not entry_box.get_style_context().has_class('combo-changed')
+
+    # switch and update initial
+    modeler.select_value('test-blue')
+    assert entry_box.get_style_context().has_class('combo-changed')
+    modeler.update_initial()
+    assert not entry_box.get_style_context().has_class('combo-changed')
+
+def test_modeler_change_callback(test_qapp):
+    counter = []
+    def incr(*_args):
+        counter.append(1)
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    modeler = gtk_widgets.VMListModeler(
+        combobox=combobox,
+        qapp=test_qapp,
+        current_value='test-vm',
+        event_callback=incr
+    )
+
+    assert counter
+    counter.clear()
+    modeler.select_value('test-blue')
+    assert counter
+
+
+def test_modeler_change_callback_later(test_qapp):
+    counter = []
+    def incr(*_args):
+        counter.append(1)
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    modeler = gtk_widgets.VMListModeler(
+        combobox=combobox,
+        qapp=test_qapp,
+        current_value='test-vm',
+    )
+
+    assert not counter
+    modeler.connect_change_callback(incr)
+    assert not counter
+    modeler.select_value('test-blue')
+    assert counter
+
+def test_modeler_input_test(test_qapp):
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    entry_box: Gtk.Entry = combobox.get_child()
+    modeler = gtk_widgets.VMListModeler(
+        combobox=combobox,
+        qapp=test_qapp,
+        current_value='test-vm',
+    )
+
+    entry_box.set_text('test-blue')
+    assert modeler.get_selected() == test_qapp.domains['test-blue']
+
+    entry_box.set_text('test')
+    assert modeler.get_selected() is None
+
+

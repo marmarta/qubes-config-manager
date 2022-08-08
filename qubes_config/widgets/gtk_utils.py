@@ -41,10 +41,11 @@ def load_icon(icon_name: str, width: int = 24, height: int = 24):
     width and height must be in pixels.
     """
     try:
+        # icon_name is a path
         return GdkPixbuf.Pixbuf.new_from_file_at_size(icon_name, width, height)
     except (GLib.Error, TypeError):
         try:
-            # icon name is a path
+            # icon_name is a name
             image: GdkPixbuf.Pixbuf = Gtk.IconTheme.get_default().load_icon(
                 icon_name, width, 0)
             return image

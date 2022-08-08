@@ -277,6 +277,8 @@ class VMListModeler(TraitSelector):
          be updated to whatever the current value is. Useful if saving changes
          happened."""
         self._initial_id = self.combo.get_active_id()
+        if self.style_changes:
+            self.entry_box.get_style_context().remove_class('combo-changed')
 
     def reset(self):
         """Reset changes."""

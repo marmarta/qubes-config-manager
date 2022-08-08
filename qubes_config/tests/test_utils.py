@@ -22,6 +22,7 @@
 # pylint: disable=missing-module-docstring
 import pytest
 
+import qubesadmin.exc
 from ..widgets.utils import apply_feature_change, get_boolean_feature, \
     get_feature, apply_feature_change_from_widget, BiDictionary
 
@@ -57,23 +58,45 @@ def test_get_feature(test_qapp):
     assert get_boolean_feature(vm, feature_name, True) is True
 
     # set feature
-    test_qapp.expected_calls[
-        ('test-vm', 'admin.vm.feature.Set', feature_name,
-         b'1')] = b'0\0'
+    call = ('test-vm', 'admin.vm.feature.Set', feature_name, b'1')
+    test_qapp.expected_calls[call] = b'0\0'
     apply_feature_change(vm, feature_name, True)
+    assert call in test_qapp.actual_calls
 
-    test_qapp.expected_calls[
-        ('test-vm', 'admin.vm.feature.Set', feature_name,
-         b'text')] = b'0\0'
+    call = ('test-vm', 'admin.vm.feature.Set', feature_name, b'text')
+    test_qapp.expected_calls[call] = b'0\0'
     apply_feature_change(vm, feature_name, 'text')
+    assert call in test_qapp.actual_calls
 
     test_qapp.expected_calls[
         ('test-vm', 'admin.vm.feature.List', None, None)] = \
-        b'0\x00other-feature'
+        b'0\x00test_feature'
     test_qapp.expected_calls[
         ('test-vm', 'admin.vm.feature.Remove', feature_name, None)] = \
         b'0\x001'
     apply_feature_change(vm, feature_name, None)
+    assert ('test-vm', 'admin.vm.feature.Remove', feature_name, None) \
+           in test_qapp.actual_calls
+
+
+def test_feature_unavailable(test_qapp):
+    feature_name = 'test_feature'
+    default_value = 'test'
+    vm = test_qapp.domains['test-vm']
+
+    # missing feature
+    test_qapp.expected_calls[
+        ('test-vm', 'admin.vm.feature.Get',
+         feature_name, None)] = \
+        b'2\x00QubesDaemonAccessError\x00\x00Feature not available\x00'
+    assert get_feature(vm, feature_name, default_value) == default_value
+
+    with pytest.raises(qubesadmin.exc.QubesException):
+        test_qapp.expected_calls[('test-vm', 'admin.vm.feature.Set',
+                                  feature_name, b'1')] = \
+            b'2\x00QubesDaemonAccessError\x00\x00Feature not available\x00'
+        apply_feature_change(vm, feature_name, True)
+
 
 def test_apply_change_from_widget(test_qapp):
     vm = test_qapp.domains['test-vm']
