@@ -24,6 +24,7 @@ from typing import Optional, List, Callable
 
 from ..widgets.qubes_widgets_library import VMListModeler, show_error, \
     ask_question, QubeName
+from ..widgets.gtk_utils import load_icon
 
 import gi
 
@@ -62,9 +63,7 @@ class VMFlowBoxButton(Gtk.FlowBoxChild):
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         box.pack_start(token_widget, False, False, 0)
         remove_icon = Gtk.Image()
-        remove_icon.set_from_pixbuf(
-            Gtk.IconTheme.get_default().load_icon(
-                'qubes-delete', 14, 0))
+        remove_icon.set_from_pixbuf(load_icon('qubes-delete', 14, 14))
         box.pack_start(remove_icon, False, False, 10)
 
         button.add(box)

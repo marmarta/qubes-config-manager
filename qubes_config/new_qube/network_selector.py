@@ -25,6 +25,7 @@ import qubesadmin
 import qubesadmin.events
 import qubesadmin.vm
 from ..widgets.qubes_widgets_library import QubeName, VMListModeler
+from ..widgets.gtk_utils import load_icon
 
 import gi
 
@@ -110,12 +111,10 @@ class NetworkSelector:
             not self.box_network_settings.get_visible())
         if self.box_network_settings.get_visible():
             self.expander_image.set_from_pixbuf(
-                Gtk.IconTheme.get_default().load_icon(
-                    'qubes-expander-shown', 20, 0))
+                load_icon('qubes-expander-shown', 20, 20))
         else:
             self.expander_image.set_from_pixbuf(
-                Gtk.IconTheme.get_default().load_icon(
-                    'qubes-expander-hidden', 18, 0))
+                load_icon('qubes-expander-hidden', 18, 18))
 
     def _custom_toggled(self, widget):
         self.network_custom_combo.set_sensitive(widget.get_active())

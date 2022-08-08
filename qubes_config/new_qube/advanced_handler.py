@@ -23,6 +23,7 @@ import logging
 
 import qubesadmin.vm
 from ..widgets.qubes_widgets_library import TextModeler
+from ..widgets.gtk_utils import load_icon
 
 import gi
 
@@ -127,13 +128,11 @@ class AdvancedHandler:
             not self.box.get_visible())
         if self.box.get_visible():
             self.expander_icon.set_from_pixbuf(
-                Gtk.IconTheme.get_default().load_icon(
-                    'qubes-expander-shown', 20, 0))
+                load_icon('qubes-expander-shown', 20, 20))
             self.expander_label.set_text('Hide advanced settings')
         else:
             self.expander_icon.set_from_pixbuf(
-                Gtk.IconTheme.get_default().load_icon(
-                    'qubes-expander-hidden', 18, 0))
+                load_icon('qubes-expander-hidden', 18, 18))
             self.expander_label.set_text('Show advanced settings')
 
     def get_pool(self) -> Optional[str]:

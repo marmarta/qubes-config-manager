@@ -25,6 +25,7 @@ import logging
 
 import qubesadmin.vm
 from ..widgets.qubes_widgets_library import QubeName
+from ..widgets.gtk_utils import load_icon
 
 import gi
 
@@ -144,8 +145,7 @@ class ApplicationButton(Gtk.Button):
         self.box.pack_start(self.label, False, False, 3)
 
         self.remove_icon = Gtk.Image()
-        self.remove_icon.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
-                'qubes-delete', 14, 0))
+        self.remove_icon.set_from_pixbuf(load_icon('qubes-delete', 14, 14))
         self.remove_icon.set_tooltip_text(
             'Click to remove this application from selection')
         self.box.pack_end(self.remove_icon, False, False, 3)

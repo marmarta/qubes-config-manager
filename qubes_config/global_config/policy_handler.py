@@ -29,6 +29,7 @@ from qrexec.exc import PolicySyntaxError
 
 from ..widgets.qubes_widgets_library import VMListModeler, show_error, \
     ask_question
+from ..widgets.gtk_utils import load_icon
 from .page_handler import PageHandler
 from .policy_rules import AbstractRuleWrapper, AbstractVerbDescription
 from .policy_manager import PolicyManager
@@ -238,12 +239,10 @@ class PolicyHandler(PageHandler):
             not self.raw_box.get_visible())
         if self.raw_box.get_visible():
             self.raw_expander_icon.set_from_pixbuf(
-                Gtk.IconTheme.get_default().load_icon(
-                    'qubes-expander-shown', 20, 0))
+                load_icon( 'qubes-expander-shown', 20, 20))
         else:
             self.raw_expander_icon.set_from_pixbuf(
-                Gtk.IconTheme.get_default().load_icon(
-                    'qubes-expander-hidden', 18, 0))
+                load_icon( 'qubes-expander-hidden', 18, 18))
 
     def fill_raw_rules(self, *_args):
         """Fill raw text window with appropriate data, based on whatever's

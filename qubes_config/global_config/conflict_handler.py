@@ -21,6 +21,7 @@
 from typing import List
 
 from .policy_manager import PolicyManager
+from ..widgets.gtk_utils import load_icon
 
 import gi
 
@@ -44,8 +45,7 @@ class ConflictFileListRow(Gtk.ListBoxRow):
 
         if file_name.startswith('/etc/qubes-rpc'):
             self.icon = Gtk.Image()
-            self.icon.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
-                'qubes-question', 14, 0))
+            self.icon.set_from_pixbuf(load_icon('qubes-question', 14, 14))
             tooltip = 'This is a legacy file from previous Qubes versions. ' \
                       'Custom policy contained there will no longer ' \
                       'be supported in Qubes 4.2.'

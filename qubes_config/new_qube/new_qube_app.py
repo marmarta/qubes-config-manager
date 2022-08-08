@@ -36,6 +36,7 @@ from .template_handler import TemplateHandler, TemplateSelector
 from .network_selector import NetworkSelector
 from .advanced_handler import AdvancedHandler
 from ..widgets.qubes_widgets_library import show_error
+from ..widgets.gtk_utils import load_icon
 
 import gi
 
@@ -57,7 +58,7 @@ def init_combobox_with_icons(combobox: Gtk.ComboBox,
     store = Gtk.ListStore(GdkPixbuf.Pixbuf, str)
 
     for text, icon in data:
-        pixbuf = Gtk.IconTheme.get_default().load_icon(icon, 20, 0)
+        pixbuf = load_icon(icon, 20, 20)
         store.append([pixbuf, text])
 
     combobox.set_model(store)
@@ -194,13 +195,11 @@ class CreateNewQube(Gtk.Application):
         button_name = button.get_name()
         if not button.get_active():
             self.tooltips[button_name].set_from_pixbuf(
-                Gtk.IconTheme.get_default().load_icon(
-                    'qubes-question', 20, 0))
+                load_icon('qubes-question', 20, 20))
             return
         self.template_handler.change_vm_type(button_name)
-        self.tooltips[button_name].set_from_pixbuf(
-            Gtk.IconTheme.get_default().load_icon(
-                'qubes-question-light', 20, 0))
+        self.tooltips[button_name].set_from_pixbuf(load_icon(
+                'qubes-question-light', 20, 20))
 
     def _do_create_qube(self, *_args):
         if not self.qube_label or not self.qube_name:

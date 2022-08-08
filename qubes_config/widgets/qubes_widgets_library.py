@@ -31,6 +31,7 @@ from gi.repository import Gtk, GLib, GdkPixbuf
 
 from typing import Optional, Callable, Dict, Any, Union, List
 
+from .gtk_utils import load_icon
 
 def show_error(title, text):
     """
@@ -143,8 +144,7 @@ class QubeName(Gtk.Box):
         self.vm = vm
         if vm is not None:
             self.image = Gtk.Image()
-            self.image.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
-                    vm.icon, 20, 0))
+            self.image.set_from_pixbuf(load_icon(vm.icon, 20, 20))
         self.label = Gtk.Label()
         self.label.set_label(vm.name if vm else 'None')
 
@@ -297,8 +297,6 @@ class VMListModeler(TraitSelector):
         self._icons: Dict[str, Gtk.Image] = {}
         self._icon_size = 20
 
-        self._theme = Gtk.IconTheme.get_default()
-
         self._create_entries(filter_function, default_value, additional_options,
                              current_value)
 
@@ -339,9 +337,9 @@ class VMListModeler(TraitSelector):
     def _get_icon(self, name):
         if name not in self._icons:
             try:
-                icon = self._theme.load_icon(name, self._icon_size, 0)
+                icon = load_icon(name, self._icon_size,  self._icon_size)
             except GLib.Error:  # pylint: disable=catching-non-exception
-                icon = self._theme.load_icon("edit-find", self._icon_size, 0)
+                icon = load_icon("edit-find", self._icon_size,  self._icon_size)
             self._icons[name] = icon
         return self._icons[name]
 
@@ -524,8 +522,7 @@ class ImageTextButton(Gtk.Button):
         super().__init__()
         self.box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.image = Gtk.Image()
-        self.image.set_from_pixbuf(Gtk.IconTheme.get_default().load_icon(
-                icon_name, 20, 0))
+        self.image.set_from_pixbuf(load_icon(icon_name, 20, 20))
         self.box.pack_start(self.image, False, False, 10)
         if label:
             self.label = Gtk.Label()

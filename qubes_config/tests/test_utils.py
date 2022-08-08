@@ -17,10 +17,15 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=missing-module-docstring
 from ..widgets.utils import apply_feature_change, get_boolean_feature, \
     get_feature, apply_feature_change_from_widget
 
 def test_get_feature(test_qapp):
+    """Test if get feature methods behave correctly, in
+    particular when setting features to None and handling boolean features."""
     feature_name = 'test_feature'
     default_value = 'test'
     vm = test_qapp.domains['test-vm']
@@ -42,12 +47,12 @@ def test_get_feature(test_qapp):
     test_qapp.expected_calls[
         ('test-vm', 'admin.vm.feature.Get', feature_name, None)] = \
         b'0\x001'
-    assert get_boolean_feature(vm, feature_name, False) == True
+    assert get_boolean_feature(vm, feature_name, False) is True
     test_qapp.expected_calls[
         ('test-vm', 'admin.vm.feature.Get',
          feature_name, None)] = \
         b'2\x00QubesFeatureNotFoundError\x00\x00Feature not set\x00'
-    assert get_boolean_feature(vm, feature_name, True) == True
+    assert get_boolean_feature(vm, feature_name, True) is True
 
     # set feature
     test_qapp.expected_calls[
