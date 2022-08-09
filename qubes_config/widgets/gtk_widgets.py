@@ -27,7 +27,7 @@ import qubesadmin.vm
 import itertools
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GLib, GdkPixbuf
+from gi.repository import Gtk, GdkPixbuf
 
 from typing import Optional, Callable, Dict, Any, Union, List
 
@@ -209,7 +209,8 @@ class VMListModeler(TraitSelector):
                  filter_function: Optional[Callable[[qubesadmin.vm.QubesVM],
                                                     bool]] = None,
                  event_callback: Optional[Callable[[], None]] = None,
-                 default_value: Optional[qubesadmin.vm.QubesVM] = None,
+                 default_value: Optional[Union[qubesadmin.vm.QubesVM, str]] =
+                 None,
                  current_value: Optional[Union[qubesadmin.vm.QubesVM, str]] =
                  None,
                  style_changes: bool = False,
@@ -286,22 +287,21 @@ class VMListModeler(TraitSelector):
 
     def _get_icon(self, name):
         if name not in self._icons:
-            try:
-                icon = load_icon(name, self._icon_size,  self._icon_size)
-            except GLib.Error:  # pylint: disable=catching-non-exception
-                icon = load_icon("edit-find", self._icon_size,  self._icon_size)
+            icon = load_icon(name, self._icon_size,  self._icon_size)
             self._icons[name] = icon
         return self._icons[name]
 
     def _create_entries(
             self,
             filter_function: Optional[Callable[[qubesadmin.vm.QubesVM], bool]],
-            default_value: Optional[qubesadmin.vm.QubesVM],
+            default_value: Optional[Union[qubesadmin.vm.QubesVM, str]],
             additional_options: Optional[Dict[str, str]] = None,
             current_value: Optional[str] = None):
 
         if additional_options:
             for api_name, display_name in additional_options.items():
+                if api_name == default_value:
+                    display_name = display_name + ' (default)'
                 self._entries[display_name] = {
                     "api_name": api_name,
                     "icon": None,
@@ -467,8 +467,8 @@ class ImageTextButton(Gtk.Button):
     to avoid boilerplate."""
     def __init__(self, icon_name: str,
                  label: Optional[str],
-                 click_function: Optional[Callable[[Any], Any]],
-                 style_classes: Optional[List[str]]):
+                 click_function: Optional[Callable[[Any], Any]]=None,
+                 style_classes: Optional[List[str]]=None):
         super().__init__()
         self.box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.image = Gtk.Image()
@@ -489,74 +489,3 @@ class ImageTextButton(Gtk.Button):
             self.set_sensitive(False)
 
         self.show_all()
-
-
-class WidgetWithButtons(Gtk.Box):
-    """This is a simple wrapper for editable widgets
-    with additional confirm/cancel/edit buttons"""
-    def __init__(self, widget):
-        """
-        To avoid circular dependencies, Widget is not annotated, but it
-        should be Union[ActionWidget, VMWidget]
-        """
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
-        self.select_widget = widget
-
-        self.edit_button = ImageTextButton(icon_name='qubes-customize',
-                                           label=None,
-                                           click_function=self._edit_clicked,
-                                           style_classes=["flat"])
-        self.confirm_button = ImageTextButton(
-            icon_name="qubes-ok", label="ACCEPT",
-            click_function=self._confirm_clicked,
-            style_classes=["button_save", "flat_button"])
-        self.cancel_button = ImageTextButton(
-            icon_name="qubes-delete", label="CANCEL",
-            click_function=self._cancel_clicked,
-            style_classes=["button_cancel", "flat_button"])
-
-        self.pack_start(self.select_widget, False, False, 0)
-        self.pack_start(self.edit_button, False, False, 0)
-        self.pack_start(self.confirm_button, False, False, 10)
-        self.pack_start(self.cancel_button, False, False, 10)
-
-        self.show_all()
-        self._set_editable(False)
-        self._initial_value = self.select_widget.get_selected()
-
-    def _set_editable(self, state: bool):
-        self.select_widget.set_editable(state)
-        self.edit_button.set_visible(not state)
-        self.cancel_button.set_visible(state)
-        self.confirm_button.set_visible(state)
-
-    def _edit_clicked(self, _widget):
-        self._set_editable(True)
-
-    def _cancel_clicked(self, _widget):
-        self.select_widget.revert_changes()
-        self._set_editable(False)
-
-    def _confirm_clicked(self, _widget):
-        self.select_widget.save()
-        self._set_editable(False)
-
-    def reset(self):
-        """Reset all changes."""
-        self.select_widget.model.select_value(self._initial_value)
-        self.select_widget.model.update_initial()
-        self.select_widget.save()
-        self._set_editable(False)
-
-    def close_edit(self):
-        """Close edit options and revert changes since last confirm."""
-        self._cancel_clicked(None)
-
-    def is_changed(self) -> bool:
-        """Has the selection been changed from initial value?"""
-        return self._initial_value != self.select_widget.get_selected()
-
-    def update_changed(self):
-        """Notify widget that the initial value (for purposes of tracking
-        changes) should be updated."""
-        self._initial_value = self.select_widget.get_selected()

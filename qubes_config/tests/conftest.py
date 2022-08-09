@@ -108,7 +108,9 @@ def add_expected_vm(qapp,
             except KeyError:
                 pass
         elif prop in combined_properties:
-            combined_properties[prop][2] = str(value)
+            combined_properties[prop] = \
+                (combined_properties[prop][0],
+                 combined_properties[prop][1], str(value))
         else:
             raise KeyError(f"Unknown property '{prop}'")
 
@@ -125,13 +127,14 @@ def add_expected_vm(qapp,
         ("0\x00" + "".join(f"{feature}\n" for feature in features)).encode()
     for feature, value in features:
         qapp.expected_calls[(name, "admin.vm.feature.Get", feature, None)] = \
-            b"0\x00" + value.encode()
+            b"0\x00" + str(value).encode()
 
     qapp.expected_calls[(name, "admin.vm.tag.List", None, None)] = \
         ("0\x00" + "".join(f"{tag}\n" for tag in tags)).encode()
     for tag in tags:
         qapp.expected_calls[(name, "admin.vm.tag.Get", tag, None)] = \
             b"0\x001"
+
 @pytest.fixture
 def test_qapp():
     """Test QubesApp"""

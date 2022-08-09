@@ -18,12 +18,12 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
 """Tests for widget library"""
+# pylint: disable=missing-function-docstring
 import gi
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GdkPixbuf, GObject
+from gi.repository import Gtk
 
-from unittest.mock import Mock, patch
 from ..widgets import gtk_widgets
 
 
@@ -307,6 +307,20 @@ def test_vmmodeler_default(test_qapp):
     assert get_selected_text(combobox) == 'test-blue (default)'
 
 
+def test_vmmodeler_default_none(test_qapp):
+    """simplest vm modeler: no special params, just check it does not error
+    out"""
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    _ = gtk_widgets.VMListModeler(
+        combobox=combobox,
+        qapp=test_qapp,
+        default_value="None",
+        additional_options=gtk_widgets.NONE_CATEGORY
+    )
+
+    assert get_selected_text(combobox) == '(none) (default)'
+
+
 def test_vmmodeler_default_current(test_qapp):
     """simplest vm modeler: no special params, just check it does not error
     out"""
@@ -332,7 +346,7 @@ def test_vmmodeler_default_current(test_qapp):
 def test_vmmodeler_filter(test_qapp):
     combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
     vms = ['test-vm', 'test-blue', 'test-red']
-    vm_modeler = gtk_widgets.VMListModeler(
+    _ = gtk_widgets.VMListModeler(
         combobox=combobox,
         qapp=test_qapp,
         filter_function=lambda vm: str(vm) in vms
@@ -355,6 +369,36 @@ def test_vmmodeler_categories_none(test_qapp):
     )
 
     assert get_selected_text(combobox) == '(none)'
+
+
+def test_vmmodeler_current_not_found(test_qapp):
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    modeler = gtk_widgets.VMListModeler(
+        combobox=combobox,
+        qapp=test_qapp,
+        current_value='RandomText'
+    )
+
+    assert get_selected_text(combobox) == 'RandomText'
+    assert modeler.get_selected() == 'RandomText'
+
+
+def test_vmmodeler_str(test_qapp):
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    vm = test_qapp.domains['test-blue']
+    modeler = gtk_widgets.VMListModeler(
+        combobox=combobox,
+        qapp=test_qapp,
+        current_value='RandomText',
+        default_value=vm,
+        additional_options=gtk_widgets.NONE_CATEGORY
+    )
+
+    assert str(modeler) == 'RandomText'
+    modeler.select_value('test-blue')
+    assert str(modeler) == 'test-blue (default)'
+    modeler.select_value("None")
+    assert str(modeler) == '(none)'
 
 
 def test_vmmodeler_simple_actions(test_qapp):
@@ -522,3 +566,43 @@ def test_modeler_input_test(test_qapp):
     assert modeler.get_selected() is None
 
 
+def test_modeler_is_available(test_qapp):
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    vms = [test_qapp.domains['test-vm'], test_qapp.domains['test-blue']]
+    other_vms = [test_qapp.domains['test-red']]
+
+    vm_modeler = gtk_widgets.VMListModeler(
+        combobox=combobox,
+        qapp=test_qapp,
+        filter_function=lambda vm: vm in vms
+    )
+
+    for vm in vms:
+        assert vm_modeler.is_vm_available(vm)
+    for vm in other_vms:
+        assert not vm_modeler.is_vm_available(vm)
+
+#### ImageTextButton
+
+def test_imagetextbutton():
+    clicks = []
+    button = gtk_widgets.ImageTextButton(
+        "icon", "label", click_function=lambda *args: clicks.append(1),
+        style_classes=['a_class'])
+
+    assert button.get_style_context().has_class('a_class')
+    assert not clicks
+    button.clicked()
+    assert len(clicks) == 1
+
+    # button contains two objects, label and image
+    assert len(button.get_child().get_children()) == 2
+
+    button_without_label = gtk_widgets.ImageTextButton(
+        "icon", None)
+    # button contains just image
+    assert len(button_without_label.get_child().get_children()) == 1
+
+    insensitive_button = gtk_widgets.ImageTextButton(
+        "icon", "text")
+    assert not insensitive_button.get_sensitive()
