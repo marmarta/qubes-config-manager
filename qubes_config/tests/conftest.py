@@ -20,8 +20,16 @@
 """Conftest helper pytest file: fixtures container here are
  reachable by all tests"""
 import pytest
+import pkg_resources
 from typing import Mapping, Union, Tuple
 from qubesadmin.tests import QubesTest
+
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('GdkPixbuf', '2.0')
+from gi.repository import Gtk
+
+from ..global_config.global_config import GlobalConfig
 
 default_vm_properties = {
     "autostart": ("bool", True, "False"),
@@ -150,3 +158,19 @@ def test_qapp():
                     {"netvm": ("vm", False, "None")}, {}, [])
 
     return qapp
+
+SIGNALS_REGISTERED = False
+
+@pytest.fixture
+def test_builder():
+    """Test gtk_builder with loaded test glade file and registered signals."""
+    global SIGNALS_REGISTERED  # pylint:disable=global-statement
+    # register all the signals various widgets might emit
+    if not SIGNALS_REGISTERED:
+        GlobalConfig.register_signals()
+        SIGNALS_REGISTERED = True
+    # test glade file contains very simple setup with correctly named widgets
+    builder = Gtk.Builder()
+    builder.add_from_file(pkg_resources.resource_filename(
+        __name__, 'test.glade'))
+    return builder

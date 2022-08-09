@@ -74,7 +74,7 @@ class VMFlowBoxButton(Gtk.FlowBoxChild):
     def _remove_self(self, _widget):
         response = ask_question(
             self.get_toplevel(), "Delete",
-            "Are you sure you want to remove this exception?")
+            "Are you sure you want to remove this qube?")
         if response == Gtk.ResponseType.NO:
             return
         parent = self.get_parent()
@@ -145,6 +145,7 @@ class VMFlowboxHandler:
             self.flowbox.add(VMFlowBoxButton(vm))
         self.flowbox.show_all()
         self.placeholder.set_visible(not bool(self._initial_vms))
+        self.add_box.set_visible(False)
 
         self.add_button.connect('clicked',
                                           self._add_button_clicked)
@@ -219,7 +220,9 @@ class VMFlowboxHandler:
     def reset(self):
         """Reset changed to initial state."""
         for child in self.flowbox.get_children():
-            self.flowbox.remove(child)
+            if isinstance(child, VMFlowBoxButton):
+                self.flowbox.remove(child)
 
         for vm in self._initial_vms:
             self.flowbox.add(VMFlowBoxButton(vm))
+        self.placeholder.set_visible(not bool(self.selected_vms))

@@ -262,26 +262,30 @@ class GlobalConfig(Gtk.Application):
         self.main_window.show()
         self.hold()
 
+    @staticmethod
+    def register_signals():
+        """Register necessary Gtk signals"""
+        GObject.signal_new('rules-changed',
+                           Gtk.ListBox,
+                           GObject.SignalFlags.RUN_LAST, GObject.TYPE_PYOBJECT,
+                           (GObject.TYPE_PYOBJECT,))
+
+        GObject.signal_new('usbvm-changed',
+                           Gtk.Window,
+                           GObject.SignalFlags.RUN_LAST, GObject.TYPE_PYOBJECT,
+                           (GObject.TYPE_PYOBJECT,))
+
+        GObject.signal_new('child-removed',
+                           Gtk.FlowBox,
+                           GObject.SignalFlags.RUN_LAST, GObject.TYPE_PYOBJECT,
+                           (GObject.TYPE_PYOBJECT,))
+
     def perform_setup(self):
         # pylint: disable=attribute-defined-outside-init
         """
         The function that performs actual widget realization and setup.
         """
-
-        GObject.signal_new('rules-changed',
-                           Gtk.ListBox,
-                           GObject.SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT,
-                           (GObject.TYPE_PYOBJECT,))
-
-        GObject.signal_new('usbvm-changed',
-                           Gtk.Window,
-                           GObject.SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT,
-                           (GObject.TYPE_PYOBJECT,))
-
-        GObject.signal_new('child-removed',
-                           Gtk.FlowBox,
-                           GObject.SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT,
-                           (GObject.TYPE_PYOBJECT,))
+        self.register_signals()
 
         self.builder = Gtk.Builder()
         self.builder.add_from_file(pkg_resources.resource_filename(
