@@ -199,7 +199,7 @@
                             <property name="has-entry">True</property>
                             <child internal-child="entry">
                               <object class="GtkEntry">
-                                <property name="can-focus">False</property>
+                                <property name="can-focus">True</property>
                                 <property name="width-chars">24</property>
                               </object>
                             </child>
@@ -220,7 +220,7 @@
                             <property name="has-entry">True</property>
                             <child internal-child="entry">
                               <object class="GtkEntry">
-                                <property name="can-focus">False</property>
+                                <property name="can-focus">True</property>
                                 <property name="width-chars">24</property>
                               </object>
                             </child>
@@ -241,7 +241,7 @@
                             <property name="has-entry">True</property>
                             <child internal-child="entry">
                               <object class="GtkEntry">
-                                <property name="can-focus">False</property>
+                                <property name="can-focus">True</property>
                                 <property name="width-chars">24</property>
                               </object>
                             </child>
@@ -263,7 +263,7 @@
                             <property name="has-entry">True</property>
                             <child internal-child="entry">
                               <object class="GtkEntry">
-                                <property name="can-focus">False</property>
+                                <property name="can-focus">True</property>
                                 <property name="width-chars">24</property>
                               </object>
                             </child>
@@ -1600,7 +1600,7 @@ Documentation will open in a disposable qube.</property>
                                             <property name="has-entry">True</property>
                                             <child internal-child="entry">
                                               <object class="GtkEntry">
-                                                <property name="can-focus">False</property>
+                                                <property name="can-focus">True</property>
                                               </object>
                                             </child>
                                           </object>
@@ -1897,7 +1897,7 @@ Documentation will open in a disposable qube.</property>
                                         <property name="has-entry">True</property>
                                         <child internal-child="entry">
                                           <object class="GtkEntry">
-                                            <property name="can-focus">False</property>
+                                            <property name="can-focus">True</property>
                                           </object>
                                         </child>
                                       </object>
@@ -2137,7 +2137,7 @@ Documentation will open in a disposable qube.</property>
                                 <property name="has-entry">True</property>
                                 <child internal-child="entry">
                                   <object class="GtkEntry">
-                                    <property name="can-focus">False</property>
+                                    <property name="can-focus">True</property>
                                     <property name="width-chars">24</property>
                                     <style>
                                       <class name="combo"/>
@@ -2688,7 +2688,7 @@ Documentation will open in a disposable qube.</property>
                                     <property name="has-entry">True</property>
                                     <child internal-child="entry">
                                       <object class="GtkEntry">
-                                        <property name="can-focus">False</property>
+                                        <property name="can-focus">True</property>
                                       </object>
                                     </child>
                                   </object>
@@ -2919,7 +2919,7 @@ Documentation will open in a disposable qube.</property>
                                 <property name="has-entry">True</property>
                                 <child internal-child="entry">
                                   <object class="GtkEntry">
-                                    <property name="can-focus">False</property>
+                                    <property name="can-focus">True</property>
                                     <property name="width-chars">24</property>
                                     <style>
                                       <class name="combo"/>
@@ -2939,7 +2939,7 @@ Documentation will open in a disposable qube.</property>
                                 <property name="has-entry">True</property>
                                 <child internal-child="entry">
                                   <object class="GtkEntry">
-                                    <property name="can-focus">False</property>
+                                    <property name="can-focus">True</property>
                                     <property name="width-chars">24</property>
                                     <style>
                                       <class name="combo"/>
@@ -3871,7 +3871,7 @@ Documentation will open in a disposable qube.</property>
                                     <property name="has-entry">True</property>
                                     <child internal-child="entry">
                                       <object class="GtkEntry">
-                                        <property name="can-focus">False</property>
+                                        <property name="can-focus">True</property>
                                         <property name="width-chars">24</property>
                                       </object>
                                     </child>
