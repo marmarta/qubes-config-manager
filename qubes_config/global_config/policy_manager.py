@@ -68,7 +68,6 @@ class PolicyManager:
         except subprocess.CalledProcessError:
             if not default_policy:
                 return [], None
-            # TODO: ok fails me
             self.policy_client.policy_replace(filename, default_policy)
             rules_text, token = self.policy_client.policy_get(filename)
 
