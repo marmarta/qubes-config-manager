@@ -21,6 +21,7 @@
  reachable by all tests"""
 import pytest
 import pkg_resources
+import subprocess
 from typing import Mapping, Union, Tuple
 from qubesadmin.tests import QubesTest
 
@@ -30,6 +31,7 @@ gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Gtk
 
 from ..global_config.global_config import GlobalConfig
+from ..global_config.policy_manager import PolicyManager
 
 default_vm_properties = {
     "autostart": ("bool", True, "False"),
@@ -155,7 +157,7 @@ def test_qapp():
     add_expected_vm(qapp, 'test-red', 'AppVM',
                     {'label': ('str', False, 'red')}, {}, [])
     add_expected_vm(qapp, 'vault', 'AppVM',
-                    {"netvm": ("vm", False, "None")}, {}, [])
+                    {"netvm": ("vm", False, '')}, {}, [])
 
     return qapp
 
@@ -174,3 +176,63 @@ def test_builder():
     builder.add_from_file(pkg_resources.resource_filename(
         __name__, 'test.glade'))
     return builder
+
+@pytest.fixture
+def real_builder():
+    """Gtk builder with actual config glade file registered"""
+    global SIGNALS_REGISTERED  # pylint:disable=global-statement
+    # register all the signals various widgets might emit
+    if not SIGNALS_REGISTERED:
+        GlobalConfig.register_signals()
+        SIGNALS_REGISTERED = True
+    # test glade file contains very simple setup with correctly named widgets
+    builder = Gtk.Builder()
+    builder.add_from_file(pkg_resources.resource_filename(
+        __name__, '../global_config.glade'))
+    return builder
+
+
+
+class TestPolicyClient:
+    """Testing policy client that does not interact with Policy API"""
+    def __init__(self):
+        self.file_tokens = {
+            'a-test': 'a',
+            'b-test': 'b'
+        }
+        self.files = {
+            'a-test': """Test * @anyvm @anyvm deny""",
+            'b-test': """Test * test-vm @anyvm allow\n
+Test * test-red test-blue deny"""
+        }
+        self.service_to_files = {
+            'Test': ['a-test', 'b-test']
+        }
+
+    def policy_get_files(self, service_name):
+        """Get files connected to a given service; does not
+        take into account policy_replace"""
+        return self.service_to_files.get(service_name, '')
+
+    def policy_get(self, file_name):
+        """Get file contents; takes into account policy_replace."""
+        if file_name in self.files:
+            return self.files[file_name], self.file_tokens[file_name]
+        raise subprocess.CalledProcessError(2, 'test')
+
+    def policy_replace(self, filename, policy_text, token='any'):
+        """Replace file contents with provided contents."""
+        if token != 'any':
+            if token != self.file_tokens.get(filename, ''):
+                raise subprocess.CalledProcessError(2, 'test')
+        self.files[filename] = policy_text
+        self.file_tokens[filename] = str(len(policy_text))
+
+
+@pytest.fixture
+def test_policy_manager():
+    """Policy manager with patched out object requiring actual working
+    Admin API methods"""
+    manager = PolicyManager()
+    manager.policy_client = TestPolicyClient()
+    return manager

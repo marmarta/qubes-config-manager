@@ -109,7 +109,8 @@ class VMWidget(Gtk.Box):
 
         if additional_text:
             additional_text_widget = \
-                Gtk.Label(additional_text)
+                Gtk.Label()
+            additional_text_widget.set_text(additional_text)
             additional_text_widget.get_style_context().add_class(
                 'didascalia')
             additional_text_widget.set_halign(Gtk.Align.END)
@@ -246,7 +247,8 @@ class RuleListBoxRow(Gtk.ListBoxRow):
                  enable_vm_edit: bool = True,
                  initial_verb: str = "will",
                  custom_deletion_warning: str = "Are you sure you want to "
-                                                "delete this rule?"):
+                                                "delete this rule?",
+                 is_new_row: bool = False):
         """
         :param parent_handler: PolicyHandler object this rule belongs to, or
         other owner object that implements verify_new_rule method.
@@ -256,6 +258,8 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         :param enable_delete: can this rule be deleted
         :param enable_vm_edit: can source and target in this rule be edited
         :param initial_verb: verb between source_qube and action
+        :param is_new_row: if True, the row is marked as new row and
+        will be deleted when closing edit mode without saving changes
         """
         super().__init__()
 
@@ -267,13 +271,15 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         self.initial_verb = initial_verb
         self.parent_handler = parent_handler
         self.custom_deletion_warning = custom_deletion_warning
+        self.is_new_row = is_new_row
 
         self.get_style_context().add_class("permission_row")
 
         self.outer_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add(self.outer_box)
 
-        self.title_label = Gtk.Label("Editing rule:")
+        self.title_label = Gtk.Label()
+        self.title_label.set_text("Editing rule:")
         self.title_label.set_no_show_all(True)
         self.title_label.get_style_context().add_class('small_title')
         self.title_label.set_halign(Gtk.Align.START)
@@ -309,7 +315,9 @@ class RuleListBoxRow(Gtk.ListBoxRow):
 
         self.editing: bool = False
 
-        self.set_edit_mode(False)
+        self.changed_from_initial: bool = False
+
+        self.set_edit_mode(False, setup=True)
 
     def get_source_widget(self) -> VMWidget:
         """Widget to be used for source VM"""
@@ -343,26 +351,37 @@ class RuleListBoxRow(Gtk.ListBoxRow):
                                             style_classes=["flat"])
         return delete_button
 
-    def _delete_self(self, *_args):
-        """Remove self from parent. Used to delete the rule."""
-        response = ask_question(self.get_toplevel(), "Delete rule",
-                                self.custom_deletion_warning)
-        if response == Gtk.ResponseType.NO:
-            return
+    def _do_delete_self(self, force: bool = False):
+        """Delete self; if force=True, do not ask user if sure,"""
+        if not force:
+            response = ask_question(self.get_toplevel(), "Delete rule",
+                                    self.custom_deletion_warning)
+            if response == Gtk.ResponseType.NO:
+                return
         parent_widget = self.get_parent()
         parent_widget.remove(self)
         parent_widget.emit('rules-changed', None)
 
-    def set_edit_mode(self, editing: bool = True):
+    def _delete_self(self, *_args):
+        """Remove self from parent. Used to delete the rule."""
+        self._do_delete_self()
+
+    def set_edit_mode(self, editing: bool = True, setup: bool = False):
         """
         Change mode from display to edit and back.
         :param editing: if True, enter editing mode
+        :param setup: is this occurring during initial setup, not due to
+         an action
         """
         if editing:
             self.get_style_context().add_class('edited_row')
             self.title_label.set_visible(True)
             self.additional_widget_box.set_visible(True)
         else:
+            # if never changed do not save
+            if not setup and self.is_new_row and not self.changed_from_initial:
+                self._do_delete_self(force=True)
+                return
             self.get_style_context().remove_class('edited_row')
             self.title_label.set_visible(False)
             self.additional_widget_box.set_visible(False)
@@ -426,6 +445,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         self.source_widget.save()
         self.target_widget.save()
         self.action_widget.save()
+        self.changed_from_initial = True
         self.set_edit_mode(False)
         self.get_parent().invalidate_sort()
 

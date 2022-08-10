@@ -17,7 +17,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License along
 # with this program; if not, see <http://www.gnu.org/licenses/>.
-import pytest
+# pylint: disable=missing-module-docstring,missing-function-docstring
+# pylint: disable=missing-class-docstring
 import subprocess
 from unittest.mock import patch
 
@@ -29,8 +30,7 @@ def test_conflict_files():
     def return_files(service_name):
         if service_name == 'test':
             return ["a-test", "b-test", "c-test"]
-        else:
-            return ['']
+        return ['']
 
     manager = PolicyManager()
     with patch("qubes_config.global_config.policy_manager."
@@ -93,8 +93,7 @@ def test_get_policy_from_file_existing():
     def get_file(filename):
         if filename == 'test':
             return rules, 'test'
-        else:
-            return '', ''
+        return '', ''
 
     with patch("qubes_config.global_config.policy_manager."
                "PolicyClient.policy_get") as mock_get:

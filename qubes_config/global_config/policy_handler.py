@@ -127,6 +127,7 @@ class PolicyHandler(PageHandler):
         self.disable_radio.connect("toggled", self._custom_toggled)
 
         self.exception_list_box.set_sort_func(self.rule_sorting_function)
+        self.main_list_box.set_sort_func(self.rule_sorting_function)
 
         self.conflict_handler = ConflictFileHandler(
             gtk_builder=gtk_builder, prefix=prefix,
@@ -144,6 +145,10 @@ class PolicyHandler(PageHandler):
         self.fill_raw_rules()
         self.check_custom_rules(rules)
 
+        # and make sure raw is in correct state
+        self.raw_box.set_visible(True)
+        self._show_hide_raw()
+
     def add_new_rule(self, *_args):
         """Add a new rule."""
         self.close_all_edits()
@@ -151,7 +156,8 @@ class PolicyHandler(PageHandler):
             service=self.service_name, source='@anyvm',
             target='@anyvm', action='deny')
         new_row = RuleListBoxRow(self,
-            self.rule_class(deny_all_rule), self.qapp, self.verb_description)
+            self.rule_class(deny_all_rule), self.qapp, self.verb_description,
+                                 is_new_row=True)
         self.exception_list_box.add(new_row)
         new_row.activate()
 
@@ -162,7 +168,8 @@ class PolicyHandler(PageHandler):
         """
         if self.disable_radio.get_active():
             return self.policy_manager.text_to_rules(self.default_policy)
-        return [row.rule.raw_rule for row in self.current_rows]
+        return [row.rule.raw_rule for row in self.current_rows if
+                not row.is_new_row or row.changed_from_initial]
 
     @property
     def current_rows(self) -> List[RuleListBoxRow]:
@@ -373,7 +380,8 @@ class PolicyHandler(PageHandler):
 class VMSubsetPolicyHandler(PolicyHandler):
     """
     Handler for a list of policy rules where targets are limited to a subset
-    of VMs, e.g. SplitGPG
+    of VMs, that is, SplitGPG. Currently makes SplitGPG assumptions, such
+    as networked qube is dangerous.
     """
     def __init__(self,
                  qapp: qubesadmin.Qubes,
@@ -443,6 +451,7 @@ class VMSubsetPolicyHandler(PolicyHandler):
         self._select_qubes_changed()
 
     def _select_qubes_changed(self, *_args):
+        self.close_all_edits()
         self.select_qubes = {row.rule.target for row in
                         self.main_list_box.get_children()}
         self.populate_rule_lists(self.current_rules)
@@ -456,7 +465,7 @@ class VMSubsetPolicyHandler(PolicyHandler):
             enable_delete=True,
             enable_vm_edit=False, initial_verb="",
             custom_deletion_warning="Are you sure you want to delete this "
-                                    "rule? All releted exceptions will also "
+                                    "rule? All related exceptions will also "
                                     "be deleted."
         ))
 
@@ -486,13 +495,14 @@ class VMSubsetPolicyHandler(PolicyHandler):
         return False
 
     def populate_rule_lists(self, rules: List[Rule]):
+        # TODO: is this called twice at the start?
         for child in self.main_list_box.get_children() + \
                      self.exception_list_box.get_children():
             child.get_parent().remove(child)
         # rules with source = '@anyvm' go to main list and their
         # qubes are key qubes
-        for rule in rules:
-            if rule.target != 'default':
+        for rule in reversed(rules):
+            if rule.target != '@default':
                 if self._has_partial_duplicate(rule, rules):
                     continue
             if rule.source == '@anyvm':
@@ -501,7 +511,8 @@ class VMSubsetPolicyHandler(PolicyHandler):
                     continue
                 self._add_main_rule(rule)
             else:
-                if rule.target not in self.select_qubes:
+                wrapped_exception_rule = self.exception_rule_class(rule)
+                if wrapped_exception_rule.target not in self.select_qubes:
                     continue
                 self._add_exception_rule(rule)
         self.add_button.set_sensitive(bool(self.main_list_box.get_children()))
@@ -511,6 +522,7 @@ class VMSubsetPolicyHandler(PolicyHandler):
         self.add_select_button.set_sensitive(state)
 
     def _add_select_qube(self, *_args):
+        self.close_all_edits()
         self.add_select_box.set_visible(True)
 
     def _add_select_confirm(self, *_args):
@@ -548,6 +560,7 @@ class VMSubsetPolicyHandler(PolicyHandler):
                 service=self.service_name, source=str(qube),
                 target=str(qube), action='deny')
             new_row = self._add_exception_rule(rule)
+            new_row.is_new_row = True
             new_row.activate()
             break
 
