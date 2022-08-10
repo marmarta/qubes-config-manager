@@ -332,7 +332,7 @@ class VMListModeler(TraitSelector):
                     found_current = True
                     break
             if not found_current:
-                self._entries[current_value] = {
+                self._entries[str(current_value)] = {
                     "api_name": str(current_value),
                     "icon": None,
                     "vm": None

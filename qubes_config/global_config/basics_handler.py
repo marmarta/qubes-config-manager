@@ -110,14 +110,15 @@ class AbstractTraitHolder(abc.ABC):
 class PropertyHandler(AbstractTraitHolder):
     """Handles comboboxes reflecting for object properties."""
     def __init__(self, qapp: qubesadmin.Qubes, trait_holder: Any,
-                 trait_name: str, widget: Gtk.ComboBox, vm_filter: Callable,
-                 readable_name: str,
+                 trait_name: str, widget: Gtk.ComboBox,
+                 vm_filter: Optional[Callable] = None,
+                 readable_name: Optional[str] = None,
                  additional_options: Optional[Dict[str, str]] = None):
         self.qapp = qapp
         self.trait_holder = trait_holder
         self.trait_name = trait_name
         self.widget = widget
-        self.readable_name = readable_name
+        self.readable_name = readable_name if readable_name else trait_name
 
         self.model = VMListModeler(
             combobox=self.widget,
@@ -160,7 +161,7 @@ class FeatureHandler(AbstractTraitHolder):
             style_changes=True)
 
     def get_readable_description(self) -> str:
-        return self.readable_name + ": " + self.widget.get_active_text()
+        return self.readable_name
 
     def get_current_value(self):
         if self.is_bool:
@@ -182,11 +183,12 @@ class QMemManHelper:
     DOM0_NAME = 'dom0-mem-boost'
 
     def __init__(self):
-        self.qmemman_config = ConfigParser()
+        self.qmemman_config = None
 
     def get_values(self) -> Dict[str, int]:
         """Returns a dict of 'vm-min-mem': value in MB and
         'dom0-mem-boost': value in MB """
+        self.qmemman_config = ConfigParser()
         self.qmemman_config.read(self.QMEMMAN_CONFIG_PATH)
 
         result = {
@@ -211,6 +213,12 @@ class QMemManHelper:
 
         assert len(text_dict) == 2 and \
                self.MINMEM_NAME in text_dict and self.DOM0_NAME in text_dict
+
+        # reinitialize the ConfigParser object, because it is somewhat
+        # unhappy to handle multiple consecutive writes and reads
+
+        self.qmemman_config = ConfigParser()
+        self.qmemman_config.read(self.QMEMMAN_CONFIG_PATH)
 
         if not self.qmemman_config.has_section('global'):
             # add the whole section
@@ -280,10 +288,10 @@ class MemoryHandler:
         self.dom0_memory_spin.set_value(
             self.initial_values.get(self.mem_helper.DOM0_NAME, 0))
 
-    def get_readable_description(self) -> str:
-        """Get human-readable description of the widget state"""
-        return f"Minimum qube memory: {self.min_memory_spin.get_value()}" \
-               f"\nDom0 memory boost: {self.dom0_memory_spin.get_value()}"
+    @staticmethod
+    def get_readable_description() -> str:
+        """Get human-readable description of the widget"""
+        return "Qube memory settings"
 
     def save(self):
         """Save changes: update system value and mark it as new initial value"""
@@ -291,8 +299,8 @@ class MemoryHandler:
             return
 
         values = {
-            self.mem_helper.MINMEM_NAME: self.min_memory_spin.get_value(),
-            self.mem_helper.DOM0_NAME: self.dom0_memory_spin.get_value()
+            self.mem_helper.MINMEM_NAME: int(self.min_memory_spin.get_value()),
+            self.mem_helper.DOM0_NAME: int(self.dom0_memory_spin.get_value())
         }
 
         self.mem_helper.save_values(values)
@@ -350,7 +358,7 @@ class KernelHolder(AbstractTraitHolder):
         return kernels_dict
 
     def get_readable_description(self) -> str:
-        return f"Kernel: {self.widget.get_active_text()}"
+        return "Default kernel"
 
     def get_current_value(self):
         return self.qapp.default_kernel

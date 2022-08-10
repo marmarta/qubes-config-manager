@@ -145,11 +145,54 @@ def add_expected_vm(qapp,
         qapp.expected_calls[(name, "admin.vm.tag.Get", tag, None)] = \
             b"0\x001"
 
+def add_dom0_vm_property(qapp, prop_name, prop_value):
+    """Add a vm property to dom0"""
+    qapp.expected_calls[('dom0', 'admin.property.Get', prop_name, None)] = \
+        b'0\x00' + f'default=True type=vm {prop_value}'.encode()
+
+def add_dom0_text_property(qapp, prop_name, prop_value):
+    """Add a str property to dom0"""
+    qapp.expected_calls[('dom0', 'admin.property.Get', prop_name, None)] = \
+        b'0\x00' + f'default=True type=str {prop_value}'.encode()
+
+
+def add_dom0_feature(qapp, feature, feature_value):
+    """Add dom0 feature"""
+    qapp.expected_calls[('dom0', 'admin.vm.feature.Get', feature, None)] = \
+        b'0\x00' + f'{feature_value}'.encode()
+
+
 @pytest.fixture
 def test_qapp():
     """Test QubesApp"""
     qapp = QubesTest()
+    qapp._local_name = 'dom0'  # pylint: disable=protected-access
 
+    add_dom0_vm_property(qapp, 'clockvm', 'sys-net')
+    add_dom0_vm_property(qapp, 'default_netvm', 'sys-net')
+    add_dom0_vm_property(qapp, 'default_template', 'fedora-36')
+    add_dom0_vm_property(qapp, 'default_dispvm', 'fedora-36')
+    add_dom0_text_property(qapp, 'default_kernel', '1.1')
+
+    add_dom0_feature(qapp, 'gui-default-allow-fullscreen', '')
+    add_dom0_feature(qapp, 'gui-default-allow-utf8-titles', '')
+    add_dom0_feature(qapp, 'gui-default-trayicon-mode', '')
+
+    # setup pools:
+    qapp.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
+        b'0\x00linux-kernel\nlvm\nfile\n'
+    qapp.expected_calls[('dom0', 'admin.pool.volume.List',
+                         'linux-kernel', None)] = \
+        b'0\x001.1\nmisc\n4.2\n'
+
+    add_expected_vm(qapp, 'dom0', 'AdminVM',
+                    {}, {}, [])
+    add_expected_vm(qapp, 'sys-net', 'AppVM',
+                    {'provides_network': ('bool', False, 'True')}, {}, [])
+    add_expected_vm(qapp, 'fedora-36', 'TemplateVM',
+                    {}, {}, [])
+    add_expected_vm(qapp, 'default-dvm', 'DispVM',
+                    {'template_for_dispvms': ('bool', False, 'True')}, {}, [])
     add_expected_vm(qapp, 'test-vm', 'AppVM',
                     {}, {}, [])
     add_expected_vm(qapp, 'test-blue', 'AppVM',
