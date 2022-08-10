@@ -426,7 +426,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
         new_target = str(self.target_widget.get_selected())
         new_action = self.action_widget.get_selected()
 
-        error = self.rule.is_rule_valid(new_source, new_target, new_action)
+        error = self.rule.get_rule_errors(new_source, new_target, new_action)
         if error:
             show_error("Invalid rule", f'This rule is not valid: {error}')
             return False

@@ -25,7 +25,9 @@ from qrexec.policy.parser import Rule, Allow, Ask, Source, Target, Action
 
 
 class AbstractRuleWrapper(abc.ABC):
-    """Wrapper for Rule objects."""
+    """Wrapper for Rule objects.
+    ACTION_CHOICES provides human-understandable names for choosing
+    action value in dropdowns."""
     ACTION_CHOICES: Dict[str, str] = {}
 
     def __init__(self, rule: Rule):
@@ -90,7 +92,7 @@ class AbstractRuleWrapper(abc.ABC):
                self.target == other_target
 
     @staticmethod
-    def is_rule_valid(source: str, target: str, action: str) -> \
+    def get_rule_errors(source: str, target: str, action: str) -> \
             Optional[str]: # pylint: disable=unused-argument
         """Return None if rule is valid and str describing error if not."""
         return None
@@ -132,7 +134,10 @@ class RuleSimple(AbstractRuleWrapper):
 
     @action.setter
     def action(self, new_value):
-        new_action = Action[new_value].value(self._rule)
+        try:
+            new_action = Action[new_value].value(self._rule)
+        except KeyError:
+            raise ValueError  # pylint: disable=raise-missing-from
         self._rule.action = new_action
 
     @property
@@ -157,12 +162,14 @@ class RuleSimpleNoAllow(RuleSimple):
 
 class RuleTargeted(AbstractRuleWrapper):
     """
-    Rule wrapper, where:
-    source = source
-    action = action
-    target = action's target= if action is allow,
-    action's default_target if action is ask, target if action is deny;
-    if action is ask or allow, target should be @default
+    Rule wrapper for rules with the following rules:
+    - source is source
+    - action is main action (e.g. 'allow target=vm' is allow
+    - target can be:
+        - if original rule target is @default, user allow's target or ask's
+            default target, but neither of those should be ever set to a
+            keyword
+        - else use original rule's normal target
     Returns and accepts strings as target/source/action.
     """
     ACTION_CHOICES = {
@@ -186,6 +193,10 @@ class RuleTargeted(AbstractRuleWrapper):
 
         if new_value.startswith('@'):
             self._rule.target = new_target
+            if hasattr(self._rule.action, 'target'):
+                self._rule.action.target = None
+            if hasattr(self._rule.action, 'default_target'):
+                self._rule.action.default_target = None
             return
 
         if isinstance(self._rule.action, Ask):
@@ -229,7 +240,7 @@ class RuleTargeted(AbstractRuleWrapper):
         return self.source == '@anyvm' and self.raw_rule.target == '@dispvm'
 
     @staticmethod
-    def is_rule_valid(source: str, target: str, action: str) -> Optional[str]:
+    def get_rule_errors(source: str, target: str, action: str) -> Optional[str]:
         if not source.startswith('@'):
             if target.startswith('@') and target != '@dispvm':
                 if action in ('ask', 'allow'):
