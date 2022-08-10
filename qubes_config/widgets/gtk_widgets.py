@@ -58,6 +58,7 @@ class TokenName(Gtk.Box):
 
     def set_token(self, token_name):
         """Set appropriate token/style for a given string."""
+        self.token_name = token_name
         for child in self.get_children():
             self.remove(child)
         try:

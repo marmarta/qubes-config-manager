@@ -123,12 +123,12 @@ class VMWidget(Gtk.Box):
 
     def set_editable(self, editable: bool):
         """Change state between editable and non-editable."""
+        # if setting editable to False, make sure combobox is
+        # reverted to initial state
+        if not editable:
+            self.revert_changes()
         self.combobox.set_visible(editable)
         self.name_widget.set_visible(not editable)
-
-    def is_editable(self) -> bool:
-        """Is the widget currently being edited?"""
-        return self.combobox.get_visible()
 
     def is_changed(self) -> bool:
         """Return True if widget was changed from its initial state."""
@@ -136,7 +136,7 @@ class VMWidget(Gtk.Box):
         return str(self.selected_value) != str(new_value)
 
     def save(self):
-        """Store changes in model; must be used before set_editable(True) if
+        """Store changes in model; must be used before set_editable(False) if
         it's desired to see changes reflected in non-editable state"""
         new_value = str(self.model.get_selected())
         self.selected_value = new_value
@@ -155,13 +155,10 @@ class ActionWidget(Gtk.Box):
     """Action selection widget."""
     def __init__(self,
                  choices: Dict[str, str],
-                 initial_value: str,
                  verb_description: Optional[AbstractVerbDescription],
                  rule: AbstractRuleWrapper,
                  action_style_class: str = 'action_text'):
         """
-        :param choices: dictionary of policy value: readable name
-        :param initial_value: initial policy value
         :param verb_description: AbstractVerbDescription object to get
         additional text
         :param rule: relevant Rule
@@ -173,8 +170,7 @@ class ActionWidget(Gtk.Box):
         self.verb_description = verb_description
         self.rule = rule
 
-        # to avoid inconsistencies
-        self.selected_value = initial_value.lower()
+        self.selected_value = rule.action.lower()
         self.combobox = Gtk.ComboBoxText()
         self.model = TextModeler(
             self.combobox,
@@ -200,8 +196,15 @@ class ActionWidget(Gtk.Box):
         self.combobox.set_halign(Gtk.Align.START)
         self.name_widget.set_halign(Gtk.Align.START)
 
-        self._format_new_value(initial_value)
+        self._format_new_value(self.selected_value)
+        self.combobox.connect('changed', self._format_verb_description)
         self.set_editable(False)
+
+    def _format_verb_description(self, *_args):
+        if self.verb_description:
+            self.additional_text_widget.set_text(
+                self.verb_description.get_verb_for_action_and_target(
+                    self.get_selected(), self.rule.target))
 
     def _format_new_value(self, new_value):
         self.name_widget.set_markup(f'{self.choices[new_value]}')
@@ -212,6 +215,8 @@ class ActionWidget(Gtk.Box):
 
     def set_editable(self, editable: bool):
         """Change state between editable and non-editable."""
+        if not editable:
+            self.revert_changes()
         self.combobox.set_visible(editable)
         self.name_widget.set_visible(not editable)
 
@@ -242,7 +247,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
                  parent_handler,
                  rule: AbstractRuleWrapper,
                  qapp: qubesadmin.Qubes,
-                 verb_description: AbstractVerbDescription,
+                 verb_description: Optional[AbstractVerbDescription] = None,
                  enable_delete: bool = True,
                  enable_vm_edit: bool = True,
                  initial_verb: str = "will",
@@ -334,8 +339,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
     def get_action_widget(self) -> ActionWidget:
         """Widget to be used for Action"""
         return ActionWidget(self.rule.ACTION_CHOICES,
-                     self.rule.action,
-                     self.verb_description, self.rule)
+                            self.verb_description, self.rule)
 
     def _get_delete_button(self) -> Gtk.Button:
         """Get a delete button appropriate for the class."""
@@ -413,11 +417,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
 
     def revert(self, *_args):
         """Revert all changes to the Rule."""
-        self.source_widget.revert_changes()
-        self.action_widget.revert_changes()
-        self.target_widget.revert_changes()
         self.set_edit_mode(False)
-        self.get_parent().invalidate_sort()
 
     def validate_and_save(self, *_args) -> bool:
         """Validate if the rule is not duplicate or conflicting with another
@@ -458,7 +458,7 @@ class LimitedRuleListBoxRow(RuleListBoxRow):
                  parent_handler,
                  rule: AbstractRuleWrapper,
                  qapp: qubesadmin.Qubes,
-                 verb_description: AbstractVerbDescription,
+                 verb_description: Optional[AbstractVerbDescription] = None,
                  enable_delete: bool = True,
                  enable_vm_edit: bool = True,
                  initial_verb: str = "will",
@@ -486,7 +486,7 @@ class NoActionListBoxRow(RuleListBoxRow):
                  parent_handler,
                  rule: AbstractRuleWrapper,
                  qapp: qubesadmin.Qubes,
-                 verb_description: AbstractVerbDescription,
+                 verb_description: Optional[AbstractVerbDescription] = None,
                  enable_delete: bool = True,
                  enable_vm_edit: bool = True,
                  initial_verb: str = "uses",

@@ -211,7 +211,6 @@ qubes.InputTablet * {self.sys_usb} @adminvm deny
 
             action_widget = ActionWidget(
                 choices=self.ACTION_CHOICES,
-                initial_value=type(rule.action).__name__.lower(),
                 verb_description=None,
                 rule=wrapped_rule)
             widget_with_buttons = WidgetWithButtons(action_widget)
