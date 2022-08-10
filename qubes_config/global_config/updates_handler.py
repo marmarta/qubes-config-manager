@@ -531,7 +531,7 @@ class UpdateProxy:
         """Current rules from the Exception list."""
         rules = []
         for row in self.updatevm_exception_list.get_children():
-            rules.append(row.rule.raw_rule)
+            rules.append(row.rule)
         return rules
 
     def is_changed(self) -> bool:
@@ -540,7 +540,8 @@ class UpdateProxy:
             return True
         if self.whonix_updatevm_model.is_changed():
             return True
-        if self.current_exception_rules != self.rules[:-2]:
+        if [rule.raw_rule for rule in self.current_exception_rules] != \
+                self.rules[:-2]:
             return True
         return False
 
@@ -550,26 +551,41 @@ class UpdateProxy:
 
     def save(self):
         """Save currently chosen settings."""
+        if not self.is_changed():
+            return
         rules = self.current_exception_rules
+        raw_rules = [rule.raw_rule for rule in rules]
 
-        if rules or self.whonix_updatevm_model.is_changed():
-            rules.append(
-                self.policy_manager.new_rule(service=self.service_name,
-                    source="@tag:whonix-updatevm", target="@default",
-                    action="allow "
-                    f"target={self.whonix_updatevm_model.get_selected()}"))
-        if rules or self.updatevm_model.is_changed():
-            rules.append(
-                self.policy_manager.new_rule(service=self.service_name,
-                    source="@type:TemplateVM", target="@default",
-                    action="allow "
-                           f"target={self.updatevm_model.get_selected()}"))
+        new_update_proxies = set()
+        for rule in rules:
+            new_update_proxies.add(self.qapp.domains[rule.target])
 
-        if rules:
-            self.policy_manager.save_rules(self.policy_file_name,
-                                           rules, self.current_token)
-            _, self.current_token = self.policy_manager.get_rules_from_filename(
-                self.policy_file_name, "")
+        raw_rules.append(
+            self.policy_manager.new_rule(service=self.service_name,
+                source="@tag:whonix-updatevm", target="@default",
+                action="allow "
+                f"target={self.whonix_updatevm_model.get_selected()}"))
+        new_update_proxies.add(self.whonix_updatevm_model.get_selected())
+
+        raw_rules.append(
+            self.policy_manager.new_rule(service=self.service_name,
+                source="@type:TemplateVM", target="@default",
+                action="allow "
+                       f"target={self.updatevm_model.get_selected()}"))
+        new_update_proxies.add(self.updatevm_model.get_selected())
+
+        self.policy_manager.save_rules(self.policy_file_name,
+                                       raw_rules, self.current_token)
+        _, self.current_token = self.policy_manager.get_rules_from_filename(
+            self.policy_file_name, "")
+
+        for vm in self.qapp.domains:
+            if 'service.qubes-updates-proxy' in vm.features:
+                apply_feature_change(vm, 'service.qubes-updates-proxy',
+                                     vm in new_update_proxies)
+            elif vm in new_update_proxies:
+                apply_feature_change(vm, 'service.qubes-updates-proxy',
+                                     True)
 
 class UpdatesHandler(PageHandler):
     """Handler for all the disparate Updates functions."""
