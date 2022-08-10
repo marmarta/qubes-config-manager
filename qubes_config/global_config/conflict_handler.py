@@ -52,6 +52,10 @@ class ConflictFileListRow(Gtk.ListBoxRow):
             self.set_tooltip_text(tooltip)
             self.box.pack_start(self.icon, False, False, 0)
 
+    def __str__(self):
+        # pylint: disable=arguments-differ
+        return self.label.get_text()
+
 
 class ConflictFileHandler:
     """Handler for conflicting policy files."""
@@ -80,3 +84,5 @@ class ConflictFileHandler:
                 row = ConflictFileListRow(file)
                 self.problem_list.add(row)
             self.problem_box.show_all()
+        else:
+            self.problem_box.set_visible(False)
