@@ -27,10 +27,10 @@ from typing import Optional, List, Dict
 from qrexec.policy.parser import Rule
 
 from ..widgets.gtk_widgets import VMListModeler, NONE_CATEGORY
-from ..widgets.gtk_utils import show_error, ask_question
 from ..widgets.utils import get_boolean_feature, apply_feature_change
 from .page_handler import PageHandler
 from .policy_rules import RuleTargeted, SimpleVerbDescription
+from .policy_handler import PolicyHandler
 from .policy_manager import PolicyManager
 from .rule_list_widgets import NoActionListBoxRow
 from .conflict_handler import ConflictFileHandler
@@ -71,15 +71,15 @@ class RepoHandler:
         # the code below relies on dicts in Python 3.6+ keeping the
         # order of items
         self.repo_to_widget_mapping = [{
-            'qubes-dom0-current-testing': self.dom0_testing_radio,
-            'qubes-dom0-security-testing': self.dom0_testing_sec_radio,
             'qubes-dom0-current': self.dom0_stable_radio,
+            'qubes-dom0-security-testing': self.dom0_testing_sec_radio,
+            'qubes-dom0-current-testing': self.dom0_testing_radio,
             },
             {'qubes-templates-itl-testing': self.template_official_testing,
             'qubes-templates-itl': self.template_official},
-            {'qubes-templates-community-testing':
+            {'qubes-templates-community': self.template_community,
+             'qubes-templates-community-testing':
                 self.template_community_testing,
-             'qubes-templates-community': self.template_community,
             }]
         self.initial_state: Dict[str, bool] = {}
 
@@ -105,9 +105,7 @@ class RepoHandler:
                 self.repos[repo_name] = dict()
                 self.repos[repo_name]['prettyname'] = lst[1]
                 self.repos[repo_name]['enabled'] = (lst[2] == 'enabled')
-        except qubesadmin.exc.QubesException as ex:
-            show_error("Error loading repository data",
-                       f"An error has occurred: {ex}")
+        except RuntimeError:
             # disable all repo-related stuff
             self.dom0_stable_radio.set_sensitive(False)
             self.dom0_testing_sec_radio.set_sensitive(False)
@@ -121,9 +119,10 @@ class RepoHandler:
     def _load_state(self):
         for repo_dict in self.repo_to_widget_mapping:
             for repo, widget in repo_dict.items():
+                if repo not in self.repos:
+                    continue
                 if self.repos[repo]['enabled']:
                     widget.set_active(self.repos[repo]['enabled'])
-                    break
 
         for repo_dict in self.repo_to_widget_mapping:
             for repo, widget in repo_dict.items():
@@ -140,31 +139,16 @@ class RepoHandler:
         process = subprocess.run(['sudo', cmd, arg],
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                            check=False, env=env)
-        if process.stderr:
-            raise qubesadmin.exc.QubesException(
-                'qrexec call stderr was not empty',
-                {'stderr': process.stderr.decode('utf-8')})
-        if process.returncode != 0:
-            raise qubesadmin.exc.QubesException(
-                'qrexec call exited with non-zero return code',
-                {'returncode': process.returncode})
+        if process.returncode != 0 or process.stderr:
+            raise RuntimeError('qrexec call failed')
         return process.stdout.decode('utf-8')
 
     def _set_repository(self, repository, state):
         action = 'Enable' if state else 'Disable'
-        try:
-            result = self._run_qrexec_repo(f'qubes.repos.{action}', repository)
-            if result != 'ok\n':
-                raise RuntimeError('qrexec call stdout did not contain "ok"'
-                            ' as expected',{'stdout': result})
-        except RuntimeError as ex:
-            msg = '{desc}; {args}'.format(desc=ex.args[0], args=', '.join(
-                # This is kind of hard to mentally parse but really all
-                # it does is pretty-print args[1], which is a dictionary
-                ['{key}: {val}'.format(key=i[0], val=i[1]) for i in
-                 ex.args[1].items()]
-            ))
-            raise RuntimeError(msg) from ex
+        result = self._run_qrexec_repo(f'qubes.repos.{action}', repository)
+        if result != 'ok\n':
+            raise RuntimeError('qrexec call stdout did not contain "ok"'
+                        ' as expected')
 
     def get_unsaved(self) -> str:
         """Get human-readable description of unsaved changes, or
@@ -187,23 +171,25 @@ class RepoHandler:
                         itl_changed = True
         unsaved = []
         if dom0_changed:
-            unsaved.append("dom0 update source changed")
+            unsaved.append("dom0 update source")
         if itl_changed:
-            unsaved.append("Official template update source changed")
+            unsaved.append("Official template update source")
         if community_changed:
-            unsaved.append("Community template update source changed")
+            unsaved.append("Community template update source")
 
         return "\n".join(unsaved)
 
     def save(self):
         """Save all changes."""
+        if not self.repos:
+            return
         for repo_dict in self.repo_to_widget_mapping:
             found = False
             for repo, widget in repo_dict.items():
                 try:
                     if widget.get_active() or found:
                         found = True
-                        self._set_repository(repo, True)
+                        self._set_repository(repo, widget.get_active())
                     else:
                         self._set_repository(repo, False)
                 except RuntimeError as ex:
@@ -292,14 +278,6 @@ class UpdateCheckerHandler:
     def _enable_exceptions_clicked(self, _widget=None):
         self.flowbox_handler.set_visible(self.exceptions_check.get_active())
 
-    def is_changed(self) -> bool:
-        """Did the user change anything from the initial settings?"""
-        if self.initial_dom0 != self.dom0_update_check.get_active():
-            return True
-        if self.initial_default != self.enable_radio.get_active():
-            return True
-        return self.flowbox_handler.is_changed()
-
     def get_unsaved(self) -> str:
         """Get human-readable description of unsaved changes, or
         empty string if none were found."""
@@ -336,11 +314,17 @@ class UpdateCheckerHandler:
         exceptions = self.flowbox_handler.selected_vms
         if changed_default or self.flowbox_handler.is_changed():
             for vm in self.qapp.domains:
-                if vm.klass == 'dom0':
+                if vm.klass == 'AdminVM':
                     continue
-                vm_state = default_state if vm not in exceptions else \
+                vm_desired_state = default_state if vm not in exceptions else \
                     not default_state
-                apply_feature_change(vm, self.FEATURE_NAME, vm_state)
+                vm_value = get_boolean_feature(vm, self.FEATURE_NAME, True)
+                if vm_value != vm_desired_state:
+                    # if we want False, we need to explicitly set it, else
+                    # we just need to erase the feature
+                    apply_feature_change(vm, self.FEATURE_NAME,
+                                         None if vm_desired_state else False)
+
         self.flowbox_handler.save()
 
     def reset(self):
@@ -459,7 +443,7 @@ class UpdateProxy:
         for rule in reversed(remaining_rules):
             self.updatevm_exception_list.add(self._get_row(rule))
 
-    def _get_row(self, rule: Rule):
+    def _get_row(self, rule: Rule, new: bool = False):
         return NoActionListBoxRow(
             parent_handler=self,
             rule=RuleTargeted(rule),
@@ -467,15 +451,18 @@ class UpdateProxy:
             verb_description=SimpleVerbDescription({}),
             initial_verb="uses",
             filter_target=self._updatevm_filter,
-            filter_source=self._needs_updatevm_filter)
+            filter_source=self._needs_updatevm_filter,
+            is_new_row=new
+        )
 
     def add_new_rule(self, *_args):
         """Add a new rule."""
         self.close_all_edits()
         new_rule = self.policy_manager.new_rule(
             service=self.service_name, source=str(self.first_eligible_vm),
-            target='@default', action=f'allow target={self.default_updatevm}')
-        new_row = self._get_row(new_rule)
+            target='@default',
+            action=f'allow target={self.default_updatevm}')
+        new_row = self._get_row(new_rule, new=True)
         self.updatevm_exception_list.add(new_row)
         new_row.activate()
 
@@ -488,20 +475,8 @@ class UpdateProxy:
 
     def close_all_edits(self):
         """Close all edited rows"""
-        for row in self.updatevm_exception_list.get_children():
-            if row.editing:
-                if not row.is_changed():
-                    row.set_edit_mode(False)
-                    continue
-                response = ask_question(row.get_toplevel(),
-                    "A rule is currently being edited",
-                    "Do you want to save changes to the following "
-                    f"rule?\n{str(row)}")
-                if response == Gtk.ResponseType.YES:
-                    if not row.validate_and_save():
-                        row.revert()
-                else:
-                    row.revert()
+        PolicyHandler.close_rows_in_list(
+            self.updatevm_exception_list.get_children())
 
     def verify_new_rule(self, row: NoActionListBoxRow,
                         new_source: str, new_target: str,
@@ -511,14 +486,11 @@ class UpdateProxy:
         if it was to be associated with provided row. Return None if rule would
         be correct, and string description of error otherwise.
         """
-        for other_row in self.updatevm_exception_list.get_children():
-            if other_row == row:
-                continue
-            if other_row.rule.is_rule_conflicting(new_source, new_target,
-                                                  new_action):
-                return str(other_row)
-        if new_source == new_target:
-            return 'Target cannot be the same as source'
+        simple_verify = PolicyHandler.verify_rule_against_rows(
+            self.updatevm_exception_list.get_children(),
+            row, new_source, new_target, new_action)
+        if simple_verify:
+            return simple_verify
         new_target_vm = self.qapp.domains[new_target]
         new_source_vm = self.qapp.domains[new_source]
         if 'whonix-updatevm' in new_source_vm.tags and \
@@ -560,12 +532,13 @@ class UpdateProxy:
         for rule in rules:
             new_update_proxies.add(self.qapp.domains[rule.target])
 
-        raw_rules.append(
-            self.policy_manager.new_rule(service=self.service_name,
-                source="@tag:whonix-updatevm", target="@default",
-                action="allow "
-                f"target={self.whonix_updatevm_model.get_selected()}"))
-        new_update_proxies.add(self.whonix_updatevm_model.get_selected())
+        if self.has_whonix:
+            raw_rules.append(
+                self.policy_manager.new_rule(service=self.service_name,
+                    source="@tag:whonix-updatevm", target="@default",
+                    action="allow "
+                    f"target={self.whonix_updatevm_model.get_selected()}"))
+            new_update_proxies.add(self.whonix_updatevm_model.get_selected())
 
         raw_rules.append(
             self.policy_manager.new_rule(service=self.service_name,
@@ -580,9 +553,10 @@ class UpdateProxy:
             self.policy_file_name, "")
 
         for vm in self.qapp.domains:
+            print(vm, 'service.qubes-updates-proxy' in vm.features)
             if 'service.qubes-updates-proxy' in vm.features:
                 apply_feature_change(vm, 'service.qubes-updates-proxy',
-                                     vm in new_update_proxies)
+                                     True if vm in new_update_proxies else None)
             elif vm in new_update_proxies:
                 apply_feature_change(vm, 'service.qubes-updates-proxy',
                                      True)
@@ -640,8 +614,7 @@ class UpdatesHandler(PageHandler):
         self.update_proxy.close_all_edits()
 
     def get_unsaved(self) -> str:
-        """Check if there are any unsaved changes and ask user for an action.
-        Return True if changes have been handled, False if not."""
+        """Get list of unsaved changes."""
         self.close_all_edits()
 
         unsaved = [self.repo_handler.get_unsaved(),
@@ -672,6 +645,3 @@ class UpdatesHandler(PageHandler):
 
         if self.dom0_updatevm_model.is_changed():
             self.qapp.updatevm = self.dom0_updatevm_model.get_selected()
-
-# Filtering for dropdowns:
-# qubes-update-proxy service? or set it up when adding as proxy??

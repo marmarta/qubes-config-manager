@@ -491,11 +491,13 @@ class NoActionListBoxRow(RuleListBoxRow):
                  enable_vm_edit: bool = True,
                  initial_verb: str = "uses",
                  filter_target: Optional[Callable] = None,
-                 filter_source: Optional[Callable] = None):
+                 filter_source: Optional[Callable] = None,
+                 is_new_row: bool = False):
         self.filter_target = filter_target
         self.filter_source = filter_source
         super().__init__(parent_handler, rule, qapp, verb_description,
-                         enable_delete, enable_vm_edit, initial_verb)
+                         enable_delete, enable_vm_edit, initial_verb,
+                         is_new_row=is_new_row)
 
     def get_source_widget(self) -> VMWidget:
         """Widget to be used for source VM"""

@@ -71,7 +71,7 @@ class VMFlowBoxButton(Gtk.FlowBoxChild):
         self.show_all()
 
 
-    def _remove_self(self, _widget):
+    def _remove_self(self, *_args):
         response = ask_question(
             self.get_toplevel(), "Delete",
             "Are you sure you want to remove this qube?")

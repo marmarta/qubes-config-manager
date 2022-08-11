@@ -309,6 +309,24 @@ class PolicyHandler(PageHandler):
         self.close_all_edits()
         row.set_edit_mode(True)
 
+    @staticmethod
+    def verify_rule_against_rows(other_rows: List[RuleListBoxRow],
+                                 row: RuleListBoxRow,
+                                 new_source: str, new_target: str,
+                                 new_action: str) -> Optional[str]:
+        """
+        Verify correctness of a rule with new_source, new_target and new_action
+        if it was to be associated with provided row. Return None if rule would
+        be correct, and string description of error otherwise.
+        """
+        for other_row in other_rows:
+            if other_row == row:
+                continue
+            if other_row.rule.is_rule_conflicting(new_source, new_target,
+                                                  new_action):
+                return str(other_row)
+        return None
+
     def verify_new_rule(self, row: RuleListBoxRow,
                         new_source: str, new_target: str,
                         new_action: str) -> Optional[str]:
@@ -317,17 +335,13 @@ class PolicyHandler(PageHandler):
         if it was to be associated with provided row. Return None if rule would
         be correct, and string description of error otherwise.
         """
-        for other_row in self.current_rows:
-            if other_row == row:
-                continue
-            if other_row.rule.is_rule_conflicting(new_source, new_target,
-                                                  new_action):
-                return str(other_row)
-        return None
+        return self.verify_rule_against_rows(self.current_rows, row,
+                                      new_source, new_target, new_action)
 
-    def close_all_edits(self):
-        """Close all edited rows."""
-        for row in self.current_rows:
+    @staticmethod
+    def close_rows_in_list(row_list: List[RuleListBoxRow]):
+        """Close all edited rows in provided ListBox"""
+        for row in row_list:
             if row.editing:
                 if not row.is_changed():
                     row.set_edit_mode(False)
@@ -342,6 +356,10 @@ class PolicyHandler(PageHandler):
                         row.revert()
                 else:
                     row.revert()
+
+    def close_all_edits(self):
+        """Close all edited rows."""
+        self.close_rows_in_list(self.current_rows)
 
     def reset(self):
         """Reset state to initial or last saved state, whichever is newer."""

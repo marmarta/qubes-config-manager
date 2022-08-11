@@ -81,6 +81,8 @@ default_vm_properties = {
     "template": ("vm", False, "fedora-36"),
 }
 
+possible_tags = ['whonix-updatevm', 'anon-gateway']
+
 
 def add_expected_vm(qapp,
                     name: str,
@@ -134,13 +136,26 @@ def add_expected_vm(qapp,
             b"0\x00" + prop_line.encode()
 
     qapp.expected_calls[(name, "admin.vm.feature.List", None, None)] = \
-        ("0\x00" + "".join(f"{feature}\n" for feature in features)).encode()
-    for feature, value in features:
-        qapp.expected_calls[(name, "admin.vm.feature.Get", feature, None)] = \
-            b"0\x00" + str(value).encode()
+        ("0\x00" + "".join(f"{feature}\n" for feature, value in
+                           features.items() if value is not None)).encode()
+    for feature, value in features.items():
+        if value is None:
+            qapp.expected_calls[
+                (name, "admin.vm.feature.Get", feature, None)] = \
+                b'2\x00QubesFeatureNotFoundError\x00\x00' + \
+                str(feature).encode() + b'\x00'
+        else:
+            qapp.expected_calls[
+                (name, "admin.vm.feature.Get", feature, None)] = \
+                b"0\x00" + str(value).encode()
 
     qapp.expected_calls[(name, "admin.vm.tag.List", None, None)] = \
         ("0\x00" + "".join(f"{tag}\n" for tag in tags)).encode()
+
+    for tag in possible_tags:
+        qapp.expected_calls[(name, "admin.vm.tag.Get", tag, None)] = \
+            b"0\x000"
+
     for tag in tags:
         qapp.expected_calls[(name, "admin.vm.tag.Get", tag, None)] = \
             b"0\x001"
@@ -169,9 +184,11 @@ def test_qapp():
     qapp._local_name = 'dom0'  # pylint: disable=protected-access
 
     add_dom0_vm_property(qapp, 'clockvm', 'sys-net')
+    add_dom0_vm_property(qapp, 'updatevm', 'sys-net')
     add_dom0_vm_property(qapp, 'default_netvm', 'sys-net')
     add_dom0_vm_property(qapp, 'default_template', 'fedora-36')
     add_dom0_vm_property(qapp, 'default_dispvm', 'fedora-36')
+
     add_dom0_text_property(qapp, 'default_kernel', '1.1')
 
     add_dom0_feature(qapp, 'gui-default-allow-fullscreen', '')
@@ -186,23 +203,65 @@ def test_qapp():
         b'0\x001.1\nmisc\n4.2\n'
 
     add_expected_vm(qapp, 'dom0', 'AdminVM',
-                    {}, {}, [])
+                    {}, {'service.qubes-update-check': 1,
+                         'config.default.qubes-update-check': None}, [])
+
     add_expected_vm(qapp, 'sys-net', 'AppVM',
-                    {'provides_network': ('bool', False, 'True')}, {}, [])
+                    {'provides_network': ('bool', False, 'True')},
+                    {'service.qubes-update-check': None,
+                     'service.qubes-updates-proxy': 1}, [])
+
+    add_expected_vm(qapp, 'sys-firewall', 'AppVM',
+                    {'provides_network': ('bool', False, 'True')},
+                    {'service.qubes-update-check': None}, [])
+
     add_expected_vm(qapp, 'fedora-36', 'TemplateVM',
-                    {}, {}, [])
+                    {"netvm": ("vm", False, '')},
+                    {'service.qubes-update-check': None}, [])
+
+    add_expected_vm(qapp, 'fedora-35', 'TemplateVM',
+                    {"netvm": ("vm", False, '')},
+                    {'service.qubes-update-check': None}, [])
+
     add_expected_vm(qapp, 'default-dvm', 'DispVM',
-                    {'template_for_dispvms': ('bool', False, 'True')}, {}, [])
+                    {'template_for_dispvms': ('bool', False, 'True')},
+                    {'service.qubes-update-check': None}, [])
+
     add_expected_vm(qapp, 'test-vm', 'AppVM',
-                    {}, {}, [])
+                    {}, {'service.qubes-update-check': None}, [])
+
     add_expected_vm(qapp, 'test-blue', 'AppVM',
-                    {'label': ('str', False, 'blue')}, {}, [])
+                    {'label': ('str', False, 'blue')},
+                    {'service.qubes-update-check': None}, [])
+
     add_expected_vm(qapp, 'test-red', 'AppVM',
-                    {'label': ('str', False, 'red')}, {}, [])
+                    {'label': ('str', False, 'red')},
+                    {'service.qubes-update-check': None}, [])
+
     add_expected_vm(qapp, 'vault', 'AppVM',
-                    {"netvm": ("vm", False, '')}, {}, [])
+                    {"netvm": ("vm", False, '')},
+                    {'service.qubes-update-check': None}, [])
 
     return qapp
+
+@pytest.fixture
+def test_qapp_whonix(test_qapp):  # pylint: disable=redefined-outer-name
+    # pylint does not understand fixtures
+    """Testing qapp with qhonix vms added"""
+    add_expected_vm(test_qapp, 'sys-whonix', 'AppVM',
+                    {},
+                    {'service.qubes-update-check': None,
+                     'service.qubes-updates-proxy': 1}, ['anon-gateway'])
+    add_expected_vm(test_qapp, 'anon-whonix', 'AppVM',
+                    {},
+                    {'service.qubes-update-check': None}, ['anon-gateway'])
+    add_expected_vm(test_qapp, 'whonix-gw-15', 'TemplateVM',
+                    {"netvm": ("vm", False, '')},
+                    {'service.qubes-update-check': None}, ['whonix-updatevm'])
+    add_expected_vm(test_qapp, 'whonix-gw-14', 'TemplateVM',
+                    {"netvm": ("vm", False, '')},
+                    {'service.qubes-update-check': None}, ['whonix-updatevm'])
+    return test_qapp
 
 SIGNALS_REGISTERED = False
 
