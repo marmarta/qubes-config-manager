@@ -32,7 +32,7 @@ from .application_selector import ApplicationData
 import gi
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GObject
+from gi.repository import Gtk
 
 
 logger = logging.getLogger('qubes-config-manager')
@@ -184,6 +184,7 @@ class TemplateSelectorNoneCombo(TemplateSelector):
         self.radio_template.connect('toggled', self._radio_toggled)
         # done separately to avoid infinite recursion
         self.modeler.connect_change_callback(self.emit_signal)
+        self.radio_none.set_active(True)
 
     def _radio_toggled(self, widget: Gtk.RadioButton):
         if widget.get_active():
@@ -231,10 +232,6 @@ class TemplateHandler:
         """
         self.qapp = qapp
         self.main_window: Gtk.Window = gtk_builder.get_object('main_window')
-
-        GObject.signal_new('template-changed',
-                           self.main_window,
-                           GObject.SIGNAL_RUN_LAST, None, (str,))
 
         self.template_selectors: Dict[str, TemplateSelector] = {
             'qube_type_app': TemplateSelectorCombo(

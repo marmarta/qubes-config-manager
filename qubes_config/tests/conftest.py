@@ -32,6 +32,7 @@ from gi.repository import Gtk
 
 from ..global_config.global_config import GlobalConfig
 from ..global_config.policy_manager import PolicyManager
+from ..new_qube.new_qube_app import CreateNewQube
 
 default_vm_properties = {
     "autostart": ("bool", True, "False"),
@@ -275,6 +276,10 @@ def test_qapp():
                     {'label': ('str', False, 'red')},
                     {'service.qubes-update-check': None}, [])
 
+    add_expected_vm(qapp, 'test-standalone', 'StandaloneVM',
+                    {'label': ('str', False, 'green')},
+                    {'service.qubes-update-check': None}, [])
+
     add_expected_vm(qapp, 'vault', 'AppVM',
                     {"netvm": ("vm", False, '')},
                     {'service.qubes-update-check': None}, [])
@@ -337,6 +342,24 @@ def real_builder():
         __name__, '../global_config.glade'))
     return builder
 
+
+
+NEW_QUBE_SIGNALS_REGISTERED = False
+
+
+@pytest.fixture
+def new_qube_builder():
+    """Gtk builder with actual config glade file registered"""
+    global NEW_QUBE_SIGNALS_REGISTERED  # pylint:disable=global-statement
+    # register all the signals various widgets might emit
+    if not NEW_QUBE_SIGNALS_REGISTERED:
+        CreateNewQube.register_signals()
+        NEW_QUBE_SIGNALS_REGISTERED = True
+    # test glade file contains very simple setup with correctly named widgets
+    builder = Gtk.Builder()
+    builder.add_from_file(pkg_resources.resource_filename(
+        __name__, '../new_qube.glade'))
+    return builder
 
 
 class TestPolicyClient:

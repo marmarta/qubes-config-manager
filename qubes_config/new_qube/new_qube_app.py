@@ -40,7 +40,7 @@ from ..widgets.gtk_utils import load_icon, show_error
 import gi
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GdkPixbuf
+from gi.repository import Gtk, Gdk, GdkPixbuf, GObject
 
 
 logger = logging.getLogger('qubes-config-manager')
@@ -114,6 +114,8 @@ class CreateNewQube(Gtk.Application):
         self.qube_name = self.builder.get_object('qube_name')
         self.qube_label = self.builder.get_object('qube_label')
 
+        self.register_signals()
+
         self._handle_theme()
 
         self.template_handler = TemplateHandler(self.builder, self.qapp)
@@ -169,6 +171,13 @@ class CreateNewQube(Gtk.Application):
 
     def _quit(self, *_args):
         self.quit()
+
+    @staticmethod
+    def register_signals():
+        """Register necessary Gtk signals"""
+        GObject.signal_new('template-changed',
+                           Gtk.Window,
+                           GObject.SIGNAL_RUN_LAST, None, (str,))
 
     @staticmethod
     def _handle_theme():
