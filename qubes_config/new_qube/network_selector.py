@@ -77,6 +77,7 @@ class NetworkSelector:
                 QubeName(self.qapp.domains[WHONIX_QUBE_NAME]), False, False, 0)
         else:
             self.network_tor_box.set_visible(False)
+            self.network_tor_box.set_no_show_all(True)
 
         self.network_modeler = VMListModeler(
             self.network_custom_combo, self.qapp,

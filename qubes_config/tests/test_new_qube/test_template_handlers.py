@@ -21,7 +21,7 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=missing-class-docstring
 
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, ANY
 
 from ...new_qube.template_handler import TemplateHandler
 from ...new_qube.application_selector import ApplicationData
@@ -131,7 +131,7 @@ def test_template_emit_signal(mock_subprocess, test_qapp, new_qube_builder):
     handler.main_window.connect('template-changed', mock_emit)
 
     handler.change_vm_type('qube_type_template')
-    assert len(mock_emit.mock_calls) == 1
+    mock_emit.assert_called_with(ANY, None)
 
     radio_none = new_qube_builder.get_object('radio_template_none')
     radio_some = new_qube_builder.get_object('radio_template_template')
@@ -139,22 +139,24 @@ def test_template_emit_signal(mock_subprocess, test_qapp, new_qube_builder):
 
     radio_some.set_active(True)
 
-    assert len(mock_emit.mock_calls) == 2
+    # first available template
+    mock_emit.assert_called_with(ANY, 'fedora-35')
 
     combo.set_active_id('fedora-36')
     assert handler.get_selected_template() == test_qapp.domains['fedora-36']
 
     # two calls because comboboxes are weird
-    assert len(mock_emit.mock_calls) == 4
+    mock_emit.assert_called_with(ANY, 'fedora-36')
 
     radio_none.set_active(True)
 
-    assert len(mock_emit.mock_calls) == 5
+    mock_emit.assert_called_with(ANY, None)
 
     handler.change_vm_type('qube_type_app')
 
-    assert len(mock_emit.mock_calls) == 7
+    # default template
+    mock_emit.assert_called_with(ANY, 'fedora-36')
 
     handler.select_template(test_qapp.domains['fedora-35'])
 
-    assert len(mock_emit.mock_calls) == 9
+    mock_emit.assert_called_with(ANY, 'fedora-35')

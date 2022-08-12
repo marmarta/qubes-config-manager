@@ -221,6 +221,7 @@ def test_qapp():
     add_dom0_vm_property(qapp, 'default_dispvm', 'fedora-36')
 
     add_dom0_text_property(qapp, 'default_kernel', '1.1')
+    add_dom0_text_property(qapp, 'default_pool', 'file')
 
     add_dom0_feature(qapp, 'gui-default-allow-fullscreen', '')
     add_dom0_feature(qapp, 'gui-default-allow-utf8-titles', '')
