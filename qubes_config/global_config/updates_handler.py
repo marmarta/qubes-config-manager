@@ -553,7 +553,6 @@ class UpdateProxy:
             self.policy_file_name, "")
 
         for vm in self.qapp.domains:
-            print(vm, 'service.qubes-updates-proxy' in vm.features)
             if 'service.qubes-updates-proxy' in vm.features:
                 apply_feature_change(vm, 'service.qubes-updates-proxy',
                                      True if vm in new_update_proxies else None)

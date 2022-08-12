@@ -137,29 +137,32 @@ class USBVMHandler:
 
     def _get_current_usbvm(self):
         usb_vm_name = get_feature(self.vm, self.FEATURE_NAME, 'sys-usb')
+        # Future: what if user has no sys-usb? well. Disable whole page?
         return self.qapp.domains.get(usb_vm_name)
 
     def save(self):
         """Save user changes."""
+        self.widget_with_buttons.close_edit()
         apply_feature_change_from_widget(self.select_widget,
-                                         self.vm, self.FEATURE_NAME)
+                                         self.get_selected_usbvm(),
+                                         self.FEATURE_NAME)
         self.widget_with_buttons.update_changed()
-        # # TODO: do some sort of general close all edits?
 
     def get_selected_usbvm(self):
         """Get currently chosen usbvm."""
-        # TODO: how this interacts with select in progress?????
         return self.select_widget.get_selected()
 
     def get_unsaved(self) -> str:
         """Get human-readable description of unsaved changes, or
         empty string if none were found."""
+        self.widget_with_buttons.close_edit()
         if self.widget_with_buttons.is_changed():
             return "USB qube"
         return ""
 
     def reset(self):
         """Reset all changes to their initial state."""
+        self.widget_with_buttons.close_edit()
         self.widget_with_buttons.reset()
 
 
@@ -229,7 +232,7 @@ qubes.InputTablet * {self.sys_usb} @adminvm deny
 
     def _warn(self):
         pass
-        # TODO: fixme
+        # TODO: future: make some sort of warning box?
 
     def save(self):
         """Save user changes"""
@@ -284,7 +287,12 @@ class U2FPolicyHandler:
         self.policy_filename = '50-config-u2f'
         self.sys_usb = sys_usb
 
-        self.default_policy = f"u2f.Authenticate * @anyvm {sys_usb} deny"
+        self.default_policy = ""
+        self.deny_all_policy = """
+u2f.Authenticate * @anyvm @anyvm deny
+u2f.Register * @anyvm @anyvm deny
+policy.RegisterArgument +u2f.Register @anyvm @anyvm deny
+"""
 
         self.problem_no_vms_box: Gtk.Box = \
             gtk_builder.get_object('usb_u2f_no_qubes_problem')
@@ -449,7 +457,7 @@ class U2FPolicyHandler:
 
             self.policy_manager.save_rules(
                 self.policy_filename,
-                self.policy_manager.text_to_rules(self.default_policy),
+                self.policy_manager.text_to_rules(self.deny_all_policy),
                 self.current_token)
 
             _, self.current_token = self.policy_manager.get_rules_from_filename(
@@ -513,7 +521,10 @@ class U2FPolicyHandler:
 
     def reset(self):
         """Reset state to initial state."""
-        self._initialize_data()
+        self.enable_check.set_active(self.initial_enable_state)
+        self.register_check.set_active(self.initial_register_state)
+        self.blanket_check.set_active(self.initial_blanket_check_state)
+        self.register_all_radio.set_active(self.initial_register_all_state)
         self.enable_some_handler.reset()
         self.register_some_handler.reset()
         self.blanket_handler.reset()
@@ -524,7 +535,7 @@ class U2FPolicyHandler:
         if self.initial_enable_state != self.enable_check.get_active():
             if self.enable_check.get_active():
                 return "U2F enabled"
-            return "Uf2 disabled"
+            return "U2F disabled"
         if not self.enable_check.get_active():
             return ""
 
@@ -532,12 +543,16 @@ class U2FPolicyHandler:
 
         if self.enable_some_handler.selected_vms != self.initially_enabled_vms:
             unsaved.append("List of qubes with U2F enabled changed")
-        if self.initial_register_state != self.register_check.get_active() or \
-            self.initial_register_all_state != \
-                self.register_all_radio.get_active() or \
-                self.register_some_handler.selected_vms != \
+
+        if self.initial_register_state != self.register_check.get_active():
+            unsaved.append("U2F key registration settings changed")
+        elif self.initial_register_all_state != \
+                self.register_all_radio.get_active():
+            unsaved.append("U2F key registration settings changed")
+        elif self.register_some_handler.selected_vms != \
                 self.initial_register_vms:
             unsaved.append("U2F key registration settings changed")
+
         if self.initial_blanket_check_state != \
                 self.blanket_check.get_active() or \
                 self.blanket_handler.selected_vms != self.initial_blanket_vms:
@@ -570,6 +585,9 @@ class DevicesHandler(PageHandler):
         self.main_window.connect('usbvm-changed', self._usbvm_changed)
 
     def _usbvm_changed(self, *_args):
+        # changing USB VM is such a big change (e.g. u2f settings will scream)
+        # that here only changes usbvm for the purposes of saving settings,
+        # but the main window will ask user to restart Settings app anyway
         sys_usb = self.usbvm_handler.get_selected_usbvm()
         self.input_handler.sys_usb = sys_usb
         self.u2f_handler.sys_usb = sys_usb

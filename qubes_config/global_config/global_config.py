@@ -374,8 +374,21 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
         }
 
         self.main_notebook.connect("switch-page", self._page_switched)
+        self.main_window.connect('usbvm-changed', self._usbvm_changed)
 
         self._handle_urls()
+
+    def _usbvm_changed(self):
+        response = ask_question(
+            self.main_window, "USB qube change",
+            "Changing USB qube requires restarting Global Settings to"
+            "correctly initialize all defaults. "
+            "Do you want to save changes and restart?")
+        if response == Gtk.ResponseType.YES:
+            self._apply()
+            self._quit()
+            return
+        self._reset()
 
     def _handle_urls(self):
         url_label_ids = ["url_info", "openinvm_info", "splitgpg_info",
@@ -442,7 +455,7 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
                                 f"Changes found:\n{description}")
         return response
 
-    def _apply(self, _widget):
+    def _apply(self, _widget=None):
         page = self.get_current_page()
         if page:
             try:
@@ -451,7 +464,12 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
                 show_error("Could not save changes",
                            f"The following error occurred: {ex}")
 
-    def _quit(self, _widget):
+    def _reset(self, _widget=None):
+        page = self.get_current_page()
+        if page:
+            page.reset()
+
+    def _quit(self, _widget=None):
         self.quit()
 
     def _ok(self, widget):

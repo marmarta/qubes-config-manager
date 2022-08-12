@@ -22,7 +22,7 @@
 import pytest
 import pkg_resources
 import subprocess
-from typing import Mapping, Union, Tuple
+from typing import Mapping, Union, Tuple, List
 from qubesadmin.tests import QubesTest
 
 import gi
@@ -173,8 +173,38 @@ def add_dom0_text_property(qapp, prop_name, prop_value):
 
 def add_dom0_feature(qapp, feature, feature_value):
     """Add dom0 feature"""
-    qapp.expected_calls[('dom0', 'admin.vm.feature.Get', feature, None)] = \
-        b'0\x00' + f'{feature_value}'.encode()
+    if feature_value is not None:
+        qapp.expected_calls[('dom0', 'admin.vm.feature.Get', feature, None)] = \
+            b'0\x00' + f'{feature_value}'.encode()
+    else:
+        qapp.expected_calls[('dom0', 'admin.vm.feature.Get', feature, None)] = \
+            b'0\x00' + f'{feature_value}'.encode()
+
+def add_feature_with_template_to_all(qapp, feature_name,
+                                     enable_vm_names: List[str]):
+    """Add possibility of checking for a feature with templated to all qubes;
+    those listed in enabled_vm_names will have it set to 1, others will
+    have it absent."""
+    for vm in qapp.domains:
+        if vm.name in enable_vm_names:
+            result=b'0\x001'
+        else:
+            result = b'2\x00QubesFeatureNotFoundError\x00\x00' + \
+                     str(feature_name).encode() + b'\x00'
+        qapp.expected_calls[(vm, 'admin.vm.feature.CheckWithTemplate',
+                             feature_name, None)] = result
+
+def add_feature_to_all(qapp, feature_name, enable_vm_names: List[str]):
+    """Add possibility of checking for a feature to all qubes; those listed
+    in enabled_vm_names will have it set to 1, others will have it absent."""
+    for vm in qapp.domains:
+        if vm.name in enable_vm_names:
+            result=b'0\x001'
+        else:
+            result = b'2\x00QubesFeatureNotFoundError\x00\x00' + \
+                     str(feature_name).encode() + b'\x00'
+        qapp.expected_calls[(vm, 'admin.vm.feature.Get',
+                             feature_name, None)] = result
 
 
 @pytest.fixture
@@ -204,8 +234,8 @@ def test_qapp():
 
     add_expected_vm(qapp, 'dom0', 'AdminVM',
                     {}, {'service.qubes-update-check': 1,
-                         'config.default.qubes-update-check': None}, [])
-
+                         'config.default.qubes-update-check': None,
+                         'config-usbvm-name': None}, [])
     add_expected_vm(qapp, 'sys-net', 'AppVM',
                     {'provides_network': ('bool', False, 'True')},
                     {'service.qubes-update-check': None,
@@ -213,6 +243,10 @@ def test_qapp():
 
     add_expected_vm(qapp, 'sys-firewall', 'AppVM',
                     {'provides_network': ('bool', False, 'True')},
+                    {'service.qubes-update-check': None}, [])
+
+    add_expected_vm(qapp, 'sys-usb', 'AppVM',
+                    {},
                     {'service.qubes-update-check': None}, [])
 
     add_expected_vm(qapp, 'fedora-36', 'TemplateVM',
@@ -242,12 +276,18 @@ def test_qapp():
                     {"netvm": ("vm", False, '')},
                     {'service.qubes-update-check': None}, [])
 
+    add_feature_with_template_to_all(qapp, 'supported-service.qubes-u2f-proxy',
+                                     ['test-vm', 'fedora-35', 'sys-usb'])
+    add_feature_to_all(qapp, 'service.qubes-u2f-proxy',
+                                     ['test-vm'])
+
     return qapp
+
 
 @pytest.fixture
 def test_qapp_whonix(test_qapp):  # pylint: disable=redefined-outer-name
     # pylint does not understand fixtures
-    """Testing qapp with qhonix vms added"""
+    """Testing qapp with whonix vms added"""
     add_expected_vm(test_qapp, 'sys-whonix', 'AppVM',
                     {},
                     {'service.qubes-update-check': None,
@@ -261,6 +301,7 @@ def test_qapp_whonix(test_qapp):  # pylint: disable=redefined-outer-name
     add_expected_vm(test_qapp, 'whonix-gw-14', 'TemplateVM',
                     {"netvm": ("vm", False, '')},
                     {'service.qubes-update-check': None}, ['whonix-updatevm'])
+    test_qapp.domains.clear_cache()
     return test_qapp
 
 SIGNALS_REGISTERED = False
