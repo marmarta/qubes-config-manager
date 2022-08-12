@@ -235,7 +235,10 @@ def test_qapp():
     add_expected_vm(qapp, 'dom0', 'AdminVM',
                     {}, {'service.qubes-update-check': 1,
                          'config.default.qubes-update-check': None,
-                         'config-usbvm-name': None}, [])
+                         'config-usbvm-name': None,
+                         'gui-default-secure-copy-sequence': None,
+                         'gui-default-secure-paste-sequence': None
+                         }, [])
     add_expected_vm(qapp, 'sys-net', 'AppVM',
                     {'provides_network': ('bool', False, 'True')},
                     {'service.qubes-update-check': None,

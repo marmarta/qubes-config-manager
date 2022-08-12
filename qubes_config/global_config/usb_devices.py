@@ -144,7 +144,7 @@ class USBVMHandler:
         """Save user changes."""
         self.widget_with_buttons.close_edit()
         apply_feature_change_from_widget(self.select_widget,
-                                         self.get_selected_usbvm(),
+                                         self.vm,
                                          self.FEATURE_NAME)
         self.widget_with_buttons.update_changed()
 
@@ -448,6 +448,8 @@ policy.RegisterArgument +u2f.Register @anyvm @anyvm deny
     def save(self):
         """Save user changes in policy."""
         if not self.enable_check.get_sensitive():
+            return
+        if not self.get_unsaved():
             return
 
         if not self.enable_check.get_active():

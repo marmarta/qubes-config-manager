@@ -121,7 +121,7 @@ def test_usbvm_handler(test_qapp, real_builder):
                'apply_feature_change_from_widget') as mock_apply:
         handler.save()
         mock_apply.assert_called_with(
-            handler.select_widget, test_qapp.domains['sys-net'],
+            handler.select_widget, test_qapp.domains['dom0'],
             handler.FEATURE_NAME)
 
     # things look correct

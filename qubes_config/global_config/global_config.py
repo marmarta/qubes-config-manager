@@ -103,8 +103,6 @@ qubes.ClipboardPaste * @anyvm @anyvm ask\n""",
             )
         ]
 
-        # TODO: use the nice wrappers from basics?
-
     def reset(self):
         for handler in self.handlers:
             handler.reset()
@@ -244,12 +242,14 @@ class GlobalConfig(Gtk.Application):
     """
     Main Gtk.Application for new qube widget.
     """
-    def __init__(self, qapp):
+    def __init__(self, qapp: qubesadmin.Qubes, policy_manager: PolicyManager):
         """
         :param qapp: qubesadmin.Qubes object
+        :param policy_manager: PolicyManager object
         """
         super().__init__(application_id='org.qubesos.globalconfig')
         self.qapp: qubesadmin.Qubes = qapp
+        self.policy_manager = policy_manager
 
     def do_activate(self, *args, **kwargs):
         """
@@ -296,7 +296,6 @@ class GlobalConfig(Gtk.Application):
             self.builder.get_object('main_notebook')
 
         self._handle_theme()
-        policy_manager = PolicyManager()
 
         self.apply_button: Gtk.Button = self.builder.get_object('apply_button')
         self.cancel_button: Gtk.Button = \
@@ -312,16 +311,16 @@ class GlobalConfig(Gtk.Application):
         # match page by widget name to handler
         self.handlers: Dict[str, PageHandler] = {
             'basics': BasicSettingsHandler(self.builder, self.qapp),
-            'usb': DevicesHandler(self.qapp, policy_manager, self.builder),
+            'usb': DevicesHandler(self.qapp, self.policy_manager, self.builder),
             'updates': UpdatesHandler(
                 qapp=self.qapp,
-                policy_manager=policy_manager,
+                policy_manager=self.policy_manager,
                 gtk_builder=self.builder
             ),
             'splitgpg': VMSubsetPolicyHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
-                policy_manager=policy_manager,
+                policy_manager=self.policy_manager,
                 prefix="splitgpg",
                 service_name='qubes.Gpg',
                 policy_file_name='50-config-splitgpg',
@@ -340,17 +339,17 @@ class GlobalConfig(Gtk.Application):
             'clipboard': ClipboardHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
-                policy_manager=policy_manager
+                policy_manager=self.policy_manager
             ),
             'file': FileAccessHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
-                policy_manager=policy_manager
+                policy_manager=self.policy_manager
             ),
             'url': PolicyHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
-                policy_manager=policy_manager,
+                policy_manager=self.policy_manager,
                 prefix="url",
                 service_name='qubes.OpenURL',
                 policy_file_name='50-config-openurl',
@@ -378,7 +377,7 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
 
         self._handle_urls()
 
-    def _usbvm_changed(self):
+    def _usbvm_changed(self, *_args):
         response = ask_question(
             self.main_window, "USB qube change",
             "Changing USB qube requires restarting Global Settings to"
@@ -421,7 +420,7 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
         page = self.get_current_page()
         if page:
             unsaved = page.get_unsaved()
-            if unsaved:
+            if unsaved != '':
                 response = self._ask_threeway_question(unsaved)
                 if response == Gtk.ResponseType.YES:
                     try:
@@ -503,7 +502,8 @@ def main():
     Start the app
     """
     qapp = qubesadmin.Qubes()
-    app = GlobalConfig(qapp)
+    policy_manager = PolicyManager()
+    app = GlobalConfig(qapp, policy_manager)
     app.run(sys.argv)
 
 
