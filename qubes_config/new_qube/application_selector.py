@@ -20,7 +20,7 @@
 """Handling application selection"""
 # pylint: disable=import-error
 import os
-from typing import Optional
+from typing import Optional, List
 import logging
 
 import qubesadmin.vm
@@ -30,7 +30,7 @@ from ..widgets.gtk_utils import load_icon
 import gi
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
+from gi.repository import Gtk, Gdk
 
 
 logger = logging.getLogger('qubes-config-manager')
@@ -92,6 +92,11 @@ class ApplicationRow(Gtk.ListBoxRow):
         self.label.set_alignment(0, 0.5)
         self.get_style_context().add_class('app_list')
 
+        # this is a workaround for
+        # https://gitlab.gnome.org/GNOME/gtk/-/issues/552
+        self.set_selectable(False)
+        self.set_activatable(True)
+
 
 class OtherTemplateApplicationRow(Gtk.ListBoxRow):
     """
@@ -115,7 +120,7 @@ class OtherTemplateApplicationRow(Gtk.ListBoxRow):
         self.show_all()
 
 
-class ApplicationButton(Gtk.Button):
+class ApplicationButton(Gtk.FlowBoxChild):
     """
     Button representing a selected application.
     """
@@ -123,19 +128,17 @@ class ApplicationButton(Gtk.Button):
         """
         :param appdata: ApplicationData object
         """
-        super().__init__(label=None)
+        super().__init__()
+        self.button = Gtk.Button(label=None)
+        self.add(self.button)
+
         self.box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.add(self.box)
+        self.button.add(self.box)
+
         self.appdata = appdata
 
         self.icon = Gtk.Image()
-        try:
-            self.icon.set_from_pixbuf(
-                GdkPixbuf.Pixbuf.new_from_file_at_size(
-                    appdata.icon_path, 18, 18))
-        except GLib.Error:
-            # icon not available, let's move on
-            pass
+        self.icon.set_from_pixbuf(load_icon(appdata.icon_path, 18, 18))
 
         self.box.pack_start(self.icon, False, False, 3)
 
@@ -150,31 +153,40 @@ class ApplicationButton(Gtk.Button):
             'Click to remove this application from selection')
         self.box.pack_end(self.remove_icon, False, False, 3)
 
+        self.button.connect('clicked', self._remove_self)
+
         self.show_all()
 
+    def _remove_self(self, *_args):
+        self.get_parent().remove(self)
 
-class AddButton(Gtk.Button):
+    def __str__(self):
+        # pylint: disable=arguments-differ
+        return self.appdata.name
+
+
+class AddButton(Gtk.FlowBoxChild):
     """
     Button to open 'select apps' window.
     """
-    def __init__(self, **properties):
-        super().__init__(properties)
-        self.set_label("+")
+    def __init__(self):
+        super().__init__()
+        self.button = Gtk.Button()
+        self.button.set_label("+")
+        self.add(self.button)
 
 
 class ApplicationBoxHandler:
     """
     Class to handle popup application box.
     """
-    def __init__(self, flowbox: Gtk.FlowBox, gtk_builder: Gtk.Builder,
-                 template_selector):
+    def __init__(self, gtk_builder: Gtk.Builder, template_selector):
         """
-        :param flowbox: Gtk.Flowbox containing application button list
         :param gtk_builder: Gtk.Builder to get relevant objects
         :param template_selector: TemplateHandler object
         """
         self.template_selector = template_selector
-        self.flowbox = flowbox
+        self.flowbox: Gtk.Flowbox = gtk_builder.get_object('applications')
         self.apps_window = gtk_builder.get_object('applications_popup')
         self.apps_list: Gtk.ListBox = gtk_builder.get_object('apps_list')
         self.label_apps: Gtk.Label = gtk_builder.get_object('label_apps')
@@ -207,6 +219,7 @@ class ApplicationBoxHandler:
             'key_press_event', self._keypress_change_template)
 
         self.apps_window.connect('key_press_event', self._keypress_event)
+        self.apps_list.connect('row-activated', self._row_activated)
 
         self.fill_app_list(default=True)
         self._fill_flow_list()
@@ -221,20 +234,35 @@ class ApplicationBoxHandler:
         self.apps_list_other.set_sort_func(self._sort_func_app_list)
         self.apps_list_other.set_filter_func(self._filter_func_other_list)
 
+        self.flowbox.set_sort_func(self._sort_flowbox)
+
         self.apps_window.connect('delete-event', self._hide_window)
         self._fill_others_list()
 
     @staticmethod
     def _cmp(a, b):
         """Helper comparison function, made to comply with Gtk specs"""
-        return (a > b) - (b > a)
+        if a == b:
+            return 0
+        if a < b:
+            return -1
+        return 1
 
     def _sort_func_app_list(self, x: ApplicationRow, y: ApplicationRow):
+        # negation because True > False, and we want the selected rows to be
+        # at the top
         selection_comparison = self._cmp(not x.is_selected(),
                                          not y.is_selected())
         if selection_comparison == 0:
             return self._cmp(x.appdata.name, y.appdata.name)
-        return self._cmp(not x.is_selected(), not y.is_selected())
+        return selection_comparison
+
+    def _sort_flowbox(self, x, y):
+        if isinstance(x, AddButton):
+            return 1
+        if isinstance(y, AddButton):
+            return -1
+        return self._cmp(str(x), str(y))
 
     def _filter_func_app_list(self, x: ApplicationRow):
         search_text = self.apps_search.get_text()
@@ -249,6 +277,14 @@ class ApplicationBoxHandler:
                 x.appdata.template):
             return False
         return self._filter_func_app_list(x)
+
+    @staticmethod
+    def _row_activated(listbox: Gtk.ListBox, row: ApplicationRow):
+        if not row.is_selected():
+            row.set_selectable(True)
+            listbox.select_row(row)
+        else:
+            row.set_selectable(False)
 
     def _do_search(self, *_args):
         self.apps_list.invalidate_filter()
@@ -286,16 +322,17 @@ class ApplicationBoxHandler:
                         'xterm.desktop', 'firefox-esr.desktop']
         else:
             for button in self.flowbox.get_children():
-                appdata = getattr(button.get_child(), 'appdata', None)
-                if appdata:
-                    selected.append(appdata.ident)
+                if isinstance(button, ApplicationButton):
+                    selected.append(button.appdata.ident)
 
         for app in available_applications:
             row = ApplicationRow(app)
             self.apps_list.add(row)
             if app.ident in selected:
-                self.apps_list.select_row(row)
+                row.activate()
             row.show_all()
+        self.apps_list.invalidate_sort()
+        self.apps_list_other.invalidate_sort()
 
     def _fill_others_list(self):
         # and the other apps
@@ -346,16 +383,12 @@ class ApplicationBoxHandler:
         for child in self.apps_list.get_children():
             if child.is_selected():
                 button = ApplicationButton(child.appdata)
-                button.connect('clicked', self._app_button_clicked)
                 self.flowbox.add(button)
         plus_button = AddButton()
-        plus_button.connect('clicked', self._choose_apps)
+        plus_button.button.connect('clicked', self._choose_apps)
         # need interaction with Template object
         self.flowbox.add(plus_button)
         self.flowbox.show_all()
-
-    def _app_button_clicked(self, widget, *_args, **_kwargs):
-        self.flowbox.remove(widget)
 
     def _choose_apps(self, *_args, **_kwargs):
         self.fill_app_list()
@@ -372,3 +405,14 @@ class ApplicationBoxHandler:
         self.apps_window.hide()
         return True  # when connected to delete-event, this tells Gtk to
         # not attempt to destroy the window
+
+    def get_selected_apps(self) -> List[str]:
+        """
+        Get list of currently selected apps' idents
+        """
+        apps = []
+        for child in self.flowbox.get_children():
+            if isinstance(child, ApplicationButton):
+                apps.append(child.appdata.ident)
+
+        return apps

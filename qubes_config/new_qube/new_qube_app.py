@@ -120,8 +120,6 @@ class CreateNewQube(Gtk.Application):
 
         self.template_handler = TemplateHandler(self.builder, self.qapp)
 
-        self.apps = self.builder.get_object('applications')
-
         self.qube_type_app: Gtk.RadioButton = \
             self.builder.get_object('qube_type_app')
         self.qube_type_template: Gtk.RadioButton = \
@@ -155,7 +153,7 @@ class CreateNewQube(Gtk.Application):
         self.network_selector = NetworkSelector(self.builder, self.qapp)
 
         self.app_box_handler = ApplicationBoxHandler(
-            self.apps, self.builder, self.template_handler)
+            self.builder, self.template_handler)
 
         self.advanced_handler = AdvancedHandler(self.builder, self.qapp)
 
@@ -263,11 +261,7 @@ class CreateNewQube(Gtk.Application):
             show_error("Could not create qube", f"An error occurred: {err}")
             return
 
-        apps = []
-        for child in self.app_box_handler.flowbox.get_children():
-            appdata = getattr(child.get_child(), 'appdata', None)
-            if appdata:
-                apps.append(appdata.ident)
+        apps = self.app_box_handler.get_selected_apps()
 
         with subprocess.Popen([
                 'qvm-appmenus',
