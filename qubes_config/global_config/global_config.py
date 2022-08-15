@@ -289,7 +289,7 @@ class GlobalConfig(Gtk.Application):
 
         self.builder = Gtk.Builder()
         self.builder.add_from_file(pkg_resources.resource_filename(
-            __name__, '../global_config.glade'))
+            'qubes_config', 'global_config.glade'))
 
         self.main_window = self.builder.get_object('main_window')
         self.main_notebook: Gtk.Notebook = \
@@ -492,7 +492,7 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
         screen = Gdk.Screen.get_default()
         provider = Gtk.CssProvider()
         provider.load_from_path(pkg_resources.resource_filename(
-            __name__, '../qubes-global-config.css'))
+            'qubes_config', 'qubes-global-config.css'))
         Gtk.StyleContext.add_provider_for_screen(
             screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 

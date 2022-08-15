@@ -358,8 +358,8 @@ class VMListModeler(TraitSelector):
                 Gtk.EntryIconPosition.PRIMARY, entry["icon"]
             )
         else:
-            self.entry_box.set_icon_from_stock(
-                Gtk.EntryIconPosition.PRIMARY, "gtk-find"
+            self.entry_box.set_icon_from_pixbuf(
+                Gtk.EntryIconPosition.PRIMARY, load_icon("gtk-find", 18, 18)
             )
 
         if self.change_function:

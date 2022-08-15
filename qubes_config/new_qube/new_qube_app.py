@@ -108,7 +108,7 @@ class CreateNewQube(Gtk.Application):
         """
         self.builder = Gtk.Builder()
         self.builder.add_from_file(pkg_resources.resource_filename(
-            __name__, '../new_qube.glade'))
+            'qubes_config', 'new_qube.glade'))
 
         self.main_window = self.builder.get_object('main_window')
         self.qube_name = self.builder.get_object('qube_name')
@@ -175,7 +175,7 @@ class CreateNewQube(Gtk.Application):
         """Register necessary Gtk signals"""
         GObject.signal_new('template-changed',
                            Gtk.Window,
-                           GObject.SIGNAL_RUN_LAST, None, (str,))
+                           GObject.SignalFlags.RUN_LAST, None, (str,))
 
     @staticmethod
     def _handle_theme():
@@ -187,7 +187,7 @@ class CreateNewQube(Gtk.Application):
         screen = Gdk.Screen.get_default()
         provider = Gtk.CssProvider()
         provider.load_from_path(pkg_resources.resource_filename(
-            __name__, '../qubes-new-qube.css'))
+            'qubes_config', 'qubes-new-qube.css'))
         Gtk.StyleContext.add_provider_for_screen(
             screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 

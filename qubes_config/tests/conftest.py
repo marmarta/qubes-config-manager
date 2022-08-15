@@ -340,7 +340,7 @@ def real_builder():
     # test glade file contains very simple setup with correctly named widgets
     builder = Gtk.Builder()
     builder.add_from_file(pkg_resources.resource_filename(
-        __name__, '../global_config.glade'))
+        'qubes_config', 'global_config.glade'))
     return builder
 
 
@@ -359,7 +359,7 @@ def new_qube_builder():
     # test glade file contains very simple setup with correctly named widgets
     builder = Gtk.Builder()
     builder.add_from_file(pkg_resources.resource_filename(
-        __name__, '../new_qube.glade'))
+        'qubes_config', 'new_qube.glade'))
     return builder
 
 

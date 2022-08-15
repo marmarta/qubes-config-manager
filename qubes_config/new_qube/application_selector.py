@@ -86,10 +86,9 @@ class ApplicationRow(Gtk.ListBoxRow):
         self.appdata = appdata
         self.label = Gtk.Label()
         self.label.set_text(self.appdata.name)
-        self.label.set_alignment(0, 0.5)
+        self.label.set_yalign(0.5)
         self.add(self.label)
         self.set_tooltip_text(self.appdata.comment)
-        self.label.set_alignment(0, 0.5)
         self.get_style_context().add_class('app_list')
 
         # this is a workaround for
