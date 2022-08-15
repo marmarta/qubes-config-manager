@@ -97,6 +97,31 @@ def test_template_handler_none(mock_subprocess, test_qapp, new_qube_builder):
 
 
 @patch('subprocess.check_output')
+def test_template_handler_select_vm(mock_subprocess,
+                                    test_qapp, new_qube_builder):
+    mock_subprocess.return_value = b''
+    handler = TemplateHandler(new_qube_builder, test_qapp)
+
+    # assert we start at app
+    assert handler.selected_type == 'qube_type_app'
+
+    # selecting template works
+    assert handler.get_selected_template() == test_qapp.domains['fedora-36']
+    handler.select_template('fedora-35')
+    assert handler.get_selected_template() == test_qapp.domains['fedora-35']
+
+    # switch to a type with None
+    handler.change_vm_type('qube_type_template')
+    assert handler.get_selected_template() is None
+
+    handler.select_template('fedora-36')
+    assert handler.get_selected_template() == test_qapp.domains['fedora-36']
+
+    handler.select_template(None)
+    assert handler.get_selected_template() is None
+
+
+@patch('subprocess.check_output')
 def test_get_appdata(mock_subprocess, test_qapp, new_qube_builder):
     def mock_output(command):
         vm_name = command[-1]

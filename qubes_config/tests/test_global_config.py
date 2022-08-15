@@ -35,23 +35,19 @@ gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Gtk
 
 # this entire file has a peculiar arrangement with mock signal registration:
-# as other tests might have registered them, to avoid problems we mock-out
-# the register method, but to enable tests from this file to run alone,
+# to enable tests from this file to run alone,
 # a test_builder fixture is requested because it will try to register
 # signals in "test" mode
 
 @patch('subprocess.check_output')
-@patch('qubes_config.global_config.global_config.GlobalConfig.register_signals')
 @patch('qubes_config.global_config.global_config.show_error')
-def test_global_config_init(mock_error, mock_signals, mock_subprocess,
+def test_global_config_init(mock_error, mock_subprocess,
                             test_qapp, test_policy_manager, test_builder):
     mock_subprocess.return_value = b''
     app = GlobalConfig(test_qapp, test_policy_manager)
     # do not call do_activate - it will make Gtk confused and, in case
     # of errors, spawn an entire screenful of windows
     app.perform_setup()
-
-    mock_signals.assert_called()
     assert test_builder
 
     # switch across pages, nothing should happen
@@ -99,9 +95,8 @@ def test_global_config_init(mock_error, mock_signals, mock_subprocess,
 
 
 @patch('subprocess.check_output')
-@patch('qubes_config.global_config.global_config.GlobalConfig.register_signals')
 @patch('qubes_config.global_config.global_config.show_error')
-def test_global_config_usb_change(mock_error, mock_signals, mock_subprocess,
+def test_global_config_usb_change(mock_error, mock_subprocess,
                                   test_qapp, test_policy_manager, test_builder):
     mock_subprocess.return_value = b''
     app = GlobalConfig(test_qapp, test_policy_manager)
@@ -109,7 +104,6 @@ def test_global_config_usb_change(mock_error, mock_signals, mock_subprocess,
     # of errors, spawn an entire screenful of windows
     app.perform_setup()
 
-    mock_signals.assert_called()
     assert test_builder
 
     # find clipboard
@@ -138,17 +132,14 @@ def test_global_config_usb_change(mock_error, mock_signals, mock_subprocess,
 
 
 @patch('subprocess.check_output')
-@patch('qubes_config.global_config.global_config.GlobalConfig.register_signals')
 @patch('qubes_config.global_config.global_config.show_error')
-def test_global_config_page_change(mock_error, mock_signals, mock_subprocess,
+def test_global_config_page_change(mock_error, mock_subprocess,
                                   test_qapp, test_policy_manager, test_builder):
     mock_subprocess.return_value = b''
     app = GlobalConfig(test_qapp, test_policy_manager)
     # do not call do_activate - it will make Gtk confused and, in case
     # of errors, spawn an entire screenful of windows
     app.perform_setup()
-
-    mock_signals.assert_called()
     assert test_builder
 
     while app.main_notebook.get_nth_page(
@@ -217,9 +208,8 @@ def test_global_config_page_change(mock_error, mock_signals, mock_subprocess,
 
 
 @patch('subprocess.check_output')
-@patch('qubes_config.global_config.global_config.GlobalConfig.register_signals')
 @patch('qubes_config.global_config.global_config.show_error')
-def test_global_config_failure(mock_error, mock_signals, mock_subprocess,
+def test_global_config_failure(mock_error, mock_subprocess,
                                test_qapp, test_policy_manager, test_builder):
     mock_subprocess.return_value = b''
     app = GlobalConfig(test_qapp, test_policy_manager)
@@ -227,7 +217,6 @@ def test_global_config_failure(mock_error, mock_signals, mock_subprocess,
     # of errors, spawn an entire screenful of windows
     app.perform_setup()
 
-    mock_signals.assert_called()
     assert test_builder
 
     # we should be at first page

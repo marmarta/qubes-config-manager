@@ -409,7 +409,9 @@ class ApplicationBoxHandler:
         """
         Get list of currently selected apps' idents
         """
-        apps = []
+        apps: List[str] = []
+        if not self.flowbox.get_visible():
+            return apps
         for child in self.flowbox.get_children():
             if isinstance(child, ApplicationButton):
                 apps.append(child.appdata.ident)

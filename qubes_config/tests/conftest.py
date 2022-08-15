@@ -227,6 +227,10 @@ def test_qapp():
     add_dom0_feature(qapp, 'gui-default-allow-utf8-titles', '')
     add_dom0_feature(qapp, 'gui-default-trayicon-mode', '')
 
+    # setup labels
+    qapp.expected_calls[('dom0', 'admin.label.List', None, None)] = \
+        b'0\x00red\nblue\ngreen\n'
+
     # setup pools:
     qapp.expected_calls[('dom0', 'admin.pool.List', None, None)] = \
         b'0\x00linux-kernel\nlvm\nfile\n'

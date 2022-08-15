@@ -257,6 +257,7 @@ class GlobalConfig(Gtk.Application):
         only at true first start, in other cases just presenting the main window
         to user.
         """
+        self.register_signals()
         self.perform_setup()
         assert self.main_window
         self.main_window.show()
@@ -285,8 +286,6 @@ class GlobalConfig(Gtk.Application):
         """
         The function that performs actual widget realization and setup.
         """
-        self.register_signals()
-
         self.builder = Gtk.Builder()
         self.builder.add_from_file(pkg_resources.resource_filename(
             'qubes_config', 'global_config.glade'))

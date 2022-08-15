@@ -69,6 +69,8 @@ def init_combobox_with_icons(combobox: Gtk.ComboBox,
     combobox.pack_start(renderer, False)
     combobox.add_attribute(renderer, "text", 1)
 
+    combobox.set_id_column(1)
+
 
 class CreateNewQube(Gtk.Application):
     """
@@ -85,16 +87,13 @@ class CreateNewQube(Gtk.Application):
         self.main_window: Optional[Gtk.Window] = None
         self.template_selector: Optional[TemplateSelector] = None
 
-        self.qube_name: Optional[Gtk.Entry] = None
-        self.qube_label: Optional[Gtk.ComboBox] = None
-        self.apps: Optional[Gtk.FlowBox] = None
-
     def do_activate(self, *args, **kwargs):
         """
         Method called whenever this program is run; it executes actual setup
         only at true first start, in other cases just presenting the main window
         to user.
         """
+        self.register_signals()
         self.perform_setup()
         assert self.main_window
         self.main_window.show()
@@ -111,10 +110,8 @@ class CreateNewQube(Gtk.Application):
             'qubes_config', 'new_qube.glade'))
 
         self.main_window = self.builder.get_object('main_window')
-        self.qube_name = self.builder.get_object('qube_name')
-        self.qube_label = self.builder.get_object('qube_label')
-
-        self.register_signals()
+        self.qube_name: Gtk.Entry = self.builder.get_object('qube_name')
+        self.qube_label: Gtk.ComboBox = self.builder.get_object('qube_label')
 
         self._handle_theme()
 
@@ -217,7 +214,7 @@ class CreateNewQube(Gtk.Application):
             model = self.qube_label.get_model()
             label = self.qapp.labels[model[tree_iter][1]]
         else:
-            return
+            raise ValueError
 
         if self.qube_type_template.get_active():
             klass = 'TemplateVM'
@@ -258,24 +255,27 @@ class CreateNewQube(Gtk.Application):
             err = repr(ex)
 
         if err or not vm:
+            print(err)
             show_error("Could not create qube", f"An error occurred: {err}")
             return
 
         apps = self.app_box_handler.get_selected_apps()
 
-        with subprocess.Popen([
-                'qvm-appmenus',
-                '--set-whitelist', '-',
-                '--update', vm.name],
-                stdin=subprocess.PIPE) as p:
-            p.communicate('\n'.join(apps).encode())
+        if apps:
+            with subprocess.Popen([
+                    'qvm-appmenus',
+                    '--set-whitelist', '-',
+                    '--update', vm.name],
+                    stdin=subprocess.PIPE) as p:
+                p.communicate('\n'.join(apps).encode())
 
         msg = Gtk.MessageDialog(
-            self.main_window,
-            Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
-            Gtk.MessageType.INFO,
-            Gtk.ButtonsType.OK,
-            "Qube created successfully!")
+            transient_for=self.main_window,
+            modal=True,
+            destroy_with_parent=True,
+            message_type=Gtk.MessageType.INFO,
+            buttons=Gtk.ButtonsType.OK,
+            text="Qube created successfully!")
         msg.run()
 
         if self.advanced_handler.get_launch_settings():
@@ -288,7 +288,7 @@ class CreateNewQube(Gtk.Application):
 
     def _create_qube(self, vmclass, name, label, template,
                      properties, pool) -> qubesadmin.vm.QubesVM:
-        if vmclass == 'StandaloneVM' and template is not None:
+        if vmclass in ['StandaloneVM', 'TemplateVM'] and template is not None:
             args = {
                 'ignore_volumes': ['private']
             }

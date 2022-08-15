@@ -63,9 +63,9 @@ class TemplateSelector(abc.ABC):
         """
 
     @abc.abstractmethod
-    def select_vm(self, vm_name: str):
+    def select_vm(self, vm_name: Optional[str]):
         """
-        Select a vm given by name.
+        Select a vm given by name (or None, if it's possible).
         :param vm_name: str of vm's name
         :return: None
         """
@@ -132,7 +132,7 @@ class TemplateSelectorCombo(TemplateSelector):
         """Get selected QubesVM object"""
         return self.modeler.get_selected()
 
-    def select_vm(self, vm_name: str):
+    def select_vm(self, vm_name: Optional[str]):
         """Select qube provided by name."""
         self.modeler.select_value(vm_name)
 
@@ -208,12 +208,12 @@ class TemplateSelectorNoneCombo(TemplateSelector):
             return self.modeler.get_selected()
         return None
 
-    def select_vm(self, vm_name: str):
+    def select_vm(self, vm_name: Optional[str]):
         """Select qube provided by name."""
         if vm_name is None:
-            # this is a weird edge case that should not happen, but let's cover
-            # it just in case
             self.radio_none.set_active(True)
+            return
+        self.radio_template.set_active(True)
         self.modeler.select_value(vm_name)
 
     def is_vm_available(self, vm: qubesadmin.vm.QubesVM) -> bool:
@@ -303,7 +303,8 @@ class TemplateHandler:
         return [appdata for appdata_list
                 in self._application_data.values() for appdata in appdata_list]
 
-    def select_template(self, vm: str):
-        """Selected a vm in the current selector as provided by vm name"""
+    def select_template(self, vm: Optional[str]):
+        """Selected a vm in the current selector as provided by
+        vm name or None"""
         if self.selected_type:
             self.template_selectors[self.selected_type].select_vm(vm)

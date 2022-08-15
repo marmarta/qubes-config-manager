@@ -179,6 +179,31 @@ def test_app_handler_change_template(mock_subprocess,
 
     assert not app_selector.flowbox.get_visible()
 
+    assert app_selector.get_selected_apps() == []
+
+    # select some apps
+    template_handler.select_template('fedora-35')
+    for child in app_selector.flowbox.get_children():
+        if isinstance(child, AddButton):
+            child.button.clicked()
+            break
+    else:
+        assert False  # button not found
+
+    for row in app_selector.apps_list.get_children():
+        assert isinstance(row, ApplicationRow)
+        if row.appdata.name == 'Udon' or row.appdata.name == 'Spaghetti':
+            row.activate()
+
+    app_selector.apps_close.clicked()
+
+    assert app_selector.get_selected_apps() == ['spaghetti.desktop',
+                                                'udon.desktop']
+
+    # and now go back to none
+    template_handler.select_template(None)
+    assert app_selector.get_selected_apps() == []
+
 
 @patch('subprocess.check_output')
 def test_app_handler_do_template(mock_subprocess,
@@ -231,3 +256,57 @@ def test_app_handler_do_template(mock_subprocess,
 
     assert template_handler.get_selected_template() == \
            test_qapp.domains['fedora-35']
+
+
+@patch('subprocess.check_output')
+def test_app_handler_delete(mock_subprocess,
+                            test_qapp, new_qube_builder):
+    def mock_output(command):
+        vm_name = command[-1]
+        if vm_name == 'fedora-35':
+            return b'test.desktop|Test App|\n' \
+                   b'tomato.desktop|Tomato|basil\n' \
+                   b'udon.desktop|Udon|noodles\n' \
+                   b'spaghetti.desktop|Spaghetti|pasta'
+        if vm_name == 'fedora-36':
+            return b'test2.desktop|Test2 App|test2 desc\n' \
+                   b'egg.desktop|Egg|egg\n' \
+                   b'firefox.desktop|Firefox|firefox'
+        return b''
+    mock_subprocess.side_effect = mock_output
+
+    template_handler = TemplateHandler(new_qube_builder, test_qapp)
+    assert template_handler.get_selected_template() == \
+           test_qapp.domains['fedora-36']
+    app_selector = ApplicationBoxHandler(new_qube_builder, template_handler)
+
+    assert app_selector.get_selected_apps() == ['firefox.desktop']
+
+    template_handler.select_template('fedora-35')
+
+    for child in app_selector.flowbox.get_children():
+        if isinstance(child, AddButton):
+            child.button.clicked()
+            break
+    else:
+        assert False  # button not found
+
+    for row in app_selector.apps_list.get_children():
+        assert isinstance(row, ApplicationRow)
+        if row.appdata.name == 'Udon' or row.appdata.name == 'Spaghetti':
+            row.activate()
+
+    app_selector.apps_close.clicked()
+
+    assert app_selector.get_selected_apps() == ['spaghetti.desktop',
+                                                'udon.desktop']
+
+    for button in app_selector.flowbox.get_children():
+        if isinstance(button, ApplicationButton):
+            if button.appdata.ident == 'udon.desktop':
+                button.button.clicked()
+                break
+    else:
+        assert False  # app button not found
+
+    assert app_selector.get_selected_apps() == ['spaghetti.desktop']
