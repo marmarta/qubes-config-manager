@@ -183,13 +183,6 @@ separator {
     border-color: @medium-gray;
 }
 
-.flat_button {
-    border-color: @medium-gray;
-    font-weight: 500;
-    margin: 5px;
-    border-radius: 0px;
-}
-
 .button_save {
     background: @dark-blue;
     color: white;

@@ -228,7 +228,7 @@ class PolicyHandler(PageHandler):
             self.check_custom_rules(rules)
             self._show_hide_raw()
         except PolicySyntaxError as ex:
-            show_error("Policy error",
+            show_error(self.main_list_box, "Policy error",
                        f"Cannot save policy.\n"
                        f"Encountered the following error(s):\n{ex}")
             return
@@ -346,7 +346,7 @@ class PolicyHandler(PageHandler):
                 if not row.is_changed():
                     row.set_edit_mode(False)
                     continue
-                response = ask_question(row.get_toplevel(),
+                response = ask_question(row,
                     "A rule is currently being edited",
                     "Do you want to save changes to the following "
                     f"rule?\n{str(row)}")
@@ -546,13 +546,13 @@ class VMSubsetPolicyHandler(PolicyHandler):
     def _add_select_confirm(self, *_args):
         new_qube = self.select_qube_model.get_selected()
         if not new_qube or not isinstance(new_qube, qubesadmin.vm.QubesVM):
-            show_error('Invalid selection',
+            show_error(self.main_list_box, 'Invalid selection',
                        f'Invalid object was selected. {new_qube} is not a'
                        'valid Qubes qube.')
             return
         if new_qube.is_networked():
             response = ask_question(
-                self.main_list_box.get_toplevel(),
+                self.main_list_box,
                 "Add new key qube",
                 f"Are you sure you want to add {new_qube} as a key qube? It "
                 f"has network access, which may lead to decreased security.")

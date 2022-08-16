@@ -255,8 +255,8 @@ class CreateNewQube(Gtk.Application):
             err = repr(ex)
 
         if err or not vm:
-            print(err)
-            show_error("Could not create qube", f"An error occurred: {err}")
+            show_error(self.main_window, "Could not create qube",
+                       f"An error occurred: {err}")
             return
 
         apps = self.app_box_handler.get_selected_apps()

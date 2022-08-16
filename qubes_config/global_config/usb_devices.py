@@ -377,7 +377,7 @@ policy.RegisterArgument +u2f.Register @anyvm @anyvm deny
     def _verify_additional_vm(self, vm):
         if vm in self.enable_some_handler.selected_vms:
             return True
-        response = ask_question(self.enable_check.get_toplevel(),
+        response = ask_question(self.enable_check,
                                 "U2F not enabled in qube",
                                 "U2F is not enabled in this qube. Do you "
                                 "want to enable it?")

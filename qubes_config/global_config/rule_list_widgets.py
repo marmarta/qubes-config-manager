@@ -358,7 +358,7 @@ class RuleListBoxRow(Gtk.ListBoxRow):
     def _do_delete_self(self, force: bool = False):
         """Delete self; if force=True, do not ask user if sure,"""
         if not force:
-            response = ask_question(self.get_toplevel(), "Delete rule",
+            response = ask_question(self, "Delete rule",
                                     self.custom_deletion_warning)
             if response == Gtk.ResponseType.NO:
                 return
@@ -428,13 +428,14 @@ class RuleListBoxRow(Gtk.ListBoxRow):
 
         error = self.rule.get_rule_errors(new_source, new_target, new_action)
         if error:
-            show_error("Invalid rule", f'This rule is not valid: {error}')
+            show_error(self.source_widget, "Invalid rule",
+                       f'This rule is not valid: {error}')
             return False
 
         error = self.parent_handler.verify_new_rule(self, new_source,
                                                     new_target, new_action)
         if error:
-            show_error("Cannot save rule",
+            show_error(self.source_widget, "Cannot save rule",
                        'This rule conflicts with the following existing rule:'
                        f'\n{error}\n')
             return False

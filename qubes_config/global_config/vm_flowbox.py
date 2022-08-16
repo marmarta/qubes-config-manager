@@ -73,7 +73,7 @@ class VMFlowBoxButton(Gtk.FlowBoxChild):
 
     def _remove_self(self, *_args):
         response = ask_question(
-            self.get_toplevel(), "Delete",
+            self, "Delete",
             "Are you sure you want to remove this qube?")
         if response == Gtk.ResponseType.NO:
             return
@@ -176,7 +176,8 @@ class VMFlowboxHandler:
             if not self.verification_callback(select_vm):
                 return
         if select_vm in self.selected_vms:
-            show_error("Cannot add qube", "This qube is already selected.")
+            show_error(self.flowbox, "Cannot add qube",
+                       "This qube is already selected.")
             return
         self.flowbox.add(VMFlowBoxButton(select_vm))
         self.placeholder.set_visible(False)

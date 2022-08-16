@@ -53,14 +53,14 @@ def test_ask_question():
     e.g., just show)"""
     window = Gtk.Window()
 
-    with patch('gi.repository.Gtk.MessageDialog') as mock_dialog:
+    with patch('gi.repository.Gtk.Dialog') as mock_dialog:
         ask_question(window, "Text", "Text")
-        mock_dialog.assert_called()
-        assert call().run() in mock_dialog.mock_calls
-        assert call().destroy() in mock_dialog.mock_calls
+        print(mock_dialog.mock_calls)
+        assert call.new().run() in mock_dialog.mock_calls
+        assert call.new().destroy() in mock_dialog.mock_calls
 
-    with patch('gi.repository.Gtk.MessageDialog') as mock_dialog:
-        show_error("Text", "Text")
-        mock_dialog.assert_called()
-        assert call().run() in mock_dialog.mock_calls
-        assert call().destroy() in mock_dialog.mock_calls
+    with patch('gi.repository.Gtk.Dialog') as mock_dialog:
+        show_error(window, "Text", "Text")
+        print(mock_dialog.mock_calls)
+        assert call.new().run() in mock_dialog.mock_calls
+        assert call.new().destroy() in mock_dialog.mock_calls

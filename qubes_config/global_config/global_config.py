@@ -32,7 +32,7 @@ import qubesadmin
 import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.vm
-from ..widgets.gtk_utils import ask_question, show_error
+from ..widgets.gtk_utils import ask_question, show_error, show_dialog
 from .page_handler import PageHandler
 from .policy_handler import PolicyHandler, VMSubsetPolicyHandler
 from .policy_rules import RuleSimple, \
@@ -420,12 +420,12 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
         if page:
             unsaved = page.get_unsaved()
             if unsaved != '':
-                response = self._ask_threeway_question(unsaved)
+                response = self._ask_unsaved(unsaved)
                 if response == Gtk.ResponseType.YES:
                     try:
                         page.save()
                     except Exception as ex:
-                        show_error("Could not save changes",
+                        show_error(self.main_window, "Could not save changes",
                                    f"The following error occurred: {ex}")
                         return False
                 elif response == Gtk.ResponseType.NO:
@@ -441,16 +441,31 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
             GLib.timeout_add(1, lambda: self.main_notebook.set_current_page(
                 old_page_num))
 
-    def _ask_threeway_question(self, description: str) -> Gtk.ResponseType:
-        # The following unsaved changes were found:
-        # blah blah
-        # Do you want to save the changes?
-        # Save changes (yes)
-        # Discard changes (no)
-        # Cancel (cancel) but
-        # TODO: implement
-        response = ask_question(self.main_window, "Unsaved changes",
-                                f"Changes found:\n{description}")
+    def _ask_unsaved(self, description: str) -> Gtk.ResponseType:
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        label_1 = Gtk.Label()
+        label_1.set_markup("The following <b>unsaved changes</b> were found:")
+        label_1.set_xalign(0)
+        label_2 = Gtk.Label()
+        label_2.set_text(
+            "\n".join([f'- {row}' for row in description.split('\n')]))
+        label_2.set_margin_start(20)
+        label_2.set_xalign(0)
+        label_3 = Gtk.Label()
+        label_3.set_text("Do you want to save changes?")
+        label_3.set_xalign(0)
+        box.pack_start(label_1, False, False, 10)
+        box.pack_start(label_2, False, False, 10)
+        box.pack_start(label_3, False, False, 10)
+
+        response = show_dialog(
+            parent=self.main_window, title="Unsaved changes", text=box,
+            buttons={
+                "Save changes": Gtk.ResponseType.YES,
+                "Discard changes": Gtk.ResponseType.NO,
+                "Cancel": Gtk.ResponseType.CANCEL,
+            }, icon_name="qubes-ask")
+
         return response
 
     def _apply(self, _widget=None):
@@ -459,7 +474,7 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
             try:
                 page.save()
             except Exception as ex:
-                show_error("Could not save changes",
+                show_error(self.main_window, "Could not save changes",
                            f"The following error occurred: {ex}")
 
     def _reset(self, _widget=None):

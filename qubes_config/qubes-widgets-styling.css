@@ -85,6 +85,23 @@ radiobutton radio {
 }
 
 .question_dialog {
-    padding: 30px;
+    padding: 10px;
     background: white;
+}
+
+.modal_dialog {
+    padding: 20px;
+    background: white;
+}
+
+.modal_contents {
+    padding: 10px;
+    background: white;
+}
+
+.flat_button {
+    border-color: @medium-gray;
+    font-weight: 500;
+    margin: 5px;
+    border-radius: 0px;
 }
