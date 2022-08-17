@@ -112,32 +112,32 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 %{python3_sitelib}/qubes_config/new_qube/template_handler.py
 %{python3_sitelib}/qubes_config/widgets/__init__.py
 %{python3_sitelib}/qubes_config/widgets/__pycache__/*
+%{python3_sitelib}/qubes_config/widgets/gtk_utils.py
 %{python3_sitelib}/qubes_config/widgets/gtk_widgets.py
 %{python3_sitelib}/qubes_config/widgets/utils.py
-%{python3_sitelib}/qubes_config/widgets/gtk_utils.py
 
-%{python3_sitelib}/qubes_config/new_qube.glade
 %{python3_sitelib}/qubes_config/global_config.glade
-%{python3_sitelib}/qubes_config/qubes-new-qube.css
+%{python3_sitelib}/qubes_config/new_qube.glade
 %{python3_sitelib}/qubes_config/qubes-global-config.css
+%{python3_sitelib}/qubes_config/qubes-new-qube.css
 %{python3_sitelib}/qubes_config/qubes-widgets-styling.css
 
 %{_bindir}/qubes-new-qube
 %{_bindir}/qubes-global-config
 
-/usr/share/icons/hicolor/scalable/apps/qubes-ok.svg
-/usr/share/icons/hicolor/scalable/apps/qubes-question.svg
-/usr/share/icons/hicolor/scalable/apps/qubes-question-light.svg
-/usr/share/icons/hicolor/scalable/apps/qubes-delete.svg
-/usr/share/icons/hicolor/scalable/apps/qubes-padlock.svg
-/usr/share/icons/hicolor/scalable/apps/qubes-logo.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-ask.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-customize.svg
-/usr/share/icons/hicolor/scalable/apps/qubes-expander-shown.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-delete.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-expander-hidden.svg
-/usr/share/icons/hicolor/scalable/apps/qubes-this-device.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-expander-shown.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-info.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-key.svg
-/usr/share/icons/hicolor/scalable/apps/qubes-ask.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-logo.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-ok.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-padlock.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-question-light.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-question.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-this-device.svg
 
 %changelog
 @CHANGELOG@
