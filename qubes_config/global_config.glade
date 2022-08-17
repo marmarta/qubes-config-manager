@@ -7004,6 +7004,11 @@ run the following command in a dom0 terminal:</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <style>
+                  <class name="flat_button"/>
+                  <class name="button_save"/>
+                  <class name="flat"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -7017,6 +7022,11 @@ run the following command in a dom0 terminal:</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <style>
+                  <class name="flat"/>
+                  <class name="flat_button"/>
+                  <class name="button_cancel"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -7030,6 +7040,11 @@ run the following command in a dom0 terminal:</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <style>
+                  <class name="flat"/>
+                  <class name="button_cancel"/>
+                  <class name="flat_button"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">False</property>

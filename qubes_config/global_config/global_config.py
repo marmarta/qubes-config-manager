@@ -33,6 +33,7 @@ import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.vm
 from ..widgets.gtk_utils import ask_question, show_error, show_dialog
+from ..widgets.gtk_widgets import ProgressBarDialog
 from .page_handler import PageHandler
 from .policy_handler import PolicyHandler, VMSubsetPolicyHandler
 from .policy_rules import RuleSimple, \
@@ -251,6 +252,10 @@ class GlobalConfig(Gtk.Application):
         self.qapp: qubesadmin.Qubes = qapp
         self.policy_manager = policy_manager
 
+        self.progress_bar_dialog = ProgressBarDialog(
+            self, "Loading system settings...")
+        self.handlers: Dict[str, PageHandler] = {}
+
     def do_activate(self, *args, **kwargs):
         """
         Method called whenever this program is run; it executes actual setup
@@ -286,6 +291,9 @@ class GlobalConfig(Gtk.Application):
         """
         The function that performs actual widget realization and setup.
         """
+        self.progress_bar_dialog.show()
+        self.progress_bar_dialog.update_progress(0)
+
         self.builder = Gtk.Builder()
         self.builder.add_from_file(pkg_resources.resource_filename(
             'qubes_config', 'global_config.glade'))
@@ -307,16 +315,23 @@ class GlobalConfig(Gtk.Application):
 
         self.main_window.connect('delete-event', self._ask_to_quit)
 
+        page_progress = 1 / self.main_notebook.get_n_pages()
+
         # match page by widget name to handler
-        self.handlers: Dict[str, PageHandler] = {
-            'basics': BasicSettingsHandler(self.builder, self.qapp),
-            'usb': DevicesHandler(self.qapp, self.policy_manager, self.builder),
-            'updates': UpdatesHandler(
+        self.handlers['basics'] = BasicSettingsHandler(self.builder, self.qapp)
+        self.progress_bar_dialog.update_progress(page_progress)
+
+        self.handlers['usb'] = DevicesHandler(
+            self.qapp, self.policy_manager, self.builder)
+        self.progress_bar_dialog.update_progress(page_progress)
+
+        self.handlers['updates'] = UpdatesHandler(
                 qapp=self.qapp,
                 policy_manager=self.policy_manager,
-                gtk_builder=self.builder
-            ),
-            'splitgpg': VMSubsetPolicyHandler(
+                gtk_builder=self.builder)
+        self.progress_bar_dialog.update_progress(page_progress)
+
+        self.handlers['splitgpg'] = VMSubsetPolicyHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
                 policy_manager=self.policy_manager,
@@ -334,18 +349,24 @@ class GlobalConfig(Gtk.Application):
                     "allow": 'access GPG\nkeys from',
                     "ask": 'to access GPG\nkeys from',
                     "deny": 'access GPG\nkeys from'
-                })),
-            'clipboard': ClipboardHandler(
+                }))
+        self.progress_bar_dialog.update_progress(page_progress)
+
+        self.handlers['clipboard'] = ClipboardHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
                 policy_manager=self.policy_manager
-            ),
-            'file': FileAccessHandler(
+            )
+        self.progress_bar_dialog.update_progress(page_progress)
+
+        self.handlers['file'] = FileAccessHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
                 policy_manager=self.policy_manager
-            ),
-            'url': PolicyHandler(
+            )
+        self.progress_bar_dialog.update_progress(page_progress)
+
+        self.handlers['url'] = PolicyHandler(
                 qapp=self.qapp,
                 gtk_builder=self.builder,
                 policy_manager=self.policy_manager,
@@ -367,14 +388,20 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
                         "deny": 'be allowed to open URLs in'
                     }
                 ),
-                rule_class=RuleTargeted),
-            'thisdevice': ThisDeviceHandler(self.qapp, self.builder),
-        }
+                rule_class=RuleTargeted)
+        self.progress_bar_dialog.update_progress(page_progress)
+
+        self.handlers['thisdevice'] = ThisDeviceHandler(self.qapp, self.builder)
+        self.progress_bar_dialog.update_progress(page_progress)
 
         self.main_notebook.connect("switch-page", self._page_switched)
         self.main_window.connect('usbvm-changed', self._usbvm_changed)
 
         self._handle_urls()
+
+        self.progress_bar_dialog.update_progress(1)
+        self.progress_bar_dialog.hide()
+        self.progress_bar_dialog.destroy()
 
     def _usbvm_changed(self, *_args):
         response = ask_question(

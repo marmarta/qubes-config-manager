@@ -12,134 +12,145 @@
       <object class="GtkBox">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="margin-start">5</property>
-        <property name="margin-end">5</property>
-        <property name="margin-top">5</property>
-        <property name="margin-bottom">5</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkLabel">
+          <object class="GtkBox">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="margin-bottom">5</property>
-            <property name="label" translatable="yes">Select applications that will be listed in the menu for this qube. This can be changed at any time through Qube Settings.</property>
-            <property name="wrap">True</property>
-            <property name="width-chars">40</property>
-            <property name="max-width-chars">40</property>
-            <property name="xalign">0</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkSearchEntry" id="apps_search">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="margin-bottom">5</property>
-            <property name="primary-icon-name">edit-find-symbolic</property>
-            <property name="primary-icon-activatable">False</property>
-            <property name="primary-icon-sensitive">False</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkScrolledWindow">
-            <property name="height-request">300</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="margin-start">10</property>
-            <property name="margin-end">10</property>
-            <property name="shadow-type">in</property>
+            <property name="orientation">vertical</property>
             <child>
-              <object class="GtkViewport">
-                <property name="height-request">300</property>
+              <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
+                <property name="margin-bottom">5</property>
+                <property name="label" translatable="yes">Select applications that will be listed in the menu for this qube. This can be changed at any time through Qube Settings.</property>
+                <property name="wrap">True</property>
+                <property name="width-chars">40</property>
+                <property name="max-width-chars">40</property>
+                <property name="xalign">0</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSearchEntry" id="apps_search">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="margin-bottom">5</property>
+                <property name="primary-icon-name">edit-find-symbolic</property>
+                <property name="primary-icon-activatable">False</property>
+                <property name="primary-icon-sensitive">False</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow">
+                <property name="height-request">300</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="margin-start">10</property>
+                <property name="margin-end">10</property>
+                <property name="shadow-type">in</property>
                 <child>
-                  <object class="GtkBox">
+                  <object class="GtkViewport">
+                    <property name="height-request">300</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="orientation">vertical</property>
-                    <child type="center">
-                      <placeholder/>
-                    </child>
                     <child>
-                      <object class="GtkListBox" id="apps_list">
+                      <object class="GtkBox">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="halign">start</property>
-                        <property name="valign">start</property>
-                        <property name="hexpand">False</property>
-                        <property name="vexpand">False</property>
-                        <property name="selection-mode">multiple</property>
-                        <child type="placeholder">
-                          <object class="GtkLabel" id="apps_list_placeholder">
+                        <property name="orientation">vertical</property>
+                        <child type="center">
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <object class="GtkListBox" id="apps_list">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <property name="halign">start</property>
                             <property name="valign">start</property>
                             <property name="hexpand">False</property>
                             <property name="vexpand">False</property>
-                            <property name="label" translatable="yes">No matching applications found in current template.</property>
+                            <property name="selection-mode">multiple</property>
+                            <child type="placeholder">
+                              <object class="GtkLabel" id="apps_list_placeholder">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="halign">start</property>
+                                <property name="valign">start</property>
+                                <property name="hexpand">False</property>
+                                <property name="vexpand">False</property>
+                                <property name="label" translatable="yes">No matching applications found in current template.</property>
+                                <property name="xalign">0</property>
+                                <attributes>
+                                  <attribute name="style" value="italic"/>
+                                </attributes>
+                              </object>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="label_other_templates">
+                            <property name="can-focus">False</property>
+                            <property name="margin-top">5</property>
+                            <property name="margin-bottom">5</property>
+                            <property name="label" translatable="yes">Other qubes containing matching applications</property>
                             <property name="xalign">0</property>
                             <attributes>
-                              <attribute name="style" value="italic"/>
+                              <attribute name="weight" value="semibold"/>
                             </attributes>
                           </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkListBox" id="apps_list_other_templates">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">start</property>
+                            <property name="valign">start</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">3</property>
+                          </packing>
                         </child>
                       </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="label_other_templates">
-                        <property name="can-focus">False</property>
-                        <property name="margin-top">5</property>
-                        <property name="margin-bottom">5</property>
-                        <property name="label" translatable="yes">Other qubes containing matching applications</property>
-                        <property name="xalign">0</property>
-                        <attributes>
-                          <attribute name="weight" value="semibold"/>
-                        </attributes>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">2</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkListBox" id="apps_list_other_templates">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="halign">start</property>
-                        <property name="valign">start</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">3</property>
-                      </packing>
                     </child>
                   </object>
                 </child>
               </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
             </child>
+            <style>
+              <class name="modal_dialog"/>
+            </style>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">2</property>
+            <property name="position">0</property>
           </packing>
         </child>
         <child>
@@ -156,6 +167,11 @@
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <style>
+                  <class name="flat"/>
+                  <class name="flat_button"/>
+                  <class name="button_cancel"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -185,12 +201,8 @@
     <child internal-child="vbox">
       <object class="GtkBox">
         <property name="can-focus">False</property>
-        <property name="margin-start">10</property>
-        <property name="margin-end">10</property>
-        <property name="margin-top">10</property>
-        <property name="margin-bottom">10</property>
         <property name="orientation">vertical</property>
-        <property name="spacing">2</property>
+        <property name="spacing">10</property>
         <child internal-child="action_area">
           <object class="GtkButtonBox">
             <property name="can-focus">False</property>
@@ -201,6 +213,11 @@
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <style>
+                  <class name="flat"/>
+                  <class name="flat_button"/>
+                  <class name="button_cancel"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -214,6 +231,11 @@
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <style>
+                  <class name="flat"/>
+                  <class name="flat_button"/>
+                  <class name="button_save"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -248,11 +270,13 @@
             <child>
               <placeholder/>
             </child>
+            <style>
+              <class name="modal_dialog"/>
+            </style>
           </object>
           <packing>
             <property name="expand">True</property>
             <property name="fill">True</property>
-            <property name="padding">10</property>
             <property name="position">1</property>
           </packing>
         </child>
@@ -288,6 +312,11 @@
                 <property name="sensitive">False</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <style>
+                  <class name="flat"/>
+                  <class name="flat_button"/>
+                  <class name="button_save"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -304,6 +333,11 @@
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <style>
+                  <class name="flat"/>
+                  <class name="flat_button"/>
+                  <class name="button_cancel"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">True</property>

@@ -36,6 +36,7 @@ from .template_handler import TemplateHandler, TemplateSelector
 from .network_selector import NetworkSelector
 from .advanced_handler import AdvancedHandler
 from ..widgets.gtk_utils import load_icon, show_error
+from ..widgets.gtk_widgets import ProgressBarDialog
 
 import gi
 
@@ -87,6 +88,9 @@ class CreateNewQube(Gtk.Application):
         self.main_window: Optional[Gtk.Window] = None
         self.template_selector: Optional[TemplateSelector] = None
 
+        self.progress_bar_dialog = ProgressBarDialog(
+            self, "Loading available applications...")
+
     def do_activate(self, *args, **kwargs):
         """
         Method called whenever this program is run; it executes actual setup
@@ -105,6 +109,9 @@ class CreateNewQube(Gtk.Application):
         The function that performs actual widget realization and setup. Should
         be only called once, in the main instance of this application.
         """
+        self.progress_bar_dialog.show()
+        self.progress_bar_dialog.update_progress(0.1)
+
         self.builder = Gtk.Builder()
         self.builder.add_from_file(pkg_resources.resource_filename(
             'qubes_config', 'new_qube.glade'))
@@ -115,7 +122,11 @@ class CreateNewQube(Gtk.Application):
 
         self._handle_theme()
 
+        self.progress_bar_dialog.update_progress(0.1)
+
         self.template_handler = TemplateHandler(self.builder, self.qapp)
+
+        self.progress_bar_dialog.update_progress(0.1)
 
         self.qube_type_app: Gtk.RadioButton = \
             self.builder.get_object('qube_type_app')
@@ -147,12 +158,20 @@ class CreateNewQube(Gtk.Application):
         self.qube_label.set_active(0)
         self.qube_name.connect('changed', self._name_changed)
 
+        self.progress_bar_dialog.update_progress(0.1)
+
         self.network_selector = NetworkSelector(self.builder, self.qapp)
+
+        self.progress_bar_dialog.update_progress(0.1)
 
         self.app_box_handler = ApplicationBoxHandler(
             self.builder, self.template_handler)
 
+        self.progress_bar_dialog.update_progress(0.1)
+
         self.advanced_handler = AdvancedHandler(self.builder, self.qapp)
+
+        self.progress_bar_dialog.update_progress(0.1)
 
         self.create_button: Gtk.Button = \
             self.builder.get_object('create_button')
@@ -163,6 +182,9 @@ class CreateNewQube(Gtk.Application):
         self.cancel_button.connect('clicked', self._quit)
 
         self.main_window.connect('delete-event', self._quit)
+
+        self.progress_bar_dialog.update_progress(1)
+        self.progress_bar_dialog.hide()
 
     def _quit(self, *_args):
         self.quit()

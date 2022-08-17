@@ -105,3 +105,31 @@ radiobutton radio {
     margin: 5px;
     border-radius: 0px;
 }
+
+.button_save {
+    background: @dark-blue;
+    color: white;
+}
+
+.button_cancel {
+    background: @light-gray;
+}
+
+.loading progress {
+    min-height: 20px;
+    border-color: @dark-gray-2;
+    border-width: 1px;
+    border-style: solid;
+}
+
+.loading trough {
+    min-height: 20px;
+    background: @medium-gray;
+    border-color: @dark-gray-2;
+    border-width: 1px;
+    border-style: solid;
+}
+
+.background {
+    background: @dark-gray-2;
+}

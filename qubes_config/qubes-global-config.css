@@ -183,15 +183,6 @@ separator {
     border-color: @medium-gray;
 }
 
-.button_save {
-    background: @dark-blue;
-    color: white;
-}
-
-.button_cancel {
-    background: @light-gray;
-}
-
 .text_button {
     color: @dark-blue;
     font-weight: 700;

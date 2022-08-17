@@ -490,3 +490,43 @@ class ImageTextButton(Gtk.Button):
             self.set_sensitive(False)
 
         self.show_all()
+
+
+class ProgressBarDialog(Gtk.Window):
+    """Simple window showing a progress bar."""
+    def __init__(self, parent_application: Gtk.Application, loading_text: str):
+        super().__init__()
+        self.parent_application = parent_application
+
+        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.add(self.box)
+
+        label = Gtk.Label()
+        label.set_text(loading_text)
+        self.box.pack_start(label, False, False, 10)
+        self.box.get_style_context().add_class('modal_dialog')
+
+        self.progress_bar = Gtk.ProgressBar()
+        self.progress_bar.get_style_context().add_class('loading')
+        self.progress_bar.set_fraction(0)
+        self.current_progress = 0
+
+        self.box.pack_start(self.progress_bar, False, False, 10)
+
+        self.show_all()
+        self.update_progress(0)
+
+        self.connect('delete-event', self._quit)
+
+    def update_progress(self, value):
+        """Update current progressbar progress"""
+        self.current_progress += value
+        self.current_progress = min(self.current_progress, 1)
+
+        self.progress_bar.set_fraction(self.current_progress)
+
+        while Gtk.events_pending():
+            Gtk.main_iteration_do(True)
+
+    def _quit(self, *_args):
+        self.parent_application.quit()
