@@ -32,8 +32,7 @@ import qubesadmin
 import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.vm
-from ..widgets.gtk_utils import ask_question, show_error, show_dialog, \
-    load_theme
+from ..widgets.gtk_utils import show_error, show_dialog, load_theme
 from ..widgets.gtk_widgets import ProgressBarDialog
 from .page_handler import PageHandler
 from .policy_handler import PolicyHandler, VMSubsetPolicyHandler
@@ -409,16 +408,22 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
         self.progress_bar_dialog.destroy()
 
     def _usbvm_changed(self, *_args):
-        response = ask_question(
-            self.main_window, "USB qube change",
-            "Changing USB qube requires restarting Global Settings to"
+        response = show_dialog(
+            parent=self.main_window, title="USB qube change",
+            text="Changing USB qube requires restarting Global Settings to"
             "correctly initialize all defaults. "
-            "Do you want to save changes and restart?")
+            "Do you want to save changes and restart?",
+            buttons={
+                "Save changes": Gtk.ResponseType.YES,
+                "Discard changes": Gtk.ResponseType.NO
+            }, icon_name="qubes-ask")
         if response == Gtk.ResponseType.YES:
             self._apply()
             self._quit()
             return
-        self._reset()
+        usb_handler = self.handlers['usb']
+        assert isinstance(usb_handler, DevicesHandler)
+        usb_handler.usbvm_handler.reset()
 
     def _handle_urls(self):
         url_label_ids = ["url_info", "openinvm_info", "splitgpg_info",

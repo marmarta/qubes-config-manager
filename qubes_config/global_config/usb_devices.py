@@ -21,7 +21,7 @@
 USB Devices-related functionality.
 """
 from functools import partial
-from typing import List, Union, Optional, Dict
+from typing import List, Union, Optional, Dict, Callable
 
 from qrexec.policy.parser import Allow
 
@@ -49,9 +49,11 @@ from gi.repository import Gtk
 class WidgetWithButtons(Gtk.Box):
     """This is a simple wrapper for editable widgets
     with additional confirm/cancel/edit buttons"""
-    def __init__(self, widget: Union[ActionWidget, VMWidget]):
+    def __init__(self, widget: Union[ActionWidget, VMWidget],
+                 confirm_callback: Optional[Callable] = None):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.select_widget = widget
+        self.confirm_callback = confirm_callback
 
         self.edit_button = ImageTextButton(icon_name='qubes-customize',
                                            label=None,
@@ -91,6 +93,8 @@ class WidgetWithButtons(Gtk.Box):
     def _confirm_clicked(self, _widget):
         self.select_widget.save()
         self._set_editable(False)
+        if self.confirm_callback:
+            self.confirm_callback()
 
     def reset(self):
         """Reset all changes."""
@@ -127,9 +131,9 @@ class USBVMHandler:
 
         self.select_widget = VMWidget(
             qapp=self.qapp, categories=None,
-            initial_value=self._get_current_usbvm(),
-            change_callback=self._emit_signal)
-        self.widget_with_buttons = WidgetWithButtons(self.select_widget)
+            initial_value=self._get_current_usbvm())
+        self.widget_with_buttons = WidgetWithButtons(
+            self.select_widget, confirm_callback=self._emit_signal)
         self.usb_qube_box.pack_start(self.widget_with_buttons, False, False, 0)
 
     def _emit_signal(self, *_args):
