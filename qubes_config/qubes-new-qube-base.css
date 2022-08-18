@@ -1,13 +1,7 @@
-@import "qubes-widgets-styling.css";
-
-label {
-  font-family: SourceSansPro;
-}
-
 .left_box {
-   background: white;
+   background: @top-background;
    border-width: 0px 1px 0px 1px;
-   border-color: @medium-gray;
+   border-color: @background-frame;
    border-style: solid;
 }
 
@@ -27,8 +21,8 @@ label {
     font-size: 120%;
     border-radius: 0px;
     border-width: 1px 0px 0px 0px;
-    border-color: @medium-gray;
-    background: white;
+    border-color: @background-frame;
+    background: @top-background;
     padding: 10px 15px 10px 20px;
 }
 
@@ -55,31 +49,31 @@ checkbutton {
 }
 
 radiobutton:checked radio {
-    background: white;
-    color: black;
+    background: @top-background;
+    color: @text-color;
 }
 
 #applications {
-    background: white;
+    background: @top-background;
     margin-top: 10px;
     margin-right: 20px;
     border-style: solid;
-    border-color: #afafaf;
+    border-color: @background-frame;
     border-radius: 10px;
     border-width: 2px;
     padding: 15px;
 }
 
 .content_box {
-    background: @light-gray;
+    background: @top-background-2;
     border-width: 2px;
-    border-color: @medium-gray;
+    border-color: @background-frame;
     padding-left: 100px;
     padding-right: 100px;
-    box-shadow: @medium-gray 2px -2px 2px -2px inset;
+    box-shadow: @background-frame 2px -2px 2px -2px inset;
     padding-top: 50px;
 }
 
 #main_window {
-    background: @dark-gray-2;
+    background: @bottom-background;
 }

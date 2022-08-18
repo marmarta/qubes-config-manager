@@ -32,7 +32,8 @@ import qubesadmin
 import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.vm
-from ..widgets.gtk_utils import ask_question, show_error, show_dialog
+from ..widgets.gtk_utils import ask_question, show_error, show_dialog, \
+    load_theme
 from ..widgets.gtk_widgets import ProgressBarDialog
 from .page_handler import PageHandler
 from .policy_handler import PolicyHandler, VMSubsetPolicyHandler
@@ -47,7 +48,7 @@ from .basics_handler import BasicSettingsHandler, FeatureHandler
 import gi
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GLib, GObject
+from gi.repository import Gtk, GLib, GObject
 
 
 logger = logging.getLogger('qubes-config-manager')
@@ -302,7 +303,11 @@ class GlobalConfig(Gtk.Application):
         self.main_notebook: Gtk.Notebook = \
             self.builder.get_object('main_notebook')
 
-        self._handle_theme()
+        load_theme(widget=self.main_window,
+                   light_theme_path=pkg_resources.resource_filename(
+                       'qubes_config', 'qubes-global-config-light.css'),
+                   dark_theme_path=pkg_resources.resource_filename(
+                       'qubes_config', 'qubes-global-config-dark.css'))
 
         self.apply_button: Gtk.Button = self.builder.get_object('apply_button')
         self.cancel_button: Gtk.Button = \
@@ -522,20 +527,6 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
             return True
         self.quit()
         return False
-
-    @staticmethod
-    def _handle_theme():
-        # style_context = self.main_window.get_style_context()
-        # window_default_color = style_context.get_background_color(
-        #     Gtk.StateType.NORMAL)
-        # TODO: future: determine light or dark scheme by checking if text is
-        #  lighter or darker than background
-        screen = Gdk.Screen.get_default()
-        provider = Gtk.CssProvider()
-        provider.load_from_path(pkg_resources.resource_filename(
-            'qubes_config', 'qubes-global-config.css'))
-        Gtk.StyleContext.add_provider_for_screen(
-            screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 
 def main():

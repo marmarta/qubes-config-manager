@@ -1,15 +1,16 @@
-@define-color qubes-blue #4180c9;
-@define-color dark-blue #4488df;
-@define-color dark-gray-2 #858585;
-@define-color dark-gray #cdcdcd;
-@define-color medium-gray #979797;
-@define-color medium-gray-2 #e7e7e7;
-@define-color light-gray #f2f2f2;
-
+label {
+  font-family: 'Source Sans Pro';
+}
 
 .qube-box-base {
   font-family: 'Source Sans Pro';
   font-weight: 600;
+  padding: 2px 10px 2px 10px;
+  border: 1px;
+  border-color: @dark-gray;
+  background: @medium-gray-2;
+  border-style: solid;
+  border-radius: 5px;
 }
 
 .qube-box-red {
@@ -82,21 +83,19 @@ radiobutton radio {
     background: @medium-gray-2;
     border-style: solid;
     border-radius: 5px;
-}
-
-.question_dialog {
-    padding: 10px;
-    background: white;
+    color: @dark-text-color;
 }
 
 .modal_dialog {
     padding: 20px;
-    background: white;
+    background: @top-background;
+    color: @text-color;
 }
 
 .modal_contents {
     padding: 10px;
-    background: white;
+    background: @top-background;
+    color: @text-color;
 }
 
 .flat_button {
@@ -104,6 +103,7 @@ radiobutton radio {
     font-weight: 500;
     margin: 5px;
     border-radius: 0px;
+    color: @dark-text-color;
 }
 
 .button_save {
@@ -112,7 +112,8 @@ radiobutton radio {
 }
 
 .button_cancel {
-    background: @light-gray;
+    background: @button-color;
+    color: @button-text-color;
 }
 
 .loading progress {
@@ -131,5 +132,5 @@ radiobutton radio {
 }
 
 .background {
-    background: @dark-gray-2;
+    background: @bottom-background;
 }

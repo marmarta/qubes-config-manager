@@ -1,0 +1,27 @@
+@define-color qubes-blue #4180c9;
+@define-color dark-blue #4488df;
+
+@define-color dark-gray-2 #858585;
+@define-color dark-gray #cdcdcd;
+@define-color medium-gray #979797;
+@define-color medium-gray-2 #e7e7e7;
+@define-color light-gray #f2f2f2;
+
+@define-color top-background #ffffff;
+@define-color top-background-2 #f2f2f2;
+@define-color bottom-background #858585;
+@define-color background-frame #979797;
+@define-color button-color #f2f2f2;
+@define-color separator-color #cdcdcd;
+@define-color soft-text-color #858585;
+@define-color misc-text-color #979797;
+
+@define-color problem-background #fce9e3;
+
+@define-color info-background #f0e9e3;
+
+@define-color text-color #000000;
+@define-color dark-text-color #000000;
+@define-color button-text-color #000000;
+
+@define-color red-code #ff0000;

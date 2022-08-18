@@ -118,9 +118,15 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 
 %{python3_sitelib}/qubes_config/global_config.glade
 %{python3_sitelib}/qubes_config/new_qube.glade
-%{python3_sitelib}/qubes_config/qubes-global-config.css
-%{python3_sitelib}/qubes_config/qubes-new-qube.css
-%{python3_sitelib}/qubes_config/qubes-widgets-styling.css
+%{python3_sitelib}/qubes_config/qubes-colors-dark.css
+%{python3_sitelib}/qubes_config/qubes-colors-light.css
+%{python3_sitelib}/qubes_config/qubes-global-config-base.css
+%{python3_sitelib}/qubes_config/qubes-global-config-light.css
+%{python3_sitelib}/qubes_config/qubes-global-config-dark.css
+%{python3_sitelib}/qubes_config/qubes-new-qube-base.css
+%{python3_sitelib}/qubes_config/qubes-new-qube-light.css
+%{python3_sitelib}/qubes_config/qubes-new-qube-dark.css
+%{python3_sitelib}/qubes_config/qubes-widgets-base.css
 
 %{_bindir}/qubes-new-qube
 %{_bindir}/qubes-global-config

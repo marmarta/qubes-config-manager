@@ -22,7 +22,7 @@ from typing import Dict, Union
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GdkPixbuf, GLib
+from gi.repository import Gtk, GdkPixbuf, GLib, Gdk
 
 RESPONSES_OK = {
     'OK': Gtk.ResponseType.OK
@@ -107,9 +107,9 @@ def show_dialog(parent: Gtk.Widget, title: str, text: Union[str, Gtk.Widget],
         button: Gtk.Button = dialog.add_button(key, value)
         button.get_style_context().add_class('flat_button')
         if value in [Gtk.ResponseType.YES, Gtk.ResponseType.OK]:
-            button.get_style_context().add_class('save_button')
+            button.get_style_context().add_class('button_save')
         else:
-            button.get_style_context().add_class('cancel_button')
+            button.get_style_context().add_class('button_cancel')
 
     dialog.set_title(title)
 
@@ -147,3 +147,30 @@ def show_dialog(parent: Gtk.Widget, title: str, text: Union[str, Gtk.Widget],
         if Gtk.ResponseType.NO in buttons.values():
             return Gtk.ResponseType.NO
     return response
+
+
+def load_theme(widget: Gtk.Widget, light_theme_path: str, dark_theme_path: str):
+    """
+    Load a dark or light theme to current screen, based on widget's
+    current (system) defaults.
+    :param widget: Gtk.Widget, preferably main window
+    :param light_theme_path: path to file with light theme css
+    :param dark_theme_path: path to file with dark theme css
+    """
+    style_context: Gtk.StyleContext = widget.get_style_context()
+    background_color: Gdk.RGBA = style_context.get_background_color(
+        Gtk.StateType.NORMAL)
+    text_color: Gdk.RGBA = style_context.get_color(
+        Gtk.StateType.NORMAL)
+    background_intensity = background_color.red + \
+                           background_color.blue + background_color.green
+    text_intensity = text_color.red + text_color.blue + text_color.green
+
+    path = light_theme_path if text_intensity < background_intensity \
+        else dark_theme_path
+
+    screen = Gdk.Screen.get_default()
+    provider = Gtk.CssProvider()
+    provider.load_from_path(path)
+    Gtk.StyleContext.add_provider_for_screen(
+        screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)

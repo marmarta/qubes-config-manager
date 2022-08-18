@@ -1,11 +1,5 @@
-@import "qubes-widgets-styling.css";
-
-label {
-  font-family: 'Source Sans Pro';
-}
-
 separator {
-    background: @dark-gray;
+    background: @separator-color;
 }
 
 .combo {
@@ -14,35 +8,35 @@ separator {
 
 .qubes_version_label {
     margin: 10px 0 10px 0;
-    color: @dark-gray-2;
+    color: @soft-text-color;
     font-size: 120%;
     font-weight: 700;
 }
 
 .content_box {
-    background: @light-gray;
+    background: @top-background-2;
     border-width: 2px;
-    border-color: @medium-gray;
+    border-color: @background-frame;
     padding-left: 100px;
     padding-right: 100px;
-    box-shadow: @medium-gray 2px -2px 2px -2px inset;
+    box-shadow: @background-frame 2px -2px 2px -2px inset;
     padding-top: 50px;
 }
 
 #main_notebook {
     border-width: 1px;
-    border-color: @dark-gray-2;
+    border-color: @bottom-background;
     border-style: solid;
 }
 
 #main_notebook header {
-    background: white;
+    background: @top-background;
     border-width: 0px;
 }
 
 #main_notebook header tabs tab {
     border-width: 0;
-    box-shadow: @medium-gray 0px 2px 2px -2px inset;
+    box-shadow: @background-frame 0px 2px 2px -2px inset;
     margin: 0px;
     font-weight: bold;
 }
@@ -53,9 +47,9 @@ separator {
 }
 
 #main_notebook header tabs tab:hover {
-    box-shadow: @medium-gray 0px 2px 2px -2px inset;
+    box-shadow: @background-frame 0px 2px 2px -2px inset;
     border-width: 0px;
-    border-color: @medium-gray;
+    border-color: @background-frame;
 }
 
 .category {
@@ -73,34 +67,34 @@ separator {
 
 .flowbox_container {
     margin: 10px 30px 10px 30px;
-    background: white;
+    background: @top-background;
     padding: 10px;
     border: 1px;
     border-style: solid;
     border-radius: 5px;
-    border-color: @dark-gray;
+    border-color: @separator-color;
 }
 
 .flowbox_title {
-    color: @dark-gray-2;
+    color: @soft-text-color;
     font-weight: 700;
     padding: 0;
     margin: 0;
 }
 
 .flowbox_flowbox {
-    background: white;
+    background: @top-background;
     padding: 10px;
 }
 
 .red_code {
     font-family: SourceCodePro;
-    color: red;
+    color: @red-code;
     margin-left: 5px;
 }
 
 .explanation_text {
-    color: @medium-gray;
+    color: @misc-text-color;
     margin-left: 5px;
 }
 
@@ -110,7 +104,7 @@ separator {
 }
 
 .add_label:disabled {
-    color: @medium-gray;
+    color: @misc-text-color;
     font-weight: bold;
 }
 
@@ -119,13 +113,13 @@ separator {
 }
 
 .permission_list {
-    background: @light-gray;
+    background: @top-background-2;
     padding-top: 10px;
     padding-bottom: 10px;
 }
 
 .permission_row {
-    background: @light-gray;
+    background: @top-background-2;
     padding:10px;
 }
 
@@ -135,15 +129,15 @@ separator {
 
 .edited_row {
     padding: 10px 10px 10px 10px;
-    background: white;
-    border-color: @medium-gray;
+    background: @top-background;
+    border-color: @background-frame;
     border-style: solid;
     border-width: 1px;
     margin: 10px;
 }
 
 .edited_row:hover {
-    background: white;
+    background: @top-background;
 }
 
 .problem_box {
@@ -151,19 +145,18 @@ separator {
     padding: 10px;
     border: 1px;
     border-style: solid;
-    border-color: white;
-    background: #fce9e3;
-    color: #ba370d;
+    border-color: @background-frame;
+    background: @problem-background;
 }
 
 .problem_list {
     margin-top: 20px;
-    background: #fce9e3;
+    background: @problem-background;
     padding-left: 50px;
 }
 
 .problem_row:hover {
-    background: #fce9e3;
+    background: @problem-background;
 }
 
 .enable_opts {
@@ -176,11 +169,11 @@ separator {
 
 .raw_text {
     margin: 10px 25px 10px 35px;
-    background: white;
+    background: @top-background;
     border-radius: 0px;
     border-width: 1px;
     border-style: solid;
-    border-color: @medium-gray;
+    border-color: @background-frame;
 }
 
 .text_button {
@@ -197,28 +190,24 @@ separator {
 
 .didascalia {
     font-style: italic;
-    color: @dark-gray;
+    color: @misc-text-color;
     margin-right: 20px;
     margin-left: 20px;
 }
 
-.background {
-    background: @dark-gray-2;
-}
-
 .info_box {
     padding: 20px 40px 20px 40px;
-    background: #f0e9e3;
+    background: @info-background;
     border-width: 1px;
     border-style: solid;
-    border-color: white;
+    border-color: @background-frame;
 }
 
 .action_text {
-    color: black;
+    color: @text-color;
     font-weight: 700;
 }
 
 .action_text_soft {
-    color: black;
+    color: @text-color;
 }

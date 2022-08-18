@@ -35,13 +35,13 @@ from .application_selector import ApplicationBoxHandler
 from .template_handler import TemplateHandler, TemplateSelector
 from .network_selector import NetworkSelector
 from .advanced_handler import AdvancedHandler
-from ..widgets.gtk_utils import load_icon, show_error
+from ..widgets.gtk_utils import load_icon, show_error, load_theme
 from ..widgets.gtk_widgets import ProgressBarDialog
 
 import gi
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GdkPixbuf, GObject
+from gi.repository import Gtk, GdkPixbuf, GObject
 
 
 logger = logging.getLogger('qubes-config-manager')
@@ -120,7 +120,11 @@ class CreateNewQube(Gtk.Application):
         self.qube_name: Gtk.Entry = self.builder.get_object('qube_name')
         self.qube_label: Gtk.ComboBox = self.builder.get_object('qube_label')
 
-        self._handle_theme()
+        load_theme(widget=self.main_window,
+                   light_theme_path=pkg_resources.resource_filename(
+                       'qubes_config', 'qubes-new-qube-light.css'),
+                   dark_theme_path=pkg_resources.resource_filename(
+                       'qubes_config', 'qubes-new-qube-dark.css'))
 
         self.progress_bar_dialog.update_progress(0.1)
 
@@ -195,20 +199,6 @@ class CreateNewQube(Gtk.Application):
         GObject.signal_new('template-changed',
                            Gtk.Window,
                            GObject.SignalFlags.RUN_LAST, None, (str,))
-
-    @staticmethod
-    def _handle_theme():
-        # style_context = self.main_window.get_style_context()
-        # window_default_color = style_context.get_background_color(
-        #     Gtk.StateType.NORMAL)
-        # TODO: future: determine light or dark scheme by checking if text is
-        #  lighter or darker than background
-        screen = Gdk.Screen.get_default()
-        provider = Gtk.CssProvider()
-        provider.load_from_path(pkg_resources.resource_filename(
-            'qubes_config', 'qubes-new-qube.css'))
-        Gtk.StyleContext.add_provider_for_screen(
-            screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     def _name_changed(self, entry: Gtk.Entry):
         if not entry.get_text():
