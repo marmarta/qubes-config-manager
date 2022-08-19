@@ -96,7 +96,7 @@ class PolicyHandler(PageHandler):
             f'{prefix}_disable_radio')
 
         # raw policy text widgets
-        self.raw_event_box: Gtk.EventBox = \
+        self.raw_event_button: Gtk.Button = \
             gtk_builder.get_object(f'{prefix}_raw_event')
         self.raw_box: Gtk.Box = \
             gtk_builder.get_object(f'{prefix}_raw_box')
@@ -134,7 +134,7 @@ class PolicyHandler(PageHandler):
             policy_manager=self.policy_manager)
 
         self.expander_handler = ExpanderHandler(
-            event_box=self.raw_event_box,
+            event_button=self.raw_event_button,
             data_container=self.raw_box,
             icon=self.raw_expander_icon,
             event_callback=self._raw_hide_show

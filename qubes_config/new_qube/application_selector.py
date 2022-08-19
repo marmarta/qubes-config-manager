@@ -160,9 +160,13 @@ class ApplicationButton(Gtk.FlowBoxChild):
             'Click to remove this application from selection')
         self.box.pack_end(self.remove_icon, False, False, 3)
 
-        self.button.connect('clicked', self._remove_self)
+        self.connect('activate', self._remove_self)
+        self.button.connect('clicked', self._activate_self)
 
         self.show_all()
+
+    def _activate_self(self, *_args):
+        self.activate()
 
     def _remove_self(self, *_args):
         self.get_parent().remove(self)
@@ -181,6 +185,11 @@ class AddButton(Gtk.FlowBoxChild):
         self.button = Gtk.Button()
         self.button.set_label("+")
         self.add(self.button)
+
+        self.button.connect('clicked', self._activate_self)
+
+    def _activate_self(self, *_args):
+        self.activate()
 
 
 class ApplicationBoxHandler:
@@ -392,7 +401,7 @@ class ApplicationBoxHandler:
                 button = ApplicationButton(child.appdata)
                 self.flowbox.add(button)
         plus_button = AddButton()
-        plus_button.button.connect('clicked', self._choose_apps)
+        plus_button.connect('activate', self._choose_apps)
         # need interaction with Template object
         self.flowbox.add(plus_button)
         self.flowbox.show_all()

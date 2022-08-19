@@ -666,7 +666,7 @@ class ProgressBarDialog(Gtk.Window):
 class ExpanderHandler:
     """A class to handle showing/hiding something on click."""
     def __init__(self,
-                 event_box: Gtk.EventBox,
+                 event_button: Gtk.Button,
                  data_container: Gtk.Container,
                  icon: Gtk.Image,
                  label: Optional[Gtk.Label] = None,
@@ -675,7 +675,7 @@ class ExpanderHandler:
                  event_callback: Optional[Callable[[bool], None]] = None
                  ):
         """
-        :param event_box: Gtk.EventBox that collects the click event
+        :param event_button: Gtk.Button that collects the click event
         :param data_container: the container with things to hide/show
         :param icon: icon that shows an expander icon
         :param label: optionally, a label that requires text changes
@@ -687,14 +687,14 @@ class ExpanderHandler:
         changed, with the new state provided as parameter (True - shown,
         False - hidden)
         """
-        self.event_box = event_box
+        self.event_button = event_button
         self.data_container = data_container
         self.label = label
         self.icon = icon
         self.event_callback = event_callback
 
-        self.event_box.connect(
-            'button-release-event', self._show_hide)
+        self.event_button.connect(
+            'clicked', self._show_hide)
 
         self.text_shown = text_shown
         self.text_hidden = text_hidden

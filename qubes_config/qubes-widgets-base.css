@@ -134,3 +134,10 @@ radiobutton radio {
 .background {
     background: @bottom-background;
 }
+
+.invisible_button {
+    border-width: 0;
+    box-shadow: none;
+    border: none;
+    background: none;
+}

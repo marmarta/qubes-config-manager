@@ -710,7 +710,7 @@ def test_policy_handler_edit_raw_close(
         assert False  # somehow the row didn't get added, bad
 
     # but now expand raw policy
-    handler.raw_event_box.emit('button-release-event', None)
+    handler.raw_event_button.emit('clicked')
     for row in handler.current_rows:
         if row.editing:
             assert False  # the row should have closed

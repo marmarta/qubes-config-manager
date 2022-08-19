@@ -113,7 +113,7 @@ def test_app_handler_show_hide(mock_subprocess, test_qapp, new_qube_builder):
     # and try again, now deselect something and select something else
     for child in app_selector.flowbox.get_children():
         if isinstance(child, AddButton):
-            child.button.clicked()
+            child.activate()
             break
     else:
         assert False  # button not found
@@ -158,7 +158,7 @@ def test_app_handler_change_template(mock_subprocess,
 
     for child in app_selector.flowbox.get_children():
         if isinstance(child, AddButton):
-            child.button.clicked()
+            child.activate()
             break
     else:
         assert False  # button not found
@@ -185,7 +185,7 @@ def test_app_handler_change_template(mock_subprocess,
     template_handler.select_template('fedora-35')
     for child in app_selector.flowbox.get_children():
         if isinstance(child, AddButton):
-            child.button.clicked()
+            child.activate()
             break
     else:
         assert False  # button not found
@@ -229,7 +229,7 @@ def test_app_handler_do_template(mock_subprocess,
 
     for child in app_selector.flowbox.get_children():
         if isinstance(child, AddButton):
-            child.button.clicked()
+            child.activate()
             break
     else:
         assert False  # button not found
@@ -286,7 +286,7 @@ def test_app_handler_delete(mock_subprocess,
 
     for child in app_selector.flowbox.get_children():
         if isinstance(child, AddButton):
-            child.button.clicked()
+            child.activate()
             break
     else:
         assert False  # button not found
@@ -304,7 +304,7 @@ def test_app_handler_delete(mock_subprocess,
     for button in app_selector.flowbox.get_children():
         if isinstance(button, ApplicationButton):
             if button.appdata.ident == 'udon.desktop':
-                button.button.clicked()
+                button.activate()
                 break
     else:
         assert False  # app button not found

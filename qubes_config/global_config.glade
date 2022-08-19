@@ -4072,9 +4072,10 @@ Documentation will open in a disposable qube.</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkEventBox" id="splitgpg_raw_event">
+                          <object class="GtkButton" id="splitgpg_raw_event">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
                             <child>
                               <object class="GtkBox">
                                 <property name="visible">True</property>
@@ -4126,11 +4127,13 @@ Documentation will open in a disposable qube.</property>
                                 </child>
                               </object>
                             </child>
+                            <style>
+                              <class name="invisible_button"/>
+                            </style>
                           </object>
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="padding">5</property>
                             <property name="position">7</property>
                           </packing>
                         </child>
@@ -4760,9 +4763,10 @@ Documentation will open in a disposable qube.</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkEventBox" id="clipboard_raw_event">
+                          <object class="GtkButton" id="clipboard_raw_event">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
                             <child>
                               <object class="GtkBox">
                                 <property name="visible">True</property>
@@ -4814,12 +4818,14 @@ Documentation will open in a disposable qube.</property>
                                 </child>
                               </object>
                             </child>
+                            <style>
+                              <class name="invisible_button"/>
+                            </style>
                           </object>
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="padding">5</property>
-                            <property name="position">10</property>
+                            <property name="position">9</property>
                           </packing>
                         </child>
                         <child>
@@ -5348,9 +5354,10 @@ Files cannot be copied to dom0.</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkEventBox" id="filecopy_raw_event">
+                          <object class="GtkButton" id="filecopy_raw_event">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
                             <child>
                               <object class="GtkBox">
                                 <property name="visible">True</property>
@@ -5402,11 +5409,13 @@ Files cannot be copied to dom0.</property>
                                 </child>
                               </object>
                             </child>
+                            <style>
+                              <class name="invisible_button"/>
+                            </style>
                           </object>
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="padding">5</property>
                             <property name="position">6</property>
                           </packing>
                         </child>
@@ -5952,9 +5961,10 @@ Documentation will open in a disposable qube.</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkEventBox" id="openinvm_raw_event">
+                          <object class="GtkButton" id="openinvm_raw_event">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
                             <child>
                               <object class="GtkBox">
                                 <property name="visible">True</property>
@@ -6006,11 +6016,13 @@ Documentation will open in a disposable qube.</property>
                                 </child>
                               </object>
                             </child>
+                            <style>
+                              <class name="invisible_button"/>
+                            </style>
                           </object>
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="padding">5</property>
                             <property name="position">16</property>
                           </packing>
                         </child>
@@ -6589,9 +6601,10 @@ from one qube in another non-disposable qube.</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkEventBox" id="url_raw_event">
+                          <object class="GtkButton" id="url_raw_event">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
                             <child>
                               <object class="GtkBox">
                                 <property name="visible">True</property>
@@ -6643,11 +6656,13 @@ from one qube in another non-disposable qube.</property>
                                 </child>
                               </object>
                             </child>
+                            <style>
+                              <class name="invisible_button"/>
+                            </style>
                           </object>
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="padding">5</property>
                             <property name="position">7</property>
                           </packing>
                         </child>
@@ -7010,10 +7025,11 @@ run the following command in a dom0 terminal:</property>
             <property name="homogeneous">True</property>
             <child>
               <object class="GtkButton" id="ok_button">
-                <property name="label" translatable="yes">OK</property>
+                <property name="label" translatable="yes">_OK</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <property name="use-underline">True</property>
                 <style>
                   <class name="flat_button"/>
                   <class name="button_save"/>
@@ -7028,10 +7044,11 @@ run the following command in a dom0 terminal:</property>
             </child>
             <child>
               <object class="GtkButton" id="cancel_button">
-                <property name="label" translatable="yes">Cancel</property>
+                <property name="label" translatable="yes">_Cancel</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <property name="use-underline">True</property>
                 <style>
                   <class name="flat"/>
                   <class name="flat_button"/>
@@ -7046,10 +7063,11 @@ run the following command in a dom0 terminal:</property>
             </child>
             <child>
               <object class="GtkButton" id="apply_button">
-                <property name="label" translatable="yes">Apply</property>
+                <property name="label" translatable="yes">_Apply</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <property name="use-underline">True</property>
                 <style>
                   <class name="flat"/>
                   <class name="button_cancel"/>

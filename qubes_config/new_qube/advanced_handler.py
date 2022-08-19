@@ -44,8 +44,8 @@ class AdvancedHandler:
         """
         self.qapp = qapp
 
-        self.events: Gtk.EventBox = \
-            gtk_builder.get_object('eventbox_advanced')
+        self.events: Gtk.Button = \
+            gtk_builder.get_object('event_button_advanced')
         self.box: Gtk.Box = \
             gtk_builder.get_object('advanced_box')
         self.expander_icon: Gtk.Image = \
@@ -54,7 +54,7 @@ class AdvancedHandler:
             gtk_builder.get_object('advanced_label')
 
         self.expander_handler = ExpanderHandler(
-            event_box=self.events,
+            event_button=self.events,
             data_container=self.box,
             icon=self.expander_icon,
             label=self.expander_label,

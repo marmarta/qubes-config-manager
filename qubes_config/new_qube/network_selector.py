@@ -97,15 +97,15 @@ class NetworkSelector:
             self.network_current_widget, False, False, 3)
         self.network_current_none.set_visible(False)
 
-        self.button_toggle_settings: Gtk.EventBox = \
-            gtk_builder.get_object('eventbox_network_current')
+        self.button_toggle_settings: Gtk.Button = \
+            gtk_builder.get_object('event_button_network_current')
         self.box_network_settings: Gtk.Box = \
             gtk_builder.get_object('box_network_settings')
         self.expander_image: Gtk.Image = \
             gtk_builder.get_object('network_settings_expander_icon')
 
         self.expander_handler = ExpanderHandler(
-            event_box=self.button_toggle_settings,
+            event_button=self.button_toggle_settings,
             data_container=self.box_network_settings,
             icon=self.expander_image)
 

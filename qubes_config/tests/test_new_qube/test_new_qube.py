@@ -118,7 +118,7 @@ def test_complex_new_qube(mock_error, mock_subprocess,
     # choose some apps
     for child in new_qube_app.app_box_handler.flowbox.get_children():
         if isinstance(child, AddButton):
-            child.button.clicked()
+            child.activate()
             break
     else:
         assert False  # button not found

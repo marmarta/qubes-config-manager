@@ -25,13 +25,13 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GdkPixbuf, GLib, Gdk
 
 RESPONSES_OK = {
-    'OK': Gtk.ResponseType.OK
+    '_OK': Gtk.ResponseType.OK
 }
 
 RESPONSES_YES_NO_CANCEL = {
-    "Yes": Gtk.ResponseType.YES,
-    "No": Gtk.ResponseType.NO,
-    "Cancel": Gtk.ResponseType.CANCEL
+    "_Yes": Gtk.ResponseType.YES,
+    "_No": Gtk.ResponseType.NO,
+    "_Cancel": Gtk.ResponseType.CANCEL
 }
 
 def load_icon_at_gtk_size(icon_name,
@@ -105,6 +105,7 @@ def show_dialog(parent: Gtk.Widget, title: str, text: Union[str, Gtk.Widget],
 
     for key, value in buttons.items():
         button: Gtk.Button = dialog.add_button(key, value)
+        button.set_use_underline(True)
         button.get_style_context().add_class('flat_button')
         if value in [Gtk.ResponseType.YES, Gtk.ResponseType.OK]:
             button.get_style_context().add_class('button_save')

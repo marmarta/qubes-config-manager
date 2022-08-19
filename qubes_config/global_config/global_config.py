@@ -414,8 +414,8 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
             "correctly initialize all defaults. "
             "Do you want to save changes and restart?",
             buttons={
-                "Save changes": Gtk.ResponseType.YES,
-                "Discard changes": Gtk.ResponseType.NO
+                "_Save changes": Gtk.ResponseType.YES,
+                "_Discard changes": Gtk.ResponseType.NO
             }, icon_name="qubes-ask")
         if response == Gtk.ResponseType.YES:
             self._apply()
@@ -498,9 +498,9 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
         response = show_dialog(
             parent=self.main_window, title="Unsaved changes", text=box,
             buttons={
-                "Save changes": Gtk.ResponseType.YES,
-                "Discard changes": Gtk.ResponseType.NO,
-                "Cancel": Gtk.ResponseType.CANCEL,
+                "_Save changes": Gtk.ResponseType.YES,
+                "_Discard changes": Gtk.ResponseType.NO,
+                "_Cancel": Gtk.ResponseType.CANCEL,
             }, icon_name="qubes-ask")
 
         return response
