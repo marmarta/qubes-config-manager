@@ -30,7 +30,7 @@ from ..widgets.gtk_utils import load_icon
 import gi
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, Pango
 
 
 logger = logging.getLogger('qubes-config-manager')
@@ -87,9 +87,10 @@ class ApplicationRow(Gtk.ListBoxRow):
         self.label = Gtk.Label()
         self.label.set_text(self.appdata.name)
         self.label.set_yalign(0.5)
+        self.label.set_ellipsize(Pango.EllipsizeMode.END)
+        self.label.set_max_width_chars(100)
         self.add(self.label)
         self.set_tooltip_text(self.appdata.comment)
-        self.get_style_context().add_class('app_list')
 
         # this is a workaround for
         # https://gitlab.gnome.org/GNOME/gtk/-/issues/552
@@ -111,11 +112,18 @@ class OtherTemplateApplicationRow(Gtk.ListBoxRow):
         self.appdata = appdata
         self.box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.add(self.box)
-        self.first_label = Gtk.Label()
-        self.first_label.set_text(f"{self.appdata.name} found in template")
-        self.box.pack_start(self.first_label, False, False, 0)
-        self.second_label = QubeName(appdata.template)
-        self.box.pack_start(self.second_label, False, False, 0)
+        self.appname_label = Gtk.Label()
+        self.appname_label.set_text(self.appdata.name)
+        self.appname_label.set_ellipsize(Pango.EllipsizeMode.END)
+        self.appname_label.set_max_width_chars(80)
+        self.box.pack_start(self.appname_label, False, False, 0)
+
+        self.middle_label = Gtk.Label()
+        self.middle_label.set_text(" found in ")
+
+        self.box.pack_start(self.middle_label, False, False, 0)
+        self.end_label = QubeName(appdata.template)
+        self.box.pack_start(self.end_label, False, False, 0)
         self.show_all()
 
 

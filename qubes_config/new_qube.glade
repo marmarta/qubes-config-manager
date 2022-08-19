@@ -57,6 +57,7 @@
                 <property name="can-focus">True</property>
                 <property name="margin-start">10</property>
                 <property name="margin-end">10</property>
+                <property name="hscrollbar-policy">never</property>
                 <property name="shadow-type">in</property>
                 <child>
                   <object class="GtkViewport">
@@ -75,10 +76,8 @@
                           <object class="GtkListBox" id="apps_list">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="halign">start</property>
                             <property name="valign">start</property>
-                            <property name="hexpand">False</property>
-                            <property name="vexpand">False</property>
+                            <property name="hexpand">True</property>
                             <property name="selection-mode">multiple</property>
                             <child type="placeholder">
                               <object class="GtkLabel" id="apps_list_placeholder">
@@ -98,7 +97,7 @@
                           </object>
                           <packing>
                             <property name="expand">False</property>
-                            <property name="fill">False</property>
+                            <property name="fill">True</property>
                             <property name="position">0</property>
                           </packing>
                         </child>
