@@ -260,11 +260,12 @@ def test_text_modeler_style_changes_none_val():
 ### VMModeler tests ###
 #######################
 
-def get_selected_text(combobox: Gtk.ComboBox):
+def get_selected_text(combobox: Gtk.ComboBox, col_no: int = 1):
     tree_iter = combobox.get_active_iter()
     model = combobox.get_model()
-    # 0 is row numer, 1 is readable name, 2 is pixbuf, 3 is api_name
-    return model[tree_iter][1]
+    # in VMListModeler 0 is row numer, 1 is readable name,
+    # 2 is pixbuf, 3 is api_name
+    return model[tree_iter][col_no]
 
 #### initial params
 
@@ -581,6 +582,161 @@ def test_modeler_is_available(test_qapp):
         assert vm_modeler.is_vm_available(vm)
     for vm in other_vms:
         assert not vm_modeler.is_vm_available(vm)
+
+########################
+### Image List tests ###
+########################
+
+#### initial params
+
+def test_imagemodeler_simple():
+    """simplest image modeler: no special params, just check it does not error
+    out"""
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    _ = gtk_widgets.ImageListModeler(
+        combobox=combobox,
+        value_list={'1': {'icon': 'test', 'object': None}}
+    )
+
+    assert get_selected_text(combobox, 0) is not None
+
+def test_imagemodeler_selected():
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    _ = gtk_widgets.ImageListModeler(
+        combobox=combobox,
+        value_list={'a': {'icon': 'test', 'object': 1},
+                    'b': {'icon': 'test', 'object': 2}},
+        selected_value='b'
+    )
+
+    assert get_selected_text(combobox, 0) == 'b'
+
+
+def test_imagemodeler_simple_actions():
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+
+    modeler = gtk_widgets.ImageListModeler(
+        combobox=combobox,
+        value_list={'a': {'icon': 'test', 'object': 1},
+                    'b': {'icon': 'test', 'object': 2},
+                    'c': {'icon': 'test', 'object': 3}
+                    },
+        selected_value='b'
+    )
+
+    # expected initial setup
+    assert combobox.get_active_id() == 'b'
+    assert get_selected_text(combobox, 0) == 'b'
+    assert modeler.get_selected() == 2
+    assert not modeler.is_changed()
+
+    # select something else
+    modeler.select_name('c')
+    assert combobox.get_active_id() == 'c'
+    assert get_selected_text(combobox, 0) == 'c'
+    assert modeler.get_selected() == 3
+    assert modeler.is_changed()
+
+    # and reset
+    modeler.reset()
+    assert combobox.get_active_id() == 'b'
+    assert get_selected_text(combobox, 0) == 'b'
+    assert modeler.get_selected() == 2
+    assert not modeler.is_changed()
+
+    # select something manually
+    combobox.set_active(combobox.get_active() + 1)
+    assert modeler.is_changed()
+
+    # and back to start
+    modeler.select_name('b')
+    assert combobox.get_active_id() == 'b'
+    assert get_selected_text(combobox, 0) == 'b'
+    assert modeler.get_selected() == 2
+    assert not modeler.is_changed()
+
+    # select and save changes
+    modeler.select_name('c')
+    modeler.update_initial()
+    assert combobox.get_active_id() == 'c'
+    assert get_selected_text(combobox, 0) == 'c'
+    assert modeler.get_selected() == 3
+    assert not modeler.is_changed()
+
+
+def test_imagemodeler_style_changes():
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    entry_box = combobox.get_child()
+    modeler = gtk_widgets.ImageListModeler(
+        combobox=combobox,
+        value_list={'a': {'icon': 'test', 'object': 1},
+                    'b': {'icon': 'test', 'object': 2},
+                    'c': {'icon': 'test', 'object': 3}
+                    },
+        selected_value='b',
+        style_changes=True
+    )
+
+    # switch selection back and forth
+    assert not entry_box.get_style_context().has_class('combo-changed')
+    modeler.select_name('c')
+    assert entry_box.get_style_context().has_class('combo-changed')
+    modeler.select_name('b')
+    assert not entry_box.get_style_context().has_class('combo-changed')
+
+    # switch and reset
+    modeler.select_name('c')
+    assert entry_box.get_style_context().has_class('combo-changed')
+    modeler.reset()
+    assert not entry_box.get_style_context().has_class('combo-changed')
+
+    # switch and update initial
+    modeler.select_name('c')
+    assert entry_box.get_style_context().has_class('combo-changed')
+    modeler.update_initial()
+    assert not entry_box.get_style_context().has_class('combo-changed')
+
+
+def test_imagemodeler_change_callback():
+    counter = []
+    def incr(*_args):
+        counter.append(1)
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    modeler = gtk_widgets.ImageListModeler(
+        combobox=combobox,
+        value_list={'a': {'icon': 'test', 'object': 1},
+                    'b': {'icon': 'test', 'object': 2},
+                    'c': {'icon': 'test', 'object': 3}
+                    },
+        selected_value='a',
+        event_callback=incr
+    )
+
+    assert counter
+    counter.clear()
+    modeler.select_name('c')
+    assert counter
+
+
+def test_imagemodeler_change_callback_later():
+    counter = []
+    def incr(*_args):
+        counter.append(1)
+    combobox: Gtk.ComboBox = Gtk.ComboBox.new_with_entry()
+    modeler = gtk_widgets.ImageListModeler(
+        combobox=combobox,
+        value_list={'a': {'icon': 'test', 'object': 1},
+                    'b': {'icon': 'test', 'object': 2},
+                    'c': {'icon': 'test', 'object': 3}
+                    },
+        selected_value='a')
+
+    assert not counter
+    modeler.connect_change_callback(incr)
+    assert not counter
+    modeler.select_name('c')
+    assert counter
+
 
 #### ImageTextButton
 

@@ -463,6 +463,137 @@ class VMListModeler(TraitSelector):
         return False
 
 
+class ImageListModeler(TraitSelector):
+    """
+    Modeler for Gtk.ComboBox contain a list of icons accompanied by names.
+    """
+    def __init__(self, combobox: Gtk.ComboBox,
+                 value_list: Dict[str, Dict[str, Any]],
+                 event_callback: Optional[Callable[[], None]] = None,
+                 selected_value: Optional[str] = None,
+                 style_changes: bool = False):
+        """
+        :param combobox: target ComboBox object
+        :param value_list: entries to be stored, in the form of a dict
+        where key is the visible name and there are two entries: icon,
+        with a str name of the icon to be used, and object, with the
+        corresponding value
+        :param event_callback: function to be called whenever combobox value
+        changes
+        :param selected_value: visible str that should be initially selected.
+        :param style_changes: if True, combo-changed style class will be
+        applied when combobox value changes
+        """
+        self.combo = combobox
+        self.entry_box = self.combo.get_child()
+        self.change_function = event_callback
+        self.style_changes = style_changes
+
+        self.icon_size = 20
+
+        self._entries: Dict[str, Dict[str, Any]] = value_list
+
+        for entry in self._entries.values():
+            entry['loaded_icon'] = load_icon(entry['icon'],
+                                             self.icon_size, self.icon_size)
+
+        self._apply_model()
+
+        self._initial_id = None
+
+        if selected_value:
+            self.select_name(selected_value)
+        else:
+            self.combo.set_active(0)
+
+        self._initial_id = self.combo.get_active_id()
+
+    def connect_change_callback(self, event_callback):
+        """Add a function to be run after combobox value is changed."""
+        self.change_function = event_callback
+
+    def is_changed(self) -> bool:
+        """Return True if the combobox selected value has changed from the
+        initial value."""
+        if self._initial_id is None:
+            return False
+        return self._initial_id != self.combo.get_active_id()
+
+    def update_initial(self):
+        """Inform the widget that information on 'initial' value should
+         be updated to whatever the current value is. Useful if saving changes
+         happened."""
+        self._initial_id = self.combo.get_active_id()
+        if self.style_changes:
+            self.entry_box.get_style_context().remove_class('combo-changed')
+
+    def reset(self):
+        """Reset changes."""
+        self.combo.set_active_id(self._initial_id)
+
+    def _combo_change(self, _widget):
+        if self.change_function:
+            self.change_function()
+
+        if self.style_changes:
+            self.entry_box.get_style_context().remove_class('combo-changed')
+            if self.is_changed():
+                self.entry_box.get_style_context().add_class('combo-changed')
+
+    def _apply_model(self):
+        assert isinstance(self.combo, Gtk.ComboBox)
+        list_store = Gtk.ListStore(str, GdkPixbuf.Pixbuf)
+
+        for entry_name, entry in self._entries.items():
+            list_store.append(
+                [
+                    entry_name,  # 0: displayed name
+                    entry['loaded_icon'],  # 1: icon
+                ]
+            )
+
+        self.combo.set_model(list_store)
+        self.combo.set_id_column(0)
+
+        icon_column = Gtk.CellRendererPixbuf()
+        self.combo.pack_start(icon_column, False)
+        self.combo.add_attribute(icon_column, "pixbuf", 1)
+
+        area = Gtk.CellAreaBox()
+        area.pack_start(icon_column, False, False, False)
+        area.add_attribute(icon_column, "pixbuf", 1)
+
+        # A Combo with an entry has a text column already
+        text_column: Gtk.CellRenderer = Gtk.CellRendererText()
+        self.combo.pack_start(text_column, False)
+        self.combo.add_attribute(text_column, "text", 0)
+
+        self.combo.connect("changed", self._combo_change)
+
+    def _event_callback(self, *_args):
+        if self.change_function:
+            self.change_function()
+
+    def __str__(self):
+        return self.entry_box.get_text()
+
+    def get_selected(self) -> Optional[Any]:
+        """
+        Get currently selected object, if any
+        :return: any object
+        """
+        selected = self.combo.get_active_id()
+        if selected in self._entries:
+            return self._entries[selected]['object']
+        return None
+
+    def select_name(self, name):
+        """
+        Select option by displayed name.
+        """
+        self.combo.set_active_id(name)
+
+
 class ImageTextButton(Gtk.Button):
     """Button with image and callback function. A simple helper
     to avoid boilerplate."""

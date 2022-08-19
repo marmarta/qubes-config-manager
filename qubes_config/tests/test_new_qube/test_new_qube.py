@@ -110,7 +110,7 @@ def test_complex_new_qube(mock_error, mock_subprocess,
     # enter name
     new_qube_app.qube_name.set_text('test')
     # select label
-    new_qube_app.qube_label.set_active_id('green')
+    new_qube_app.qube_label_combo.set_active_id('green')
     # select template and networking
     new_qube_app.template_handler.select_template('fedora-35')
     new_qube_app.network_selector.network_none.set_active(True)

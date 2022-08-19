@@ -36,7 +36,7 @@ from .template_handler import TemplateHandler, TemplateSelector
 from .network_selector import NetworkSelector
 from .advanced_handler import AdvancedHandler
 from ..widgets.gtk_utils import load_icon, show_error, load_theme
-from ..widgets.gtk_widgets import ProgressBarDialog
+from ..widgets.gtk_widgets import ProgressBarDialog, ImageListModeler
 
 import gi
 
@@ -118,7 +118,8 @@ class CreateNewQube(Gtk.Application):
 
         self.main_window = self.builder.get_object('main_window')
         self.qube_name: Gtk.Entry = self.builder.get_object('qube_name')
-        self.qube_label: Gtk.ComboBox = self.builder.get_object('qube_label')
+        self.qube_label_combo: Gtk.ComboBox = \
+            self.builder.get_object('qube_label')
 
         load_theme(widget=self.main_window,
                    light_theme_path=pkg_resources.resource_filename(
@@ -156,10 +157,18 @@ class CreateNewQube(Gtk.Application):
         self.qube_type_standalone.connect('toggled', self._type_selected)
         self.qube_type_disposable.connect('toggled', self._type_selected)
 
-        init_combobox_with_icons(
-            self.qube_label,
-            [(label, f'appvm-{label}') for label in self.qapp.labels])
-        self.qube_label.set_active(0)
+        label_dict = {}
+        for label in self.qapp.labels:
+            label_dict[str(label)] = {
+                'icon': f'appvm-{label}',
+                'object': str(label)
+            }
+
+        self.qube_label_modeler = ImageListModeler(
+            combobox=self.qube_label_combo,
+            value_list=label_dict
+        )
+
         self.qube_name.connect('changed', self._name_changed)
 
         self.progress_bar_dialog.update_progress(0.1)
@@ -217,15 +226,10 @@ class CreateNewQube(Gtk.Application):
                 'qubes-question-light', 20, 20))
 
     def _do_create_qube(self, *_args):
-        if not self.qube_label or not self.qube_name:
-            raise ValueError
+        label = self.qube_label_modeler.get_selected()
+        name = self.qube_name.get_text()
 
-        tree_iter = self.qube_label.get_active_iter()
-
-        if tree_iter is not None:
-            model = self.qube_label.get_model()
-            label = self.qapp.labels[model[tree_iter][1]]
-        else:
+        if not label or not name:
             raise ValueError
 
         if self.qube_type_template.get_active():
@@ -255,7 +259,7 @@ class CreateNewQube(Gtk.Application):
         try:
             vm = self._create_qube(
                 vmclass=klass,
-                name=self.qube_name.get_text(),
+                name=name,
                 label = label,
                 template=self.template_handler.get_selected_template(),
                 properties=properties,
