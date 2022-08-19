@@ -25,6 +25,7 @@
                 <property name="name">basics</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
+                <property name="hscrollbar-policy">never</property>
                 <property name="shadow-type">in</property>
                 <child>
                   <object class="GtkViewport">
@@ -749,6 +750,7 @@ Documentation will open in a disposable qube.</property>
                 <property name="name">usb</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
+                <property name="hscrollbar-policy">never</property>
                 <property name="shadow-type">in</property>
                 <child>
                   <object class="GtkViewport">
@@ -1047,7 +1049,6 @@ Documentation will open in a disposable qube.</property>
                           <object class="GtkBox" id="usb_u2f_no_usb_vm_problem">
                             <property name="can-focus">False</property>
                             <property name="halign">center</property>
-                            <property name="margin-top">20</property>
                             <property name="orientation">vertical</property>
                             <child>
                               <object class="GtkLabel" id="updates_problem_label3">
@@ -1077,7 +1078,6 @@ Documentation will open in a disposable qube.</property>
                           <object class="GtkBox" id="usb_u2f_no_qubes_problem">
                             <property name="can-focus">False</property>
                             <property name="halign">center</property>
-                            <property name="margin-top">20</property>
                             <property name="orientation">vertical</property>
                             <child>
                               <object class="GtkLabel" id="updates_problem_label2">
@@ -2071,6 +2071,7 @@ Documentation will open in a disposable qube.</property>
                 <property name="name">updates</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
+                <property name="hscrollbar-policy">never</property>
                 <property name="shadow-type">in</property>
                 <child>
                   <object class="GtkViewport">
@@ -3431,6 +3432,7 @@ Documentation will open in a disposable qube.</property>
                 <property name="name">splitgpg</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
+                <property name="hscrollbar-policy">never</property>
                 <property name="shadow-type">in</property>
                 <child>
                   <object class="GtkViewport">
@@ -4243,6 +4245,7 @@ Documentation will open in a disposable qube.</property>
                 <property name="name">clipboard</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
+                <property name="hscrollbar-policy">never</property>
                 <property name="shadow-type">in</property>
                 <child>
                   <object class="GtkViewport">
@@ -4928,6 +4931,7 @@ Documentation will open in a disposable qube.</property>
                 <property name="name">file</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
+                <property name="hscrollbar-policy">never</property>
                 <property name="shadow-type">in</property>
                 <child>
                   <object class="GtkViewport">
@@ -6121,6 +6125,7 @@ Documentation will open in a disposable qube.</property>
                 <property name="name">url</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
+                <property name="hscrollbar-policy">never</property>
                 <property name="shadow-type">in</property>
                 <child>
                   <object class="GtkViewport">
@@ -6757,6 +6762,7 @@ from one qube in another non-disposable qube.</property>
                 <property name="name">thisdevice</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
+                <property name="hscrollbar-policy">never</property>
                 <property name="shadow-type">in</property>
                 <child>
                   <object class="GtkViewport">
