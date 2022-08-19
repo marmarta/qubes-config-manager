@@ -22,8 +22,7 @@ from typing import Optional, Dict, Any
 import logging
 
 import qubesadmin.vm
-from ..widgets.gtk_widgets import TextModeler
-from ..widgets.gtk_utils import load_icon
+from ..widgets.gtk_widgets import TextModeler, ExpanderHandler
 
 import gi
 
@@ -54,6 +53,15 @@ class AdvancedHandler:
         self.expander_label: Gtk.Label = \
             gtk_builder.get_object('advanced_label')
 
+        self.expander_handler = ExpanderHandler(
+            event_box=self.events,
+            data_container=self.box,
+            icon=self.expander_icon,
+            label=self.expander_label,
+            text_shown='Hide advanced settings',
+            text_hidden='Show advanced settings'
+        )
+
         self.main_window: Gtk.Window = gtk_builder.get_object('main_window')
 
         self.provides_network_check: Gtk.CheckButton = \
@@ -68,8 +76,6 @@ class AdvancedHandler:
         self.initram: Gtk.SpinButton = gtk_builder.get_object(
             'initram_spin_button')
 
-        self.events.connect(
-            'button-release-event', self._show_hide_advanced)
 
         pools: Dict[str, Any] = {}
         for pool in self.qapp.pools.values():
@@ -79,7 +85,6 @@ class AdvancedHandler:
                 pools[str(pool)] = str(pool)
 
         self.pool_handler = TextModeler(self.pool, pools)
-        # TODO: check if default correctly selected in all cases
 
         # discuss: max ram?
         self.initram.configure(
@@ -122,18 +127,6 @@ class AdvancedHandler:
             self.initram.set_text(text)
             return True
         return False
-
-    def _show_hide_advanced(self, *_args):
-        self.box.set_visible(
-            not self.box.get_visible())
-        if self.box.get_visible():
-            self.expander_icon.set_from_pixbuf(
-                load_icon('qubes-expander-shown', 20, 20))
-            self.expander_label.set_text('Hide advanced settings')
-        else:
-            self.expander_icon.set_from_pixbuf(
-                load_icon('qubes-expander-hidden', 18, 18))
-            self.expander_label.set_text('Show advanced settings')
 
     def get_pool(self) -> Optional[str]:
         """Get selected storage pool"""

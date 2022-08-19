@@ -23,10 +23,10 @@ from unittest.mock import patch, call
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GdkPixbuf', '2.0')
-from gi.repository import GdkPixbuf, Gtk
+from gi.repository import GdkPixbuf, Gtk, Gdk
 
 from ..widgets.gtk_utils import load_icon, load_icon_at_gtk_size, \
-    ask_question, show_error
+    ask_question, show_error, is_theme_light
 
 def test_load_icon():
     """Test loading icon methods; tests if they don't error out and
@@ -64,3 +64,38 @@ def test_ask_question():
         print(mock_dialog.mock_calls)
         assert call.new().run() in mock_dialog.mock_calls
         assert call.new().destroy() in mock_dialog.mock_calls
+
+
+def test_get_theme():
+    """test getting light/dark theme"""
+    # first test dark theme
+    screen = Gdk.Screen.get_default()
+    provider = Gtk.CssProvider()
+    provider.load_from_data(b"""
+label {
+    background: black;
+    color: red;
+}
+""")
+    Gtk.StyleContext.add_provider_for_screen(
+        screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+    label = Gtk.Label()
+
+    assert not is_theme_light(label)
+
+    # and a simple light theme
+
+    screen = Gdk.Screen.get_default()
+    provider = Gtk.CssProvider()
+    provider.load_from_data(b"""
+label {
+    background: white;
+    color: blue;
+}""")
+    Gtk.StyleContext.add_provider_for_screen(
+        screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+    label = Gtk.Label()
+
+    assert is_theme_light(label)

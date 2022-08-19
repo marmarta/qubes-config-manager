@@ -31,7 +31,7 @@ from gi.repository import Gtk, GdkPixbuf
 
 from typing import Optional, Callable, Dict, Any, Union, List
 
-from .gtk_utils import load_icon
+from .gtk_utils import load_icon, is_theme_light
 
 NONE_CATEGORY = {
     "None": "(none)"
@@ -661,3 +661,66 @@ class ProgressBarDialog(Gtk.Window):
 
     def _quit(self, *_args):
         self.parent_application.quit()
+
+
+class ExpanderHandler:
+    """A class to handle showing/hiding something on click."""
+    def __init__(self,
+                 event_box: Gtk.EventBox,
+                 data_container: Gtk.Container,
+                 icon: Gtk.Image,
+                 label: Optional[Gtk.Label] = None,
+                 text_shown: Optional[str] = None,
+                 text_hidden: Optional[str] = None,
+                 event_callback: Optional[Callable[[bool], None]] = None
+                 ):
+        """
+        :param event_box: Gtk.EventBox that collects the click event
+        :param data_container: the container with things to hide/show
+        :param icon: icon that shows an expander icon
+        :param label: optionally, a label that requires text changes
+        :param text_shown: if label is provided, will be used as text when
+        data is shown
+        :param text_hidden: if label is provided, will be used as text when
+        data is hidden
+        :param event_callback: if provided, will be called after state is
+        changed, with the new state provided as parameter (True - shown,
+        False - hidden)
+        """
+        self.event_box = event_box
+        self.data_container = data_container
+        self.label = label
+        self.icon = icon
+        self.event_callback = event_callback
+
+        self.event_box.connect(
+            'button-release-event', self._show_hide)
+
+        self.text_shown = text_shown
+        self.text_hidden = text_hidden
+
+        # get variant
+        suffix = 'black' if is_theme_light(Gtk.Window()) else 'white'
+        self.icon_hidden = load_icon(f'qubes-expander-hidden-{suffix}', 18, 18)
+        self.icon_shown = load_icon(f'qubes-expander-shown-{suffix}', 20, 20)
+
+        self.set_state(False)
+
+    def _show_hide(self, *_args):
+        self.set_state(not self.data_container.get_visible())
+
+    def set_state(self, state: bool):
+        """Show data if state is true, hide it otherwise"""
+        self.data_container.set_visible(state)
+
+        if state:
+            self.icon.set_from_pixbuf(self.icon_shown)
+            if self.label:
+                self.label.set_text(self.text_shown)
+        else:
+            self.icon.set_from_pixbuf(self.icon_hidden)
+            if self.label:
+                self.label.set_text(self.text_hidden)
+
+        if self.event_callback:
+            self.event_callback(state)

@@ -24,8 +24,7 @@ import logging
 import qubesadmin
 import qubesadmin.events
 import qubesadmin.vm
-from ..widgets.gtk_widgets import QubeName, VMListModeler
-from ..widgets.gtk_utils import load_icon
+from ..widgets.gtk_widgets import QubeName, VMListModeler, ExpanderHandler
 
 import gi
 
@@ -104,18 +103,11 @@ class NetworkSelector:
             gtk_builder.get_object('box_network_settings')
         self.expander_image: Gtk.Image = \
             gtk_builder.get_object('network_settings_expander_icon')
-        self.button_toggle_settings.connect(
-            'button-release-event', self._show_hide_more)
 
-    def _show_hide_more(self, *_args):
-        self.box_network_settings.set_visible(
-            not self.box_network_settings.get_visible())
-        if self.box_network_settings.get_visible():
-            self.expander_image.set_from_pixbuf(
-                load_icon('qubes-expander-shown', 20, 20))
-        else:
-            self.expander_image.set_from_pixbuf(
-                load_icon('qubes-expander-hidden', 18, 18))
+        self.expander_handler = ExpanderHandler(
+            event_box=self.button_toggle_settings,
+            data_container=self.box_network_settings,
+            icon=self.expander_image)
 
     def _custom_toggled(self, widget):
         self.network_custom_combo.set_sensitive(widget.get_active())

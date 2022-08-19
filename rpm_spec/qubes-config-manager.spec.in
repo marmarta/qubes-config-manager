@@ -134,8 +134,10 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 /usr/share/icons/hicolor/scalable/apps/qubes-ask.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-customize.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-delete.svg
-/usr/share/icons/hicolor/scalable/apps/qubes-expander-hidden.svg
-/usr/share/icons/hicolor/scalable/apps/qubes-expander-shown.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-expander-hidden-black.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-expander-shown-black.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-expander-hidden-white.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-expander-shown-white.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-info.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-key.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-logo.svg

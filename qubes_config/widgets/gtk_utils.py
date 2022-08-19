@@ -157,6 +157,17 @@ def load_theme(widget: Gtk.Widget, light_theme_path: str, dark_theme_path: str):
     :param light_theme_path: path to file with light theme css
     :param dark_theme_path: path to file with dark theme css
     """
+    path = light_theme_path if is_theme_light(widget) else dark_theme_path
+
+    screen = Gdk.Screen.get_default()
+    provider = Gtk.CssProvider()
+    provider.load_from_path(path)
+    Gtk.StyleContext.add_provider_for_screen(
+        screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+
+def is_theme_light(widget):
+    """Check if current theme is light or dark"""
     style_context: Gtk.StyleContext = widget.get_style_context()
     background_color: Gdk.RGBA = style_context.get_background_color(
         Gtk.StateType.NORMAL)
@@ -166,11 +177,4 @@ def load_theme(widget: Gtk.Widget, light_theme_path: str, dark_theme_path: str):
                            background_color.blue + background_color.green
     text_intensity = text_color.red + text_color.blue + text_color.green
 
-    path = light_theme_path if text_intensity < background_intensity \
-        else dark_theme_path
-
-    screen = Gdk.Screen.get_default()
-    provider = Gtk.CssProvider()
-    provider.load_from_path(path)
-    Gtk.StyleContext.add_provider_for_screen(
-        screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+    return text_intensity < background_intensity

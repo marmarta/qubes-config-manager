@@ -27,8 +27,8 @@ from typing import Optional, List, Type, Set
 from qrexec.policy.parser import Rule
 from qrexec.exc import PolicySyntaxError
 
-from ..widgets.gtk_widgets import VMListModeler
-from ..widgets.gtk_utils import load_icon, show_error, ask_question
+from ..widgets.gtk_widgets import VMListModeler, ExpanderHandler
+from ..widgets.gtk_utils import show_error, ask_question
 from .page_handler import PageHandler
 from .policy_rules import AbstractRuleWrapper, AbstractVerbDescription
 from .policy_manager import PolicyManager
@@ -118,8 +118,6 @@ class PolicyHandler(PageHandler):
         self.exception_list_box.connect('rules-changed', self.fill_raw_rules)
         self.main_list_box.connect('rules-changed', self.fill_raw_rules)
 
-        self.raw_event_box.connect(
-            'button-release-event', self._show_hide_raw)
         self.raw_save.connect("clicked", self._save_raw)
         self.raw_cancel.connect("clicked", self._cancel_raw)
 
@@ -135,6 +133,13 @@ class PolicyHandler(PageHandler):
             own_file_name=self.policy_file_name,
             policy_manager=self.policy_manager)
 
+        self.expander_handler = ExpanderHandler(
+            event_box=self.raw_event_box,
+            data_container=self.raw_box,
+            icon=self.raw_expander_icon,
+            event_callback=self._raw_hide_show
+        )
+
         self.initial_rules, self.current_token = \
             self.policy_manager.get_rules_from_filename(
                 self.policy_file_name, self.default_policy)
@@ -144,10 +149,6 @@ class PolicyHandler(PageHandler):
         self.populate_rule_lists(rules)
         self.fill_raw_rules()
         self.check_custom_rules(rules)
-
-        # and make sure raw is in correct state
-        self.raw_box.set_visible(True)
-        self._show_hide_raw()
 
     def add_new_rule(self, *_args):
         """Add a new rule."""
@@ -226,7 +227,7 @@ class PolicyHandler(PageHandler):
                     self.text_buffer.get_end_iter(), False))
             self.populate_rule_lists(rules)
             self.check_custom_rules(rules)
-            self._show_hide_raw()
+            self.expander_handler.set_state(False)
         except PolicySyntaxError as ex:
             show_error(self.main_list_box, "Policy error",
                        f"Cannot save policy.\n"
@@ -235,20 +236,11 @@ class PolicyHandler(PageHandler):
 
     def _cancel_raw(self, _widget):
         self.fill_raw_rules()
-        self._show_hide_raw()
+        self.expander_handler.set_state(False)
 
-    def _show_hide_raw(self, *_args):
-        # if showing raws, make sure editing is done
-        if not self.raw_box.get_visible():
+    def _raw_hide_show(self, state):
+        if state:
             self.close_all_edits()
-        self.raw_box.set_visible(
-            not self.raw_box.get_visible())
-        if self.raw_box.get_visible():
-            self.raw_expander_icon.set_from_pixbuf(
-                load_icon( 'qubes-expander-shown', 20, 20))
-        else:
-            self.raw_expander_icon.set_from_pixbuf(
-                load_icon( 'qubes-expander-hidden', 18, 18))
 
     def fill_raw_rules(self, *_args):
         """Fill raw text window with appropriate data, based on whatever's
