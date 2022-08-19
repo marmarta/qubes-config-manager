@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Exec=qubes-new-qube
+Icon=qubes-new-qube
+Terminal=false
+Name=Create New Qube
+GenericName=Create New Qube
+StartupNotify=false
+Categories=Settings;X-XFCE-SettingsDialog;Qubes Tools

@@ -144,6 +144,11 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 /usr/share/icons/hicolor/scalable/apps/qubes-question-light.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-question.svg
 /usr/share/icons/hicolor/scalable/apps/qubes-this-device.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-new-qube.svg
+/usr/share/icons/hicolor/scalable/apps/qubes-global-config.svg
+
+/usr/share/applications/qubes-global-config.desktop
+/usr/share/applications/qubes-new-qube.desktop
 
 %changelog
 @CHANGELOG@

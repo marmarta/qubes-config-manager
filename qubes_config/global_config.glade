@@ -512,7 +512,7 @@
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label" translatable="yes">Settings related to window management. Changes made here require the restart of affected qubes before they come into effect.</property>
+                            <property name="label" translatable="yes">Settings related to window management. You will need to restart the affected qubes to see changes made here.</property>
                             <property name="xalign">0</property>
                             <style>
                               <class name="explanation"/>
@@ -780,7 +780,7 @@ Documentation will open in a disposable qube.</property>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label" translatable="yes">A USB qube is the one to which USB controllers are connected. By default it is &lt;tt&gt;sys-usb&lt;/tt&gt;, and is should &lt;b&gt;not&lt;/b&gt; be changed unless you really know what you're doing. If you need to change it, you also need to manually change device assignments in Qube Settings.
+                            <property name="label" translatable="yes">A USB qube is the one to which USB controllers are connected. By default it is &lt;tt&gt;sys-usb&lt;/tt&gt;, and is should &lt;b&gt;not&lt;/b&gt; be changed unless you really know what you're doing. If you have changed the device assignment, you can select here the correct qube for purposes of policy settings below.
 &lt;b&gt;Note:&lt;/b&gt; Changes here apply &lt;b&gt;ONLY&lt;/b&gt; to various policy settings on this page. If you do not change USB controller assignment, this setting will not change system behavior.</property>
                             <property name="use-markup">True</property>
                             <property name="wrap">True</property>
@@ -864,7 +864,7 @@ Documentation will open in a disposable qube.</property>
                             <child>
                               <object class="GtkLabel" id="usb_input_problem_label">
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Custom policy changes found. The changes below might be overwritten by existing custom policy changes. You can view the files below to adjust existing policy, or move their contents to raw policy file below to enable graphical edit.</property>
+                                <property name="label" translatable="yes">Custom policy changes found. The changes below might be overwritten by existing custom policy changes. You can check the files listed below to verify existing policy.</property>
                                 <property name="wrap">True</property>
                               </object>
                               <packing>
@@ -983,7 +983,7 @@ Documentation will open in a disposable qube.</property>
                             <property name="can-focus">False</property>
                             <property name="label" translatable="yes">Qubes OS U2F Proxy allows you to use U2F two-factor authentication devices without exposing the entire device and its contents to every qube.
 
-&lt;b&gt;Note:&lt;/b&gt; In order to use U2F proxy in a qube, its template must have the &lt;tt&gt;qubes-u2f&lt;/tt&gt; package installed. By default, only keys registered by this qube can be used by U2F Proxy.</property>
+&lt;b&gt;Note:&lt;/b&gt; In order to use U2F proxy in a qube, its template must have the &lt;tt&gt;qubes-u2f&lt;/tt&gt; package installed. By default, a qube can only use keys that it has registered itself.</property>
                             <property name="use-markup">True</property>
                             <property name="wrap">True</property>
                             <property name="xalign">0</property>
@@ -1053,7 +1053,7 @@ Documentation will open in a disposable qube.</property>
                               <object class="GtkLabel" id="updates_problem_label3">
                                 <property name="can-focus">False</property>
                                 <property name="halign">center</property>
-                                <property name="label" translatable="yes">U2F Proxy Service not installed in the USB qube. To use U2F Proxy Service, install &lt;tt&gt;qubes-u2f&lt;/tt&gt; package in the template of the USB qube.</property>
+                                <property name="label" translatable="yes">U2F Proxy Service is not installed in the USB qube. To use U2F Proxy Service, install &lt;tt&gt;qubes-u2f&lt;/tt&gt; package in the template of the USB qube.</property>
                                 <property name="use-markup">True</property>
                                 <property name="wrap">True</property>
                               </object>
@@ -1110,7 +1110,7 @@ Documentation will open in a disposable qube.</property>
                             <child>
                               <object class="GtkLabel" id="usb_u2f_problem_label">
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Custom policy changes found. The changes below might be overwritten by existing custom policy changes. You can view the files below to adjust existing policy, or move their contents to raw policy file below to enable graphical edit.</property>
+                                <property name="label" translatable="yes">Custom policy changes found. The changes below might be overwritten by existing custom policy changes. You can check the files listed below to verify existing policy.</property>
                                 <property name="wrap">True</property>
                               </object>
                               <packing>
@@ -1819,8 +1819,10 @@ Documentation will open in a disposable qube.</property>
                                         <property name="visible">True</property>
                                         <property name="can-focus">False</property>
                                         <property name="halign">start</property>
-                                        <property name="label" translatable="yes">Caution: this can lead toa security vulnerability.</property>
+                                        <property name="label" translatable="yes">Caution: this can lead to a security vulnerability. 
+&lt;b&gt;All&lt;/b&gt; keys, including those registered by other qubes and registered previously, will be available to qubes selected below.</property>
                                         <property name="use-markup">True</property>
+                                        <property name="wrap">True</property>
                                       </object>
                                       <packing>
                                         <property name="expand">False</property>
@@ -2168,7 +2170,7 @@ Documentation will open in a disposable qube.</property>
                             <child>
                               <object class="GtkLabel" id="updates_problem_label1">
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Error accessing repository data has occured. Cannot change update settings.</property>
+                                <property name="label" translatable="yes">Error accessing repository data. Cannot change update settings.</property>
                                 <property name="wrap">True</property>
                               </object>
                               <packing>
@@ -2871,7 +2873,7 @@ Documentation will open in a disposable qube.</property>
                             <child>
                               <object class="GtkLabel" id="updates_problem_label_2">
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Custom policy changes found. The changes below might be overwritten by existing custom policy changes. You can view the files below to adjust existing policy, or move their contents to raw policy file below to enable graphical edit.</property>
+                                <property name="label" translatable="yes">Custom policy changes found. The changes below might be overwritten by existing custom policy changes. You can check the files listed below to verify existing policy.</property>
                                 <property name="wrap">True</property>
                               </object>
                               <packing>
@@ -3194,7 +3196,7 @@ Documentation will open in a disposable qube.</property>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label" translatable="yes">Templates</property>
+                            <property name="label" translatable="yes">Template repositories</property>
                             <property name="xalign">0</property>
                             <style>
                               <class name="group_title"/>
@@ -3211,7 +3213,7 @@ Documentation will open in a disposable qube.</property>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label" translatable="yes">You can use Qubes Template Manager to install new templates.</property>
+                            <property name="label" translatable="yes">You can use Qubes Template Manager to install new templates from repositories selected here.</property>
                             <property name="wrap">True</property>
                             <property name="xalign">0</property>
                             <style>
@@ -3461,7 +3463,7 @@ Documentation will open in a disposable qube.</property>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label" translatable="yes">Isolate your GPG encryption keys in their own qubes, separate from the qubes with the apps that need to access them. Qubes OS can proxy your GPG keys through this feature, to protect your keys.</property>
+                            <property name="label" translatable="yes">Isolate your GPG encryption keys in their own qubes, separate from the qubes with the apps that need to access them. Qubes OS can proxy your GPG keys through this feature to protect your keys.</property>
                             <property name="wrap">True</property>
                             <property name="xalign">0</property>
                             <style>
@@ -3479,6 +3481,7 @@ Documentation will open in a disposable qube.</property>
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <property name="halign">center</property>
+                            <property name="margin-bottom">20</property>
                             <property name="spacing">20</property>
                             <child>
                               <object class="GtkImage">
@@ -4957,8 +4960,7 @@ Documentation will open in a disposable qube.</property>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label" translatable="yes">Control access for moving and copying files between qubes using &lt;tt&gt;qvm-copy&lt;/tt&gt;, &lt;tt&gt;qvm-move&lt;/tt&gt; 
-and file manager commands such as Move/Copy to VM</property>
+                            <property name="label" translatable="yes">Control access for moving and copying files between qubes using &lt;tt&gt;qvm-copy&lt;/tt&gt;, &lt;tt&gt;qvm-move&lt;/tt&gt; and file manager commands such as Move/Copy to VM</property>
                             <property name="use-markup">True</property>
                             <property name="wrap">True</property>
                             <property name="xalign">0</property>
@@ -5535,6 +5537,7 @@ Files cannot be copied to dom0.</property>
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <property name="halign">center</property>
+                            <property name="margin-bottom">20</property>
                             <property name="spacing">20</property>
                             <child>
                               <object class="GtkImage">
@@ -6169,6 +6172,7 @@ Documentation will open in a disposable qube.</property>
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <property name="halign">center</property>
+                            <property name="margin-bottom">20</property>
                             <property name="spacing">20</property>
                             <child>
                               <object class="GtkImage">

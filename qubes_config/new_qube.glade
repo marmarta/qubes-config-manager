@@ -2,7 +2,7 @@
 <!-- Generated with glade 3.38.2 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
-  <!-- interface-css-provider-path qubes-new-qube.css -->
+  <!-- interface-css-provider-path qubes-new-qube-light.css -->
   <object class="GtkWindow" id="applications_popup">
     <property name="height-request">400</property>
     <property name="can-focus">False</property>

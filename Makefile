@@ -22,10 +22,14 @@ install-icons:
 	cp icons/question_icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-question.svg
 	cp icons/question_icon_light.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-question-light.svg
 	cp icons/this-device-icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-this-device.svg
+	cp icons/new-qube-program-icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-new-qube.svg
+	cp icons/config-program-icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/qubes-global-config.svg
 
 install-autostart:
 	mkdir -p $(DESTDIR)/etc/xdg/autostart
 	mkdir -p $(DESTDIR)/usr/share/applications
+	cp desktop/qubes-global-config.desktop $(DESTDIR)/usr/share/applications/
+	cp desktop/qubes-new-qube.desktop $(DESTDIR)/usr/share/applications/
 
 install: install-autostart install-icons
 
