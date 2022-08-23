@@ -33,7 +33,7 @@ import qubesadmin.events
 import qubesadmin.exc
 import qubesadmin.vm
 from ..widgets.gtk_utils import show_error, show_dialog, load_theme
-from ..widgets.gtk_widgets import ProgressBarDialog
+from ..widgets.gtk_widgets import ProgressBarDialog, ViewportHandler
 from .page_handler import PageHandler
 from .policy_handler import PolicyHandler, VMSubsetPolicyHandler
 from .policy_rules import RuleSimple, \
@@ -402,6 +402,18 @@ qubes.OpenURL * @anyvm @anyvm ask\n""",
         self.main_window.connect('usbvm-changed', self._usbvm_changed)
 
         self._handle_urls()
+
+        self.viewport_handler = ViewportHandler(
+            self.main_window,
+            [self.builder.get_object('basics_scrolled_window'),
+             self.builder.get_object('usb_scrolled_window'),
+             self.builder.get_object('updates_scrolled_window'),
+             self.builder.get_object('splitgpg_scrolled_window'),
+             self.builder.get_object('clipboard_scrolled_window'),
+             self.builder.get_object('file_scrolled_window'),
+             self.builder.get_object('url_scrolled_window'),
+             self.builder.get_object('thisdevice_scrolled_window'),
+             ])
 
         self.progress_bar_dialog.update_progress(1)
         self.progress_bar_dialog.hide()

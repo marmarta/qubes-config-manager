@@ -31,6 +31,7 @@
                   <object class="GtkViewport">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="vscroll-policy">natural</property>
                     <child>
                       <!-- n-columns=3 n-rows=20 -->
                       <object class="GtkGrid" id="basics_contents">
@@ -756,6 +757,7 @@ Documentation will open in a disposable qube.</property>
                   <object class="GtkViewport">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="vscroll-policy">natural</property>
                     <child>
                       <object class="GtkBox" id="usb_contents">
                         <property name="visible">True</property>

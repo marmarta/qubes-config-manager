@@ -27,7 +27,7 @@ import qubesadmin.vm
 import itertools
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GdkPixbuf
+from gi.repository import Gtk, GdkPixbuf, GLib
 
 from typing import Optional, Callable, Dict, Any, Union, List
 
@@ -717,6 +717,10 @@ class ExpanderHandler:
             self.icon.set_from_pixbuf(self.icon_shown)
             if self.label:
                 self.label.set_text(self.text_shown)
+            for child in reversed(self.data_container.get_children()):
+                if child.get_can_focus():
+                    child.grab_focus()
+
         else:
             self.icon.set_from_pixbuf(self.icon_hidden)
             if self.label:
@@ -724,3 +728,70 @@ class ExpanderHandler:
 
         if self.event_callback:
             self.event_callback(state)
+
+
+class ViewportHandler:
+    """A class that enables auto-scrolling to the focused widget."""
+    def __init__(self, main_window: Gtk.Window,
+                 scrolled_windows: List[Gtk.ScrolledWindow]):
+        self.scrolled_windows = scrolled_windows
+        self.main_window = main_window
+
+        for viewport in [scrolled_window.get_child()
+                         for scrolled_window in self.scrolled_windows]:
+            viewport.connect('set-focus-child',
+                              self._viewport_set_focus_child)
+
+    def is_child(self, widget, container):
+        """
+        Go recursively over all children of container, to check if widget is
+        a child of it.
+        """
+        for child in container.get_children():
+            if child is widget:
+                return True
+            if isinstance(child, Gtk.Container):
+                if self.is_child(widget, child):
+                    return True
+        return False
+
+    def _viewport_set_focus_child(self, viewport, child):
+        GLib.idle_add(self.scroll_slide_viewport, viewport, child)
+
+    def scroll_slide_viewport(self, viewport, widget):
+        """Scroll the viewport if needed to see the current focused widget"""
+        if not widget or not viewport:
+            return
+
+        current_window = None
+
+        for scrolled_window in self.scrolled_windows:
+            if scrolled_window.get_child() == viewport:
+                current_window = scrolled_window
+
+        if not current_window:
+            return
+
+        child  = self.main_window.get_focus()
+
+        if not self.is_child(child, current_window):
+            return
+
+        adjustment: Gtk.Adjustment = current_window.get_vadjustment()
+
+        _, widget_top = child.translate_coordinates(current_window, 0, 0)
+        widget_bottom = widget_top + child.get_allocation().height
+
+        # this adjusted page size is to make sure scrolling shows the
+        # widget in context
+        page_size = adjustment.get_page_size() * 0.7
+
+        top = adjustment.get_value()
+        bottom = top + page_size
+
+        if widget_top < top:
+            adjustment.set_value(widget_top)
+            return
+        if widget_bottom > bottom:
+            adjustment.set_value(
+                widget_bottom - page_size)

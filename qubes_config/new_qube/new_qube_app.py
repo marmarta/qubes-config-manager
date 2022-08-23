@@ -23,7 +23,7 @@ New Qube program.
 # pylint: disable=import-error
 import subprocess
 import sys
-from typing import Optional, List, Tuple, Dict, Any
+from typing import Optional, Dict, Any
 import pkg_resources
 import logging
 
@@ -36,41 +36,17 @@ from .template_handler import TemplateHandler, TemplateSelector
 from .network_selector import NetworkSelector
 from .advanced_handler import AdvancedHandler
 from ..widgets.gtk_utils import load_icon, show_error, load_theme
-from ..widgets.gtk_widgets import ProgressBarDialog, ImageListModeler
+from ..widgets.gtk_widgets import ProgressBarDialog, ImageListModeler,\
+    ViewportHandler
 
 import gi
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GdkPixbuf, GObject
+from gi.repository import Gtk, GObject
 
 
 logger = logging.getLogger('qubes-config-manager')
 WHONIX_QUBE_NAME = 'sys-whonix'
-
-
-def init_combobox_with_icons(combobox: Gtk.ComboBox,
-                             data: List[Tuple[str, str]]):
-    """
-    Create a combobox with icons
-    :param combobox: Gtk.ComboBox widget
-    :param data: list of tuples of text and icon name for combobox contents
-    """
-    store = Gtk.ListStore(GdkPixbuf.Pixbuf, str)
-
-    for text, icon in data:
-        pixbuf = load_icon(icon, 20, 20)
-        store.append([pixbuf, text])
-
-    combobox.set_model(store)
-    renderer = Gtk.CellRendererPixbuf()
-    combobox.pack_start(renderer, False)
-    combobox.add_attribute(renderer, "pixbuf", 0)
-
-    renderer = Gtk.CellRendererText()
-    combobox.pack_start(renderer, False)
-    combobox.add_attribute(renderer, "text", 1)
-
-    combobox.set_id_column(1)
 
 
 class CreateNewQube(Gtk.Application):
@@ -193,6 +169,9 @@ class CreateNewQube(Gtk.Application):
         self.cancel_button: Gtk.Button = \
             self.builder.get_object('cancel_button')
         self.cancel_button.connect('clicked', self._quit)
+
+        self.viewport_handler = ViewportHandler(
+            self.main_window, [self.builder.get_object('main_scrolled_window')])
 
         self.main_window.connect('delete-event', self._quit)
 
