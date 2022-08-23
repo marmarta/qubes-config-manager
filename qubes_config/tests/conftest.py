@@ -127,10 +127,11 @@ def add_expected_vm(qapp,
         else:
             raise KeyError(f"Unknown property '{prop}'")
 
-    if klass in ("TemplateVM", "StandaloneVM"):
-        del combined_properties["template"]
-
     for prop, value in combined_properties.items():
+        if prop == 'template' and klass in ("TemplateVM", "StandaloneVM"):
+            qapp.expected_calls[(name, "admin.vm.property.Get", prop, None)] = \
+                b'2\x00QubesNoSuchPropertyError\x00\x00No such property\x00'
+            continue
         prop_line = f"default={value[1]} type={value[0]} {value[2]}"
         properties_getall += (f"{prop} " + prop_line + "\n").encode()
         qapp.expected_calls[(name, "admin.vm.property.Get", prop, None)] = \

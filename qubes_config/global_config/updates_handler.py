@@ -409,7 +409,8 @@ class UpdateProxy:
     @staticmethod
     def _needs_updatevm_filter(vm):
         if vm.klass == 'AdminVM' or vm.klass == 'AppVM':
-            # TODO: what about standalone disposables????????
+            return False
+        if getattr(vm, 'template', None):
             return False
         return not vm.is_networked()
 

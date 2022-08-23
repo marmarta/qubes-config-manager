@@ -263,7 +263,11 @@ class CreateNewQube(Gtk.Application):
                     '--update', vm.name],
                     stdin=subprocess.PIPE) as p:
                 p.communicate('\n'.join(apps).encode())
-
+                if p.returncode != 0:
+                    show_error(self.main_window,
+                               "Failed to select applications",
+                               f"An error occurred: {err}")
+                    return
         msg = Gtk.MessageDialog(
             transient_for=self.main_window,
             modal=True,
@@ -278,7 +282,6 @@ class CreateNewQube(Gtk.Application):
         if self.advanced_handler.get_install_system():
             subprocess.check_call(['qubes-vm-boot-from-device', str(vm)])
 
-        # TODO: discuss: should we quit after a failure?
         self.quit()
 
     def _create_qube(self, vmclass, name, label, template,

@@ -28,7 +28,7 @@ from qrexec.policy.parser import Rule
 from qrexec.exc import PolicySyntaxError
 
 from ..widgets.gtk_widgets import VMListModeler, ExpanderHandler
-from ..widgets.gtk_utils import show_error, ask_question
+from ..widgets.gtk_utils import show_error, ask_question, show_dialog
 from .page_handler import PageHandler
 from .policy_rules import AbstractRuleWrapper, AbstractVerbDescription
 from .policy_manager import PolicyManager
@@ -338,11 +338,16 @@ class PolicyHandler(PageHandler):
                 if not row.is_changed():
                     row.set_edit_mode(False)
                     continue
-                response = ask_question(row,
-                    "A rule is currently being edited",
-                    "Do you want to save changes to the following "
-                    f"rule?\n{str(row)}")
-                # TODO: improve with save/discard buttons
+                response = show_dialog(
+                    parent=row.get_toplevel(), title="Unsaved changes",
+                    text="A rule is currently being edited. \n"
+                         "Do you want to save changes to the following"
+                         f"rule?\n{str(row)}",
+                    buttons={
+                        "_Save changes": Gtk.ResponseType.YES,
+                        "_Discard changes": Gtk.ResponseType.NO,
+                    }, icon_name="qubes-ask")
+
                 if response == Gtk.ResponseType.YES:
                     if not row.validate_and_save():
                         row.revert()
@@ -505,7 +510,6 @@ class VMSubsetPolicyHandler(PolicyHandler):
         return False
 
     def populate_rule_lists(self, rules: List[Rule]):
-        # TODO: is this called twice at the start?
         for child in self.main_list_box.get_children() + \
                      self.exception_list_box.get_children():
             child.get_parent().remove(child)

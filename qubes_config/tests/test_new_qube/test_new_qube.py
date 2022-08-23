@@ -80,6 +80,7 @@ def test_simple_new_qube(mock_error, mock_subprocess,
 
     with patch('qubes_config.new_qube.new_qube_app.Gtk.MessageDialog') \
             as mock_dialog, patch('subprocess.Popen') as mock_popen:
+        mock_popen().__enter__().returncode = 0
         new_qube_app.create_button.clicked()
         assert mock_dialog.mock_calls  # called to tell us about the success
 
@@ -152,6 +153,7 @@ def test_complex_new_qube(mock_error, mock_subprocess,
 
     with patch('qubes_config.new_qube.new_qube_app.Gtk.MessageDialog') \
             as mock_dialog, patch('subprocess.Popen') as mock_popen:
+        mock_popen().__enter__().returncode = 0
         new_qube_app.create_button.clicked()
         assert mock_dialog.mock_calls  # called to tell us about the success
 
@@ -402,6 +404,7 @@ def test_advanced_new_qube(mock_error, mock_subprocess,
 
     with patch('qubes_config.new_qube.new_qube_app.Gtk.MessageDialog') \
             as mock_dialog, patch('subprocess.Popen') as mock_popen:
+        mock_popen().__enter__().returncode = 0
         new_qube_app.create_button.clicked()
         assert mock_dialog.mock_calls  # called to tell us about the success
 

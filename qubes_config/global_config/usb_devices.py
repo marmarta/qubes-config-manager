@@ -189,6 +189,9 @@ class InputDeviceHandler:
         self.sys_usb = sys_usb
         # generally do an update_usb thingy
 
+        self.warn_box = gtk_builder.get_object('usb_input_problem_box_warn')
+        self.warn_box.set_visible(False)
+
         self.default_policy = f"""
 qubes.InputMouse * {self.sys_usb} @adminvm deny
 qubes.InputKeyboard * {self.sys_usb} @adminvm deny
@@ -233,10 +236,8 @@ qubes.InputTablet * {self.sys_usb} @adminvm deny
             own_file_name=self.policy_file_name,
             policy_manager=self.policy_manager)
 
-
     def _warn(self):
-        pass
-        # TODO: future: make some sort of warning box?
+        self.warn_box.set_visible(True)
 
     def save(self):
         """Save user changes"""
@@ -320,8 +321,6 @@ policy.RegisterArgument +u2f.Register @anyvm @anyvm deny
         self.blanket_check: Gtk.CheckButton = \
             gtk_builder.get_object('usb_u2f_blanket_check')
 
-        # TODO: add default: not dom0 func
-
         self.initially_enabled_vms : List[qubesadmin.vm.QubesVM] = []
         self.available_vms: List[qubesadmin.vm.QubesVM] = []
         self.initial_register_vms: List[qubesadmin.vm.QubesVM] = []
@@ -373,10 +372,6 @@ policy.RegisterArgument +u2f.Register @anyvm @anyvm deny
     def _enable_clicked(related_box: Union[Gtk.Box, VMFlowboxHandler],
                         widget: Gtk.CheckButton):
         related_box.set_visible(widget.get_active())
-
-    def _warn(self):
-        # warn about weird data?
-        pass
 
     def _verify_additional_vm(self, vm):
         if vm in self.enable_some_handler.selected_vms:
