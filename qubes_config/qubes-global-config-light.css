@@ -1,3 +1,11 @@
 @import "qubes-colors-light.css";
 @import "qubes-widgets-base.css";
 @import "qubes-global-config-base.css";
+
+.qube-box-base {
+  font-family: 'Source Sans Pro';
+  font-weight: 600;
+  padding: 2px 10px 2px 10px;
+  border: none;
+  background: none;
+}
