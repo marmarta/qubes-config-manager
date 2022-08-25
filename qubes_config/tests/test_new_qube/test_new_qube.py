@@ -319,7 +319,7 @@ def test_new_disposable(mock_error, mock_subprocess,
     # the created qube should be empty, have red label, default
     # networking, no apps and not provide network
     test_qapp.expected_calls[
-        ('dom0', 'admin.vm.Create.DisposableVM',
+        ('dom0', 'admin.vm.Create.DispVM',
          'default-dvm', b'name=test label=red')] =  b'0\x00'
 
     # it's a standalone so it should be a hvm with no kernel

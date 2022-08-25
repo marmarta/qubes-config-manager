@@ -216,7 +216,7 @@ class CreateNewQube(Gtk.Application):
         elif self.qube_type_standalone.get_active():
             klass = 'StandaloneVM'
         elif self.qube_type_disposable.get_active():
-            klass = 'DisposableVM'
+            klass = 'DispVM'
         else:
             klass = 'AppVM'
 
