@@ -7,6 +7,7 @@
     <property name="width-request">1800</property>
     <property name="height-request">1200</property>
     <property name="can-focus">False</property>
+    <property name="title" translatable="yes">Qubes OS Global Config</property>
     <property name="window-position">center</property>
     <child>
       <object class="GtkBox" id="background_box">
@@ -966,7 +967,7 @@ Documentation will open in a disposable qube.</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <property name="halign">start</property>
-                                <property name="label" translatable="yes">USB &lt;b&gt;Tablet&lt;/b&gt;: </property>
+                                <property name="label" translatable="yes">USB &lt;b&gt;Touchscreen/Tablet&lt;/b&gt;: </property>
                                 <property name="use-markup">True</property>
                               </object>
                               <packing>
@@ -6982,7 +6983,7 @@ run the following command in a dom0 terminal:</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="pixel-size">128</property>
-                    <property name="icon-name">qubes-logo</property>
+                    <property name="icon-name">qubes-global-config</property>
                     <property name="icon_size">6</property>
                   </object>
                   <packing>
