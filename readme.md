@@ -390,3 +390,9 @@ A named disposable qube behaves like a normal disposable qube (that is,
 does not store any information between reboots), but has a set name
 and settings. It can be used as, for example, a net qube by other qubes.
 
+# Sponsors
+
+This work was funded by the Prototype Fund and the German Federal Ministry
+of Education and Research.
+
+![](images/pf.png)![](images/bmbf.jpg)
